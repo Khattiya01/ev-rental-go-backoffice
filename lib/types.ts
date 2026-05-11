@@ -4,7 +4,7 @@ export type ContractStatus = 'active' | 'completed' | 'overdue'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 export type DriverType = 'Grab' | 'Bolt' | 'Private'
-export type AdminRole = 'Super Admin' | 'Fleet Manager' | 'Accountant' | 'Mechanic'
+export type AdminRole = 'super_admin' | 'admin' | 'viewer'
 
 export interface Vehicle {
   id: string
@@ -12,17 +12,17 @@ export interface Vehicle {
   model: string
   make: string
   year: number
-  color: string
+  color: string | null
   status: VehicleStatus
   socPercent: number
   odometer: number
   lat: number
   lng: number
-  imageUrl: string
-  vin: string
-  condition: 'Excellent' | 'Good' | 'Fair' | 'Poor'
-  location: string
-  nextServiceDate: string
+  imageUrl: string | null
+  vin: string | null
+  condition: 'Excellent' | 'Good' | 'Fair' | 'Poor' | string | null
+  location: string | null
+  nextServiceDate: string | null
   mileage: number
 }
 
@@ -89,7 +89,7 @@ export interface AdminUser {
   name: string
   email: string
   role: AdminRole
-  status: 'Active' | 'Inactive'
+  createdAt: string
 }
 
 export interface PricingPlan {

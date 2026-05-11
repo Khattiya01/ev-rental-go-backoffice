@@ -55,10 +55,10 @@ export const mockGeofences: GeofenceZone[] = [
 ]
 
 export const mockAdminUsers: AdminUser[] = [
-  { id: '1', name: 'John Smith', email: 'john.smith@evgo.com', role: 'Super Admin', status: 'Active' },
-  { id: '2', name: 'Maria Garcia', email: 'maria.garcia@evgo.com', role: 'Accountant', status: 'Active' },
-  { id: '3', name: 'David Lee', email: 'david.lee@evgo.com', role: 'Mechanic', status: 'Inactive' },
-  { id: '4', name: 'Sarah Khan', email: 'sarah.khan@evgo.com', role: 'Super Admin', status: 'Active' },
+  { id: '1', name: 'John Smith', email: 'john.smith@evgo.com', role: 'super_admin', createdAt: '2024-01-01T00:00:00.000Z' },
+  { id: '2', name: 'Maria Garcia', email: 'maria.garcia@evgo.com', role: 'admin', createdAt: '2024-01-15T00:00:00.000Z' },
+  { id: '3', name: 'David Lee', email: 'david.lee@evgo.com', role: 'viewer', createdAt: '2024-02-01T00:00:00.000Z' },
+  { id: '4', name: 'Sarah Khan', email: 'sarah.khan@evgo.com', role: 'super_admin', createdAt: '2024-02-10T00:00:00.000Z' },
 ]
 
 export const mockPricingPlans: PricingPlan[] = [

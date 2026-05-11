@@ -8,9 +8,10 @@ interface ModalProps {
   title: string
   children: React.ReactNode
   footer?: React.ReactNode
+  size?: 'md' | 'lg'
 }
 
-export default function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     if (isOpen) document.addEventListener('keydown', handleEsc)
@@ -22,10 +23,10 @@ export default function Modal({ isOpen, onClose, title, children, footer }: Moda
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h2 className="text-white font-semibold text-lg">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors text-xl leading-none">×</button>
+      <div className={`relative z-10 bg-white border border-slate-200 rounded-2xl shadow-2xl w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} mx-4`}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-200">
+          <h2 className="text-slate-800 font-semibold text-lg">{title}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors text-xl leading-none">×</button>
         </div>
         <div className="p-5">{children}</div>
         {footer && <div className="flex gap-3 p-5 pt-0">{footer}</div>}

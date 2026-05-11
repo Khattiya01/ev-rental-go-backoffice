@@ -12,7 +12,7 @@ export default function CircularProgress({ value, size = 40 }: CircularProgressP
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#334155" strokeWidth={4} />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e2e8f0" strokeWidth={4} />
         <circle
           cx={size / 2} cy={size / 2} r={radius} fill="none"
           stroke={color} strokeWidth={4}

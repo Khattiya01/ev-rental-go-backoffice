@@ -32,19 +32,19 @@ export default function FleetMapPage() {
   return (
     <div className="flex gap-0 h-[calc(100vh-8rem)] -m-6">
       {/* Sidebar */}
-      <div className="w-80 bg-slate-800 border-r border-slate-700 flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-slate-700">
+      <div className="w-80 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+        <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-white font-semibold text-sm">Live Fleet Filter &amp; List</h2>
-            <button className="text-slate-400 hover:text-slate-200 text-lg">▲</button>
+            <h2 className="text-slate-800 font-semibold text-sm">Live Fleet Filter &amp; List</h2>
+            <button className="text-slate-500 hover:text-slate-700 text-lg">▲</button>
           </div>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-500 mb-2"
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400 mb-2"
           />
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none mb-2">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none mb-2">
             <option value="">All Status</option>
             <option value="available">Available</option>
             <option value="rented">Rented</option>
@@ -52,7 +52,7 @@ export default function FleetMapPage() {
             <option value="under_repair">Under Repair</option>
             <option value="offline">Offline</option>
           </select>
-          <select value={batteryFilter} onChange={e => setBatteryFilter(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none">
+          <select value={batteryFilter} onChange={e => setBatteryFilter(e.target.value)} className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none">
             <option value="">All Battery Level</option>
             <option value="low">Low (&lt;20%)</option>
             <option value="medium">Medium (20-60%)</option>
@@ -61,11 +61,11 @@ export default function FleetMapPage() {
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {filtered.map(vehicle => (
-            <div key={vehicle.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
+            <div key={vehicle.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
               <div className={`w-3 h-3 rounded-full flex-shrink-0 ${statusDotColor[vehicle.status]}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-slate-200 text-sm font-medium truncate">{vehicle.make} {vehicle.model} ({vehicle.plate})</p>
-                <p className="text-slate-500 text-xs">SoC: {vehicle.socPercent}%</p>
+                <p className="text-slate-700 text-sm font-medium truncate">{vehicle.make} {vehicle.model} ({vehicle.plate})</p>
+                <p className="text-slate-400 text-xs">SoC: {vehicle.socPercent}%</p>
               </div>
             </div>
           ))}
@@ -75,7 +75,7 @@ export default function FleetMapPage() {
       {/* Map */}
       <div className="flex-1 relative">
         <div className="absolute top-4 right-4 z-10">
-          <input placeholder="Search..." className="bg-slate-800/90 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-500 focus:outline-none w-48 backdrop-blur-sm" />
+          <input placeholder="Search..." className="bg-white/90 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none w-48 backdrop-blur-sm" />
         </div>
         <FleetMap vehicles={filtered} />
       </div>

@@ -1,0 +1,189 @@
+{
+  "login": {
+    "appName": "EV Rental Go",
+    "title": "Backoffice Access",
+    "subtitle": "Enter your credentials to manage the fleet",
+    "emailLabel": "Admin Email",
+    "passwordLabel": "Security Key",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot Password?",
+    "signIn": "Sign In",
+    "signingIn": "Signing in..."
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "fleet": "Fleet",
+    "vehicles": "Vehicles",
+    "liveMap": "Live Map",
+    "geofencing": "Geofencing",
+    "customers": "Customers",
+    "allCustomers": "All Customers",
+    "kycApproval": "e-KYC Approval",
+    "blacklist": "Blacklist",
+    "rentals": "Rentals",
+    "billing": "Billing",
+    "invoices": "Invoices",
+    "collections": "Collections",
+    "maintenance": "Maintenance",
+    "reports": "Reports",
+    "settings": "Settings",
+    "users": "Users",
+    "pricing": "Pricing",
+    "roles": {
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "viewer": "Viewer"
+    }
+  },
+  "header": {
+    "backoffice": "Backoffice",
+    "searchPlaceholder": "Search...",
+    "signOut": "Sign Out",
+    "switchLanguage": "ภาษาไทย"
+  },
+  "dashboard": {
+    "title": "Dashboard Overview",
+    "totalVehicles": "Total Vehicles",
+    "activeRentals": "Active Rentals",
+    "available": "Available",
+    "maintenance": "Maintenance",
+    "pendingKYC": "Pending e-KYC",
+    "liveLocations": "Live Vehicle Locations",
+    "alertsFeed": "Alerts Feed",
+    "revenueTrend": "Revenue Trend",
+    "search": "Search...",
+    "thisWeek": "This Week",
+    "vsLastWeek": "vs last week"
+  },
+  "users": {
+    "title": "Users & Roles",
+    "addNewAdmin": "Add New Admin",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "roles": {
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "viewer": "Viewer Only"
+    },
+    "empty": "No users found in the system",
+    "edit": "Edit",
+    "delete": "Delete",
+    "createModal": {
+      "title": "Add New Admin",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "roleLabel": "Role",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "editModal": {
+      "title": "Edit User",
+      "nameLabel": "Name",
+      "roleLabel": "Role",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "deleteModal": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to remove",
+      "messageSuffix": "from the system?",
+      "warning": "This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Delete",
+      "deleting": "Deleting..."
+    },
+    "toast": {
+      "created": "User created successfully",
+      "updated": "User updated successfully",
+      "deleted": "User \"{name}\" deleted successfully",
+      "fetchError": "Failed to fetch users",
+      "createError": "Failed to create user",
+      "updateError": "Failed to update user",
+      "deleteError": "Failed to delete user"
+    }
+  },
+  "vehicles": {
+    "title": "EV Fleet Vehicles",
+    "addVehicle": "Add Vehicle",
+    "searchPlaceholder": "Search plate, model...",
+    "filterAll": "All",
+    "filterAvailable": "Available",
+    "filterRented": "Rented",
+    "filterCharging": "Charging",
+    "filterRepair": "Under Repair",
+    "filterOffline": "Offline",
+    "columns": {
+      "vehicle": "Vehicle",
+      "plate": "Plate",
+      "status": "Status",
+      "battery": "Battery",
+      "location": "Location",
+      "actions": "Actions"
+    },
+    "empty": "No vehicles found",
+    "showing": "Showing {count} of {total} vehicles",
+    "viewDetails": "View Details",
+    "status": {
+      "available": "Available",
+      "rented": "Rented",
+      "charging": "Charging",
+      "under_repair": "Under Repair",
+      "offline": "Offline"
+    },
+    "fetchError": "Failed to load vehicle data"
+  },
+  "vehicleDetail": {
+    "backToList": "Back to Vehicles",
+    "notFound": "Vehicle Not Found",
+    "notFoundDesc": "The vehicle you are looking for does not exist.",
+    "goBack": "Go Back",
+    "loading": "Loading vehicle...",
+    "tabs": {
+      "info": "Vehicle Info",
+      "telematics": "Telematics",
+      "history": "Rental History",
+      "remote": "Remote Control"
+    },
+    "info": {
+      "plateNumber": "Plate Number",
+      "vin": "VIN",
+      "make": "Make",
+      "model": "Model",
+      "year": "Year",
+      "color": "Color",
+      "status": "Status",
+      "odometer": "Odometer",
+      "condition": "Condition",
+      "location": "Location",
+      "nextService": "Next Service"
+    },
+    "telematics": {
+      "batteryLevel": "Battery Level",
+      "socTitle": "State of Charge (SoC)",
+      "tempTitle": "Temperature",
+      "rangeTitle": "Estimated Range",
+      "noData": "No telematics data available"
+    },
+    "history": {
+      "noHistory": "No rental history yet"
+    },
+    "remote": {
+      "motorCutoff": "Emergency Motor Cutoff",
+      "motorCutoffDesc": "Immediately disable the vehicle motor remotely. Use only in emergency situations.",
+      "passwordLabel": "Confirm with your admin password",
+      "passwordPlaceholder": "Enter password to confirm",
+      "cutoffButton": "Cut Motor Power",
+      "iotReset": "IoT Device Reset",
+      "iotResetDesc": "Restart the onboard IoT device to restore connectivity.",
+      "resetButton": "Reset IoT Device"
+    }
+  }
+}

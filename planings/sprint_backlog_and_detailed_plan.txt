@@ -1,0 +1,223 @@
+Sprint Backlog & Detailed Plan (2-Week Sprints)
+
+แผนการดำเนินงานแบบ Agile (ระยะเวลารวม 1 เดือน / ~200 ชั่วโมง)
+
+การทำงานจะแบ่งเป็น 2 Sprints โดยทุกสิ้นสุด Sprint (ทุกๆ 14 วัน) จะมีการ Demo ระบบจริง (Working Software) ให้ลูกค้าดูความคืบหน้า
+
+🟦 SPRINT 1: Foundation + Core Operations
+
+ระยะเวลา: สัปดาห์ที่ 1 - 2 (ใช้เวลาประมาณ ~100 ชั่วโมง)
+เป้าหมาย (Sprint Goal): โครงสร้างระบบพร้อมใช้งาน, การจัดการข้อมูลรถ/ลูกค้า/สัญญาแบบพื้นฐานทำงานได้ (End-to-End Core Flow)
+
+Epic
+
+PBI / Feature
+
+Task Breakdown (FE / BE / QA)
+
+G: Core
+
+G1: Auth System & RBAC
+
+FE: Login Page, Token Store, Guard Route
+
+
+
+BE: Auth API, JWT, Role Model
+
+
+
+QA: Test Security & Access Control
+
+G: Core
+
+G2: Base Layout System
+
+FE: Sidebar, Topbar, Responsive Admin Shell
+
+
+
+BE: User Profile Endpoint
+
+B: Fleet
+
+B1: Vehicle List Page
+
+FE: Table UI, Search, Filter
+
+
+
+BE: GET /vehicles API, Pagination
+
+B: Fleet
+
+B2: Vehicle Detail (Basic)
+
+FE: Tab Info, Layout
+
+
+
+BE: GET /vehicles/:id API
+
+C: Customer
+
+C1: Customer List
+
+FE: Table UI, Status Badge
+
+
+
+BE: GET /customers API
+
+C: Customer
+
+C2: e-KYC Review Page
+
+FE: Compare Doc UI, Approve/Reject Modal
+
+
+
+BE: KYC Processing APIs
+
+
+
+QA: Test Approval Flow
+
+D: Contract
+
+D1: Active Rentals List
+
+FE: Table Contracts, Filters
+
+
+
+BE: GET /contracts API
+
+E: Billing
+
+E1: Invoice List
+
+FE: Table Invoices, Status
+
+
+
+BE: GET /invoices API
+
+F: Settings
+
+F1: Users Management
+
+FE: Admin User List, Role Dropdown
+
+
+
+BE: CRUD Users API
+
+🎯 Demo Points (สิ้นสุด Sprint 1):
+
+ลูกค้าจะเห็นหน้าตาระบบหลังบ้านของจริง
+
+ทดสอบการ Login ด้วยสิทธิ์ที่ต่างกัน
+
+แอดมินสามารถกดดูรายการรถ และกดอนุมัติ/ปฏิเสธ เอกสาร e-KYC ของผู้เช่าได้
+
+🟩 SPRINT 2: Business Intelligence + Operations Control
+
+ระยะเวลา: สัปดาห์ที่ 3 - 4 (ใช้เวลาประมาณ ~100 ชั่วโมง)
+เป้าหมาย (Sprint Goal): ระบบพร้อมใช้งานจริงเชิงธุรกิจ (Demo-Ready), มี Dashboard, ระบบติดตามหนี้, และความปลอดภัยขั้นสูง
+
+Epic
+
+PBI / Feature
+
+Task Breakdown (FE / BE / QA)
+
+A: Dashboard
+
+A1: Admin Dashboard
+
+FE: Summary Cards, Revenue Chart (Mock), Alert Feed
+
+
+
+BE: Aggregation APIs
+
+B: Fleet
+
+B3: Status Update System
+
+FE: Live Status Badge Update
+
+
+
+BE: State Sync API
+
+B: Fleet
+
+B4: Remote Actions (Stub)
+
+FE: Action Buttons (Disable Engine), Confirm Modal
+
+
+
+BE: Log Action APIs (Prepared for IoT)
+
+C: Customer
+
+C3: Blacklist System
+
+FE: Blacklist Table, Add/Remove UI
+
+
+
+BE: Enforce restriction APIs
+
+D: Contract
+
+D2: Contract Detail
+
+FE: Detail View, PDF Preview Placeholder
+
+
+
+BE: Contract Fetching API
+
+E: Billing
+
+E2: Overdue System
+
+FE: Overdue List, Action Buttons (Send SMS mock)
+
+
+
+BE: Calculation logic & Status API
+
+F: Settings
+
+F2: Role Permissions
+
+FE: Permission Matrix Checkbox UI
+
+
+
+BE: Enforcement Layer
+
+G: Core
+
+G3: Audit Log System
+
+FE: Activity Log View
+
+
+
+BE: Log critical actions (KYC, Blacklist, Setup)
+
+🎯 Demo Points (สิ้นสุด Sprint 2 / พร้อมส่งมอบ):
+
+ลูกค้าจะเห็น Dashboard ที่มีตัวเลขสรุป
+
+ทดสอบระบบแจ้งเตือนและติดตามลูกค้าค้างชำระ
+
+ทดสอบระบบ Blacklist ป้องกันผู้ใช้เช่ารถ
+
+ดูประวัติการใช้งาน (Audit Log) ของแอดมินแต่ละคน

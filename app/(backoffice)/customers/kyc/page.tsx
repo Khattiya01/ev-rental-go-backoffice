@@ -25,7 +25,7 @@ export default function KYCApprovalPage() {
 
   const summaryCards = [
     { title: 'Total Vehicles', value: totalVehicles, icon: '🚗', color: 'bg-blue-500/20' },
-    { title: 'Active Rentals', value: activeRentals, icon: '🕐', color: 'bg-teal-500/20' },
+    { title: 'Active Rentals', value: activeRentals, icon: '🕐', color: 'bg-blue-500/10' },
     { title: 'Available', value: available, icon: '✅', color: 'bg-green-500/20' },
     { title: 'Maintenance', value: maintenance, icon: '🔧', color: 'bg-amber-500/20' },
     { title: 'Pending e-KYC', value: pendingKYC, icon: '👤', color: 'bg-purple-500/20' },
@@ -33,18 +33,18 @@ export default function KYCApprovalPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-white text-xl font-bold">KYC Verification: {customer.name}</h1>
+      <h1 className="text-slate-800 text-xl font-bold">KYC Verification: {customer.name}</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-5 gap-4">
         {summaryCards.map(card => (
           <div
             key={card.title}
-            className={`${card.color} rounded-xl border border-slate-700 p-4 flex items-center justify-between`}
+            className={`${card.color} rounded-xl border border-slate-200 p-4 flex items-center justify-between`}
           >
             <div>
-              <p className="text-slate-400 text-xs">{card.title}</p>
-              <p className="text-white text-2xl font-bold">{card.value.toLocaleString()}</p>
+              <p className="text-slate-500 text-xs">{card.title}</p>
+              <p className="text-slate-800 text-2xl font-bold">{card.value.toLocaleString()}</p>
             </div>
             <span className="text-2xl">{card.icon}</span>
           </div>
@@ -54,20 +54,20 @@ export default function KYCApprovalPage() {
       {/* Queue navigation */}
       {pendingCustomers.length > 1 && (
         <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-sm">
+          <span className="text-slate-500 text-sm">
             Reviewing {currentIndex + 1} of {pendingCustomers.length} pending
           </span>
           <button
             onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
             disabled={currentIndex === 0}
-            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-slate-200 rounded-lg text-xs transition-colors"
+            className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs transition-colors"
           >
             ← Prev
           </button>
           <button
             onClick={() => setCurrentIndex(i => Math.min(pendingCustomers.length - 1, i + 1))}
             disabled={currentIndex === pendingCustomers.length - 1}
-            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-slate-200 rounded-lg text-xs transition-colors"
+            className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs transition-colors"
           >
             Next →
           </button>
@@ -77,8 +77,8 @@ export default function KYCApprovalPage() {
       {/* KYC comparison */}
       <div className="grid grid-cols-3 gap-5">
         {/* Selfie */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-          <h2 className="text-white font-semibold mb-4">User Selfie</h2>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h2 className="text-slate-800 font-semibold mb-4">User Selfie</h2>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={customer.avatarUrl.replace('150', '300')}
@@ -88,31 +88,31 @@ export default function KYCApprovalPage() {
         </div>
 
         {/* Document comparison */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-semibold">Document Comparison</h2>
+            <h2 className="text-slate-800 font-semibold">Document Comparison</h2>
             <span className="text-green-400 text-sm font-semibold bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded-full">
               98% Match
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-slate-500 text-xs mb-2 text-center">ID Card (Front)</p>
-              <div className="bg-slate-700 rounded-xl p-4 h-36 flex items-center justify-center">
+              <p className="text-slate-400 text-xs mb-2 text-center">ID Card (Front)</p>
+              <div className="bg-slate-100 rounded-xl p-4 h-36 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-3xl mb-2">🪪</div>
-                  <p className="text-slate-400 text-xs">ID Card</p>
-                  <p className="text-slate-300 text-xs font-medium mt-1">{customer.name}</p>
+                  <div className="text-3xl mb-2">🪴</div>
+                  <p className="text-slate-500 text-xs">ID Card</p>
+                  <p className="text-slate-700 text-xs font-medium mt-1">{customer.name}</p>
                 </div>
               </div>
             </div>
             <div>
-              <p className="text-slate-500 text-xs mb-2 text-center">Driver&apos;s License</p>
-              <div className="bg-slate-700 rounded-xl p-4 h-36 flex items-center justify-center">
+              <p className="text-slate-400 text-xs mb-2 text-center">Driver&apos;s License</p>
+              <div className="bg-slate-100 rounded-xl p-4 h-36 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-3xl mb-2">🚗</div>
-                  <p className="text-slate-400 text-xs">Driver License</p>
-                  <p className="text-slate-300 text-xs font-medium mt-1">{customer.name}</p>
+                  <p className="text-slate-500 text-xs">Driver License</p>
+                  <p className="text-slate-700 text-xs font-medium mt-1">{customer.name}</p>
                 </div>
               </div>
             </div>
@@ -120,17 +120,17 @@ export default function KYCApprovalPage() {
         </div>
 
         {/* Extracted data */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-semibold">Extracted Personal Data</h2>
+            <h2 className="text-slate-800 font-semibold">Extracted Personal Data</h2>
             <span className="text-green-400 text-xs flex items-center gap-1">✅ Verified</span>
           </div>
           <div className="space-y-3">
             {extractedData.map(item => (
               <div key={item.label} className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-slate-500 text-xs">{item.label}</p>
-                  <p className="text-slate-200 text-sm font-medium">{item.value}</p>
+                  <p className="text-slate-400 text-xs">{item.label}</p>
+                  <p className="text-slate-700 text-sm font-medium">{item.value}</p>
                 </div>
                 <span className="text-green-400 text-xs whitespace-nowrap">✅ Verified</span>
               </div>

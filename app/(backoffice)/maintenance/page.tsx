@@ -5,7 +5,7 @@ const tickets = [
 ] as const
 
 const columns = [
-  { key: 'todo', label: 'To Do', color: 'border-slate-500', bg: 'bg-slate-500/10' },
+  { key: 'todo', label: 'To Do', color: 'border-slate-300', bg: 'bg-slate-100' },
   { key: 'in_progress', label: 'In Progress', color: 'border-amber-500', bg: 'bg-amber-500/10' },
   { key: 'done', label: 'Done', color: 'border-green-500', bg: 'bg-green-500/10' },
 ] as const
@@ -19,25 +19,25 @@ const priorityStyles = {
 export default function MaintenancePage() {
   return (
     <div className="space-y-5">
-      <h1 className="text-white text-xl font-bold">Service Tickets</h1>
+      <h1 className="text-slate-800 text-xl font-bold">Service Tickets</h1>
       <div className="grid grid-cols-3 gap-4">
         {columns.map(col => (
           <div key={col.key} className={`${col.bg} border ${col.color} rounded-xl p-4`}>
-            <h2 className="text-white font-semibold mb-3">{col.label}</h2>
+            <h2 className="text-slate-800 font-semibold mb-3">{col.label}</h2>
             <div className="space-y-3">
               {tickets
                 .filter(t => t.status === col.key)
                 .map(ticket => (
-                  <div key={ticket.id} className="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                  <div key={ticket.id} className="bg-white rounded-xl border border-slate-200 p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-slate-200 font-medium text-sm">{ticket.plate}</span>
+                      <span className="text-slate-700 font-medium text-sm">{ticket.plate}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${priorityStyles[ticket.priority]}`}>
                         {ticket.priority}
                       </span>
                     </div>
-                    <p className="text-slate-400 text-sm">{ticket.model}</p>
-                    <p className="text-slate-300 text-sm mt-1">{ticket.issue}</p>
-                    <p className="text-slate-500 text-xs mt-2">👤 {ticket.assigned}</p>
+                    <p className="text-slate-500 text-sm">{ticket.model}</p>
+                    <p className="text-slate-600 text-sm mt-1">{ticket.issue}</p>
+                    <p className="text-slate-400 text-xs mt-2">👤 {ticket.assigned}</p>
                   </div>
                 ))}
             </div>

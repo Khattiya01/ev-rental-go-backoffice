@@ -1,0 +1,189 @@
+{
+  "login": {
+    "appName": "EV Rental Go",
+    "title": "เข้าสู่ระบบ Backoffice",
+    "subtitle": "กรอกข้อมูลเพื่อจัดการระบบ EV Rental Go",
+    "emailLabel": "อีเมลผู้ดูแลระบบ",
+    "passwordLabel": "รหัสผ่าน",
+    "rememberMe": "จดจำฉัน",
+    "forgotPassword": "ลืมรหัสผ่าน?",
+    "signIn": "เข้าสู่ระบบ",
+    "signingIn": "กำลังเข้าสู่ระบบ..."
+  },
+  "sidebar": {
+    "dashboard": "แดชบอร์ด",
+    "fleet": "ยานพาหนะ",
+    "vehicles": "รายการรถ",
+    "liveMap": "แผนที่สด",
+    "geofencing": "พื้นที่การทำงาน",
+    "customers": "ลูกค้า",
+    "allCustomers": "ลูกค้าทั้งหมด",
+    "kycApproval": "อนุมัติ e-KYC",
+    "blacklist": "บัญชีดำ",
+    "rentals": "สัญญาเช่า",
+    "billing": "การเงิน",
+    "invoices": "ใบแจ้งหนี้",
+    "collections": "ติดตามหนี้",
+    "maintenance": "ซ่อมบำรุง",
+    "reports": "รายงาน",
+    "settings": "ตั้งค่า",
+    "users": "ผู้ใช้งาน",
+    "pricing": "ราคา",
+    "roles": {
+      "super_admin": "ผู้ดูแลระบบสูงสุด",
+      "admin": "แอดมิน",
+      "viewer": "ผู้ดูเท่านั้น"
+    }
+  },
+  "header": {
+    "backoffice": "Backoffice",
+    "searchPlaceholder": "ค้นหา...",
+    "signOut": "ออกจากระบบ",
+    "switchLanguage": "English"
+  },
+  "dashboard": {
+    "title": "ภาพรวมระบบ",
+    "totalVehicles": "รถทั้งหมด",
+    "activeRentals": "กำลังเช่า",
+    "available": "ว่าง",
+    "maintenance": "ซ่อมบำรุง",
+    "pendingKYC": "รอยืนยัน KYC",
+    "liveLocations": "ตำแหน่งรถแบบสด",
+    "alertsFeed": "การแจ้งเตือน",
+    "revenueTrend": "แนวโน้มรายได้",
+    "search": "ค้นหา...",
+    "thisWeek": "สัปดาห์นี้",
+    "vsLastWeek": "เทียบสัปดาห์ที่แล้ว"
+  },
+  "users": {
+    "title": "ผู้ใช้งานระบบ",
+    "addNewAdmin": "เพิ่มผู้ดูแลระบบ",
+    "columns": {
+      "name": "ชื่อ",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "createdAt": "วันที่สร้าง",
+      "actions": "จัดการ"
+    },
+    "roles": {
+      "super_admin": "ผู้ดูแลระบบ",
+      "admin": "แอดมิน",
+      "viewer": "ผู้ดูเท่านั้น"
+    },
+    "empty": "ไม่มีผู้ใช้งานในระบบ",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "createModal": {
+      "title": "เพิ่มผู้ดูแลระบบใหม่",
+      "nameLabel": "ชื่อ",
+      "emailLabel": "อีเมล",
+      "passwordLabel": "รหัสผ่าน",
+      "roleLabel": "บทบาท",
+      "cancel": "ยกเลิก",
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก..."
+    },
+    "editModal": {
+      "title": "แก้ไขผู้ใช้งาน",
+      "nameLabel": "ชื่อ",
+      "roleLabel": "บทบาท",
+      "cancel": "ยกเลิก",
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก..."
+    },
+    "deleteModal": {
+      "title": "ยืนยันการลบผู้ใช้",
+      "message": "คุณต้องการลบผู้ใช้",
+      "messageSuffix": "ออกจากระบบ?",
+      "warning": "การกระทำนี้ไม่สามารถย้อนกลับได้",
+      "cancel": "ยกเลิก",
+      "confirm": "ยืนยันลบ",
+      "deleting": "กำลังลบ..."
+    },
+    "toast": {
+      "created": "เพิ่มผู้ใช้งานเรียบร้อยแล้ว",
+      "updated": "อัปเดตผู้ใช้งานเรียบร้อยแล้ว",
+      "deleted": "ลบผู้ใช้ \"{name}\" เรียบร้อยแล้ว",
+      "fetchError": "ไม่สามารถโหลดรายชื่อผู้ใช้ได้",
+      "createError": "ไม่สามารถเพิ่มผู้ใช้ได้",
+      "updateError": "ไม่สามารถแก้ไขผู้ใช้ได้",
+      "deleteError": "ไม่สามารถลบผู้ใช้ได้"
+    }
+  },
+  "vehicles": {
+    "title": "รายการรถยนต์ EV",
+    "addVehicle": "เพิ่มรถ",
+    "searchPlaceholder": "ค้นหาป้ายทะเบียน, รุ่น...",
+    "filterAll": "ทั้งหมด",
+    "filterAvailable": "ว่าง",
+    "filterRented": "เช่าแล้ว",
+    "filterCharging": "กำลังชาร์จ",
+    "filterRepair": "ซ่อมอยู่",
+    "filterOffline": "ออฟไลน์",
+    "columns": {
+      "vehicle": "รถ",
+      "plate": "ทะเบียน",
+      "status": "สถานะ",
+      "battery": "แบตเตอรี่",
+      "location": "ตำแหน่ง",
+      "actions": "จัดการ"
+    },
+    "empty": "ไม่พบข้อมูลรถ",
+    "showing": "แสดง {count} จาก {total} คัน",
+    "viewDetails": "ดูรายละเอียด",
+    "status": {
+      "available": "ว่าง",
+      "rented": "เช่าแล้ว",
+      "charging": "กำลังชาร์จ",
+      "under_repair": "ซ่อมอยู่",
+      "offline": "ออฟไลน์"
+    },
+    "fetchError": "ไม่สามารถโหลดข้อมูลรถได้"
+  },
+  "vehicleDetail": {
+    "backToList": "กลับไปรายการรถ",
+    "notFound": "ไม่พบรถคันนี้",
+    "notFoundDesc": "ไม่พบข้อมูลรถที่คุณค้นหา",
+    "goBack": "กลับ",
+    "loading": "กำลังโหลดข้อมูลรถ...",
+    "tabs": {
+      "info": "ข้อมูลรถ",
+      "telematics": "เทเลเมติกส์",
+      "history": "ประวัติการเช่า",
+      "remote": "ควบคุมระยะไกล"
+    },
+    "info": {
+      "plateNumber": "ป้ายทะเบียน",
+      "vin": "เลขตัวถัง (VIN)",
+      "make": "ยี่ห้อ",
+      "model": "รุ่น",
+      "year": "ปี",
+      "color": "สี",
+      "status": "สถานะ",
+      "odometer": "เลขไมล์",
+      "condition": "สภาพ",
+      "location": "ตำแหน่ง",
+      "nextService": "นัดเซอร์วิสครั้งหน้า"
+    },
+    "telematics": {
+      "batteryLevel": "ระดับแบตเตอรี่",
+      "socTitle": "สถานะการชาร์จ (SoC)",
+      "tempTitle": "อุณหภูมิ",
+      "rangeTitle": "ระยะทางโดยประมาณ",
+      "noData": "ไม่มีข้อมูลเทเลเมติกส์"
+    },
+    "history": {
+      "noHistory": "ยังไม่มีข้อมูลประวัติการเช่า"
+    },
+    "remote": {
+      "motorCutoff": "ตัดการทำงานของมอเตอร์ฉุกเฉิน",
+      "motorCutoffDesc": "ปิดการทำงานของมอเตอร์รถจากระยะไกลทันที ใช้เฉพาะในกรณีฉุกเฉินเท่านั้น",
+      "passwordLabel": "ยืนยันด้วยรหัสผ่านผู้ดูแลระบบ",
+      "passwordPlaceholder": "ใส่รหัสผ่านเพื่อยืนยัน",
+      "cutoffButton": "ตัดพลังงานมอเตอร์",
+      "iotReset": "รีเซ็ตอุปกรณ์ IoT",
+      "iotResetDesc": "รีสตาร์ทอุปกรณ์ IoT บนรถเพื่อคืนการเชื่อมต่อ",
+      "resetButton": "รีเซ็ตอุปกรณ์ IoT"
+    }
+  }
+}

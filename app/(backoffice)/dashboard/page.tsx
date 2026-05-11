@@ -15,7 +15,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-white text-xl font-bold">Dashboard Overview</h1>
+      <h1 className="text-slate-800 text-xl font-bold">Dashboard Overview</h1>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
@@ -28,11 +28,11 @@ export default function DashboardPage() {
 
       {/* Map + Alerts */}
       <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 bg-slate-800 rounded-xl border border-slate-700 p-4">
+        <div className="col-span-3 bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-white font-semibold text-sm">Live Vehicle Locations</h2>
+            <h2 className="text-slate-700 font-semibold text-sm">Live Vehicle Locations</h2>
             <div className="relative">
-              <input placeholder="Search..." className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none w-36" />
+              <input placeholder="Search..." className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600 placeholder-slate-400 focus:outline-none w-36" />
             </div>
           </div>
           <div className="h-80 rounded-xl overflow-hidden">
@@ -40,19 +40,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="col-span-2 bg-slate-800 rounded-xl border border-slate-700 p-4">
-          <h2 className="text-white font-semibold text-sm mb-3">Alerts Feed</h2>
+        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4">
+          <h2 className="text-slate-700 font-semibold text-sm mb-3">Alerts Feed</h2>
           <AlertFeed alerts={mockAlerts} />
         </div>
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-white font-semibold text-sm">Revenue Trend</h2>
-          <span className="text-teal-400 text-sm font-semibold">
+          <h2 className="text-slate-700 font-semibold text-sm">Revenue Trend</h2>
+          <span className="text-blue-500 text-sm font-semibold">
             This Week: ${revenueData.at(-1)?.revenue.toLocaleString()}
-            <span className="text-green-400 text-xs ml-2">+8.5% vs last week</span>
+            <span className="text-green-500 text-xs ml-2">+8.5% vs last week</span>
           </span>
         </div>
         <RevenueChart data={revenueData} />
