@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Car } from 'lucide-react'
 import type { Vehicle, VehicleStatus } from '@/lib/types'
+import ImageUploader from '@/components/ui/image-uploader'
+import MultiImageUploader from '@/components/ui/multi-image-uploader'
 
 const STATUS_LABELS: Record<VehicleStatus, string> = {
   available: 'Available',
@@ -30,7 +32,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
   const [color, setColor] = useState(initialData?.color ?? '')
   const [vin, setVin] = useState(initialData?.vin ?? '')
   const [status, setStatus] = useState<VehicleStatus>(initialData?.status ?? 'available')
-  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? '')
+  const [images, setImages] = useState<string[]>(initialData?.images ?? (initialData?.imageUrl ? [initialData.imageUrl] : []))
+  const [odometer, setOdometer] = useState(String(initialData?.odometer ?? '0'))
+  const [condition, setCondition] = useState(initialData?.condition ?? 'Good')
+  const [location, setLocation] = useState(initialData?.location ?? '')
+  const [nextServiceDate, setNextServiceDate] = useState(initialData?.nextServiceDate ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -48,8 +54,13 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
       year: parseInt(year, 10),
       color: color || null,
       vin: vin || null,
-      imageUrl: imageUrl || null,
+      imageUrl: images[0] ?? null,
+      images,
       status,
+      odometer: parseInt(odometer, 10) || 0,
+      condition: condition || null,
+      location: location || null,
+      nextServiceDate: nextServiceDate || null,
     }
 
     try {
@@ -114,140 +125,173 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
         )}
 
         {/* Vehicle Identity */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">Vehicle Identity</h2>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">Vehicle Identity</h2>
 
-          <div>
-            <label htmlFor="plate" className={labelClass}>
-              Plate Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="plate"
-              type="text"
-              required
-              placeholder="e.g. กข 1234 กรุงเทพ"
-              value={plate}
-              onChange={e => setPlate(e.target.value)}
-              className={inputClass}
-            />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+            {/* Photo — left column */}
+            <MultiImageUploader value={images} onChange={setImages} label="Vehicle Photos" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label htmlFor="make" className={labelClass}>
-                Make <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="make"
-                type="text"
-                required
-                placeholder="e.g. Tesla, BYD, Hyundai"
-                value={make}
-                onChange={e => setMake(e.target.value)}
-                className={inputClass}
-              />
+            {/* Fields — right column */}
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="plate" className={labelClass}>
+                  Plate Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="plate"
+                  type="text"
+                  required
+                  placeholder="e.g. กข 1234 กรุงเทพ"
+                  value={plate}
+                  onChange={e => setPlate(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="make" className={labelClass}>
+                    Make <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="make"
+                    type="text"
+                    required
+                    placeholder="e.g. Tesla, BYD, Hyundai"
+                    value={make}
+                    onChange={e => setMake(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="model" className={labelClass}>
+                    Model <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="model"
+                    type="text"
+                    required
+                    placeholder="e.g. Model 3, Atto 3, Ioniq 5"
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="year" className={labelClass}>
+                    Year <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="year"
+                    type="number"
+                    required
+                    min={1990}
+                    max={2030}
+                    value={year}
+                    onChange={e => setYear(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="color" className={labelClass}>Color</label>
+                  <input
+                    id="color"
+                    type="text"
+                    placeholder="e.g. White, Black, Blue"
+                    value={color}
+                    onChange={e => setColor(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="vin" className={labelClass}>VIN (Vehicle Identification Number)</label>
+                <input
+                  id="vin"
+                  type="text"
+                  placeholder="17-character VIN"
+                  value={vin}
+                  onChange={e => setVin(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
             </div>
-
-            <div>
-              <label htmlFor="model" className={labelClass}>
-                Model <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="model"
-                type="text"
-                required
-                placeholder="e.g. Model 3, Atto 3, Ioniq 5"
-                value={model}
-                onChange={e => setModel(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="year" className={labelClass}>
-                Year <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="year"
-                type="number"
-                required
-                min={1990}
-                max={2030}
-                value={year}
-                onChange={e => setYear(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="color" className={labelClass}>Color</label>
-              <input
-                id="color"
-                type="text"
-                placeholder="e.g. White, Black, Blue"
-                value={color}
-                onChange={e => setColor(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="vin" className={labelClass}>VIN (Vehicle Identification Number)</label>
-            <input
-              id="vin"
-              type="text"
-              placeholder="17-character VIN"
-              value={vin}
-              onChange={e => setVin(e.target.value)}
-              className={inputClass}
-            />
           </div>
         </div>
 
-        {/* Status & Media */}
+        {/* Current Status */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">Status & Media</h2>
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">Current Status</h2>
+
+          <div>
+            <label htmlFor="status" className={labelClass}>Status</label>
+            <select
+              id="status"
+              value={status}
+              onChange={e => setStatus(e.target.value as VehicleStatus)}
+              className={inputClass}
+            >
+              {STATUS_OPTIONS.map(s => (
+                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="status" className={labelClass}>Status</label>
+              <label htmlFor="odometer" className={labelClass}>Odometer (km)</label>
+              <input
+                id="odometer"
+                type="number"
+                min={0}
+                value={odometer}
+                onChange={e => setOdometer(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="condition" className={labelClass}>Condition</label>
               <select
-                id="status"
-                value={status}
-                onChange={e => setStatus(e.target.value as VehicleStatus)}
+                id="condition"
+                value={condition}
+                onChange={e => setCondition(e.target.value)}
                 className={inputClass}
               >
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                {['Excellent', 'Good', 'Fair', 'Poor'].map(c => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="imageUrl" className={labelClass}>Image URL</label>
+              <label htmlFor="location" className={labelClass}>Home Location</label>
               <input
-                id="imageUrl"
-                type="url"
-                placeholder="https://..."
-                value={imageUrl}
-                onChange={e => setImageUrl(e.target.value)}
+                id="location"
+                type="text"
+                placeholder="e.g. Lat Phrao Depot"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="nextServiceDate" className={labelClass}>Next Service Date</label>
+              <input
+                id="nextServiceDate"
+                type="date"
+                value={nextServiceDate}
+                onChange={e => setNextServiceDate(e.target.value)}
                 className={inputClass}
               />
             </div>
           </div>
-
-          {imageUrl && (
-            <div>
-              <p className={labelClass}>Preview</p>
-              <img
-                src={imageUrl}
-                alt="Vehicle preview"
-                className="w-48 h-32 object-cover rounded-xl border border-slate-200"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            </div>
-          )}
         </div>
 
         {/* Footer Actions */}

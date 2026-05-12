@@ -18,7 +18,8 @@ export interface Vehicle {
   odometer: number
   lat: number
   lng: number
-  imageUrl: string | null
+  imageUrl: string | null   // cover image — first of images[] (used in list/map)
+  images: string[]          // all images (gallery)
   vin: string | null
   condition: 'Excellent' | 'Good' | 'Fair' | 'Poor' | string | null
   location: string | null

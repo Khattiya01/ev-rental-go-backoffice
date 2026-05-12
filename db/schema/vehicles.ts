@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, doublePrecision, timestamp, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, integer, doublePrecision, timestamp, pgEnum, json } from 'drizzle-orm/pg-core'
 
 export const vehicleStatusEnum = pgEnum('vehicle_status', ['available', 'rented', 'charging', 'under_repair', 'offline'])
 
@@ -17,6 +17,7 @@ export const vehicles = pgTable('vehicles', {
   lat: doublePrecision('lat').notNull().default(13.756),
   lng: doublePrecision('lng').notNull().default(100.502),
   imageUrl: varchar('image_url', { length: 500 }),
+  images: json('images').$type<string[]>().default([]),
   condition: varchar('condition', { length: 50 }).default('Good'),
   location: varchar('location', { length: 255 }),
   nextServiceDate: varchar('next_service_date', { length: 50 }),

@@ -5,11 +5,13 @@ import { logout } from '@/lib/actions/auth'
 import { setLocale } from '@/lib/actions/locale'
 import type { CurrentUser } from '@/lib/dal'
 import { mockAlerts } from '@/lib/mock-data'
-import { Search, Bell, ChevronDown, LogOut } from 'lucide-react'
+import { Search, Bell, ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 
 interface HeaderProps {
   user: CurrentUser | null
+  onToggle: () => void
+  collapsed: boolean
 }
 
 const roleLabel: Record<string, string> = {
@@ -23,7 +25,7 @@ const LOCALES = [
   { value: 'en', flag: '🇺🇸', label: 'English' },
 ] as const
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onToggle, collapsed }: HeaderProps) {
   const t = useTranslations('header')
   const locale = useLocale()
   const [isPending, startTransition] = useTransition()
@@ -61,9 +63,26 @@ export default function Header({ user }: HeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-60 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20">
+    <header
+      className={`fixed top-0 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-20 transition-all duration-300 ${
+        collapsed ? 'left-16' : 'left-60'
+      }`}
+    >
       {/* Left */}
-      <div className="text-slate-600 font-semibold text-sm">{t('backoffice')}</div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onToggle}
+          className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="w-5 h-5" />
+          ) : (
+            <PanelLeftClose className="w-5 h-5" />
+          )}
+        </button>
+        <div className="text-slate-600 font-semibold text-sm">{t('backoffice')}</div>
+      </div>
 
       {/* Right */}
       <div className="flex items-center gap-3">

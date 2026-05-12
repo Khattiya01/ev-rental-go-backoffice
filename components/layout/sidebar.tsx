@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
+import logo from '@/public/images/logo.png'
+import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import type { CurrentUser } from '@/lib/dal'
 import {
@@ -22,18 +25,103 @@ function isGroup(item: NavItem): item is NavGroup {
 
 interface SidebarProps {
   user: CurrentUser | null
+  collapsed: boolean
 }
 
-function NavGroupItem({ group, pathname }: { group: NavGroup; pathname: string }) {
+function NavGroupItem({
+  group,
+  pathname,
+  collapsed,
+}: {
+  group: NavGroup
+  pathname: string
+  collapsed: boolean
+}) {
   const isAnyChildActive = group.children.some(
     c => pathname === c.href || pathname.startsWith(c.href + '/')
   )
   const [open, setOpen] = useState(isAnyChildActive)
+  const [flyoutOpen, setFlyoutOpen] = useState(false)
+  const [flyoutTop, setFlyoutTop] = useState(0)
+  const triggerRef = useRef<HTMLDivElement>(null)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-expand when navigating into this group
   useEffect(() => {
     if (isAnyChildActive) setOpen(true)
   }, [isAnyChildActive])
+
+  function showFlyout() {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setFlyoutTop(rect.top)
+    }
+    setFlyoutOpen(true)
+  }
+
+  function hideFlyout() {
+    hideTimer.current = setTimeout(() => setFlyoutOpen(false), 80)
+  }
+
+  // Collapsed: icon button + flyout portal on hover
+  if (collapsed) {
+    return (
+      <>
+        <div
+          ref={triggerRef}
+          className="mb-0.5"
+          onMouseEnter={showFlyout}
+          onMouseLeave={hideFlyout}
+        >
+          <div
+            className={`flex items-center justify-center w-10 h-10 rounded-lg mx-auto cursor-pointer transition-colors ${
+              isAnyChildActive
+                ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <group.icon className="w-5 h-5" />
+          </div>
+        </div>
+
+        {flyoutOpen && createPortal(
+          <div
+            className="fixed z-[9999]"
+            style={{ top: flyoutTop, left: 64 }}
+            onMouseEnter={showFlyout}
+            onMouseLeave={hideFlyout}
+          >
+            {/* transparent bridge to fill gap between sidebar and panel */}
+            <div className="absolute inset-y-0 -left-4 w-4" />
+            <div className="ml-2 min-w-44 bg-[#0f2d4a] border border-blue-900/60 rounded-lg shadow-xl py-1.5 overflow-hidden">
+              <p className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-1.5 pt-0.5">
+                {group.label}
+              </p>
+              {group.children.map(child => {
+                const isActive = pathname === child.href || pathname.startsWith(child.href + '/')
+                return (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    onClick={() => setFlyoutOpen(false)}
+                    className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                      isActive
+                        ? 'text-blue-300 bg-blue-400/20'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <child.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    {child.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    )
+  }
 
   return (
     <div>
@@ -77,7 +165,7 @@ function NavGroupItem({ group, pathname }: { group: NavGroup; pathname: string }
   )
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, collapsed }: SidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('sidebar')
 
@@ -133,25 +221,79 @@ export default function Sidebar({ user }: SidebarProps) {
     : 'A'
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-60 bg-[#0c2340] border-r border-blue-900/50 flex flex-col z-30">
+    <aside
+      className={`fixed top-0 left-0 h-screen bg-[#0c2340] border-r border-blue-900/50 flex flex-col z-30 transition-all duration-300 ${
+        collapsed ? 'w-16' : 'w-60'
+      }`}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-blue-900/50">
-        <div className="w-9 h-9 bg-teal-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-          <Car className="w-5 h-5" />
+      {collapsed ? (
+        <div className="flex items-center justify-center py-4 border-b border-blue-900/50">
+          <Image
+            src={logo}
+            alt="EV Rental Go"
+            height={32}
+            style={{ width: 'auto' }}
+            className="object-contain drop-shadow-[0_0_8px_rgba(45,212,191,0.4)]"
+            priority
+          />
         </div>
-        <div className="leading-none">
-          <span className="text-white font-bold text-base">EV Rental </span>
-          <span className="text-teal-400 font-bold text-base">Go</span>
+      ) : (
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-blue-900/50">
+          <Image
+            src={logo}
+            alt="EV Rental Go"
+            height={40}
+            style={{ width: 'auto' }}
+            className="object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(45,212,191,0.4)]"
+            priority
+          />
+          <div className="flex flex-col leading-none">
+            <div className="flex items-baseline gap-1">
+              <span className="text-white font-bold text-sm tracking-wide">EV Rental</span>
+              <span className="text-teal-400 font-extrabold text-sm tracking-wider">Go</span>
+            </div>
+            <span className="mt-1 text-[9px] font-semibold text-teal-500/70 uppercase tracking-widest border border-teal-500/30 rounded px-1 py-0.5 w-fit">
+              Backoffice
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3">
+      <nav className={`flex-1 overflow-y-auto py-3 ${collapsed ? 'px-1' : 'px-3'}`}>
         {navItems.map(item => {
           if (isGroup(item)) {
-            return <NavGroupItem key={item.basePath} group={item} pathname={pathname} />
+            return (
+              <NavGroupItem
+                key={item.basePath}
+                group={item}
+                pathname={pathname}
+                collapsed={collapsed}
+              />
+            )
           }
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+          const isActive =
+            pathname === item.href ||
+            (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+
+          if (collapsed) {
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={`flex items-center justify-center w-10 h-10 rounded-lg mx-auto mb-0.5 transition-colors ${
+                  isActive
+                    ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+              </Link>
+            )
+          }
+
           return (
             <Link
               key={item.href}
@@ -169,18 +311,34 @@ export default function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer — real user */}
-      <div className="p-3 border-t border-blue-900/50">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            {initials}
+      {/* Footer */}
+      <div className={`border-t border-blue-900/50 ${collapsed ? 'p-2' : 'p-3'}`}>
+        {collapsed ? (
+          <div className="flex justify-center py-1">
+            <div
+              className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold"
+              title={user?.name ?? 'Admin'}
+            >
+              {initials}
+            </div>
           </div>
-          <div className="text-sm min-w-0">
-            <p className="text-slate-200 font-medium leading-none truncate">{user?.name ?? 'Admin'}</p>
-            <p className="text-slate-400 text-xs mt-0.5">{roleLabelFor(user?.role ?? '') || 'Admin'}</p>
+        ) : (
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+              {initials}
+            </div>
+            <div className="text-sm min-w-0">
+              <p className="text-slate-200 font-medium leading-none truncate">
+                {user?.name ?? 'Admin'}
+              </p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                {roleLabelFor(user?.role ?? '') || 'Admin'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   )
 }
+

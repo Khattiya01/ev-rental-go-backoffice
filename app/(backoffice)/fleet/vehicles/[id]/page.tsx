@@ -65,7 +65,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     )
   }
 
-  const allImages = [vehicle.imageUrl, vehicle.imageUrl, vehicle.imageUrl, vehicle.imageUrl]
+  const hasImage = Boolean(vehicle.imageUrl)
+  const allImages = vehicle.images?.length ? vehicle.images : (vehicle.imageUrl ? [vehicle.imageUrl] : [])
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'general', label: t('tabs.info') },
@@ -107,17 +108,41 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       {/* Tab: General Info */}
       {activeTab === 'general' && (
         <div className="grid grid-cols-2 gap-5">
-          {/* Gallery */}
+          {/* Photo Gallery */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">Gallery</h2>
-            <img src={allImages[selectedImage] ?? '/images/placeholder.png'} alt="Vehicle" className="w-full h-52 object-cover rounded-xl mb-3" />
-            <div className="flex gap-2">
-              {allImages.map((img, i) => (
-                <button key={i} onClick={() => setSelectedImage(i)} className={`flex-1 h-16 rounded-lg overflow-hidden border-2 transition-colors ${selectedImage === i ? 'border-blue-500' : 'border-slate-200'}`}>
-                  <img src={img ?? '/images/placeholder.png'} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            <h2 className="text-slate-800 font-semibold mb-4">Photos</h2>
+            {allImages.length > 0 ? (
+              <>
+                <img
+                  src={allImages[selectedImage] ?? '/images/placeholder.png'}
+                  alt={`${vehicle.make} ${vehicle.model}`}
+                  className="w-full h-52 object-cover rounded-xl mb-3"
+                  onError={e => { (e.target as HTMLImageElement).src = '/images/placeholder.png' }}
+                />
+                {allImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {allImages.map((img, i) => (
+                      <button
+                        key={img}
+                        onClick={() => setSelectedImage(i)}
+                        className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
+                          selectedImage === i ? 'border-blue-500' : 'border-slate-200'
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-52 rounded-xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center">
+                  <span className="text-2xl">🚗</span>
+                </div>
+                <p className="text-slate-400 text-sm">No photo available</p>
+              </div>
+            )}
           </div>
 
           {/* Registration Details */}
@@ -143,7 +168,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
               <h2 className="text-slate-800 font-semibold mb-4">Current Status</h2>
               <dl className="space-y-2.5">
                 {([
-                  [t('info.odometer'), `${vehicle.mileage.toLocaleString()} mi`],
+                  [t('info.odometer'), `${vehicle.odometer.toLocaleString()} km`],
                   [t('info.condition'), vehicle.condition ?? '-'],
                   [t('info.location'), vehicle.location ?? '-'],
                   [t('info.nextService'), vehicle.nextServiceDate ?? '-'],

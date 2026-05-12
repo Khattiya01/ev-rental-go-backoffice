@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Pencil, Trash2, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react'
+import { UserPlus, Pencil, Trash2, AlertCircle, Loader2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { useTranslations } from 'next-intl'
@@ -33,6 +33,7 @@ function UserAvatar({ name }: { name: string }) {
 
 const EMPTY_CREATE = { name: '', email: '', password: '', role: 'admin' as AdminRole }
 const EMPTY_EDIT = { name: '', role: 'admin' as AdminRole }
+const PAGE_SIZE = 10
 
 export default function UsersSettingsPage() {
   const t = useTranslations('users')
@@ -57,6 +58,7 @@ export default function UsersSettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [showPassword, setShowPassword] = useState(false)
+  const [page, setPage] = useState(1)
 
   async function fetchUsers() {
     setLoading(true)
@@ -170,10 +172,15 @@ export default function UsersSettingsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
+        <div>
+          <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">
+            {users.length > 0 ? `${users.length} admin users` : 'Manage admin access'}
+          </p>
+        </div>
         <button
           onClick={() => { setCreateForm(EMPTY_CREATE); setCreateError(null); setCreateOpen(true) }}
-          className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
         >
           <UserPlus className="w-4 h-4" />
           {t('addNewAdmin')}
@@ -181,65 +188,73 @@ export default function UsersSettingsPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left text-slate-500 text-xs font-medium px-5 py-3 uppercase tracking-wide">{t('columns.name')}</th>
-              <th className="text-left text-slate-500 text-xs font-medium px-5 py-3 uppercase tracking-wide">{t('columns.email')}</th>
-              <th className="text-left text-slate-500 text-xs font-medium px-5 py-3 uppercase tracking-wide">{t('columns.role')}</th>
-              <th className="text-left text-slate-500 text-xs font-medium px-5 py-3 uppercase tracking-wide">{t('columns.createdAt')}</th>
-              <th className="text-left text-slate-500 text-xs font-medium px-5 py-3 uppercase tracking-wide">{t('columns.actions')}</th>
+            <tr className="bg-slate-50/70 border-b border-slate-200">
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.name')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.email')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.role')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.createdAt')}</th>
+              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.actions')}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <tr key={i} className="border-b border-slate-200">
-                  <td className="px-5 py-3"><div className="h-4 bg-slate-200 rounded animate-pulse w-32" /></td>
-                  <td className="px-5 py-3"><div className="h-4 bg-slate-200 rounded animate-pulse w-48" /></td>
-                  <td className="px-5 py-3"><div className="h-4 bg-slate-200 rounded animate-pulse w-24" /></td>
-                  <td className="px-5 py-3"><div className="h-4 bg-slate-200 rounded animate-pulse w-24" /></td>
-                  <td className="px-5 py-3"><div className="h-4 bg-slate-200 rounded animate-pulse w-20" /></td>
+                <tr key={i}>
+                  <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-100 animate-pulse" /><div className="h-4 bg-slate-100 rounded animate-pulse w-28" /></div></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-44" /></td>
+                  <td className="px-5 py-4"><div className="h-5 bg-slate-100 rounded-full animate-pulse w-20" /></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-24" /></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-16 ml-auto" /></td>
                 </tr>
               ))
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-10 text-slate-400">{t('empty')}</td>
+                <td colSpan={5} className="text-center py-16">
+                  <div className="flex flex-col items-center gap-2 text-slate-400">
+                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-1">
+                      <UserPlus size={22} className="text-slate-300" />
+                    </div>
+                    <p className="font-medium text-slate-500">{t('empty')}</p>
+                  </div>
+                </td>
               </tr>
             ) : (
-              users.map(user => (
-                <tr key={user.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3">
+              users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(user => (
+                <tr key={user.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <UserAvatar name={user.name} />
                       <span className="text-slate-700 text-sm font-medium">{user.name}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-slate-500 text-sm">{user.email}</td>
-                  <td className="px-5 py-3"><RoleBadge role={user.role} /></td>
-                  <td className="px-5 py-3 text-slate-500 text-sm">{new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-5 py-3.5 text-slate-500 text-sm">{user.email}</td>
+                  <td className="px-5 py-3.5"><RoleBadge role={user.role} /></td>
+                  <td className="px-5 py-3.5 text-slate-500 text-sm tabular-nums">{new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openEdit(user)}
-                        className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                        title={t('edit')}
                       >
-                        <Pencil className="w-3.5 h-3.5" />
-                        {t('edit')}
+                        <Pencil size={15} />
                       </button>
                       <button
                         onClick={() => openDelete(user)}
-                        className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title={t('delete')}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        {t('delete')}
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>
@@ -248,6 +263,33 @@ export default function UsersSettingsPage() {
             )}
           </tbody>
         </table>
+
+        {!loading && users.length > 0 && (
+          <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <span className="text-sm text-slate-500">
+              Showing {Math.min((page - 1) * PAGE_SIZE + 1, users.length)}–{Math.min(page * PAGE_SIZE, users.length)} of {users.length}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(p => p - 1)}
+                disabled={page === 1}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <span className="text-sm text-slate-600 px-2 tabular-nums">
+                {page} / {Math.max(1, Math.ceil(users.length / PAGE_SIZE))}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={page * PAGE_SIZE >= users.length}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Create Modal */}

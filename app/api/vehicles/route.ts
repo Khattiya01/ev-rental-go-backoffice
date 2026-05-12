@@ -46,6 +46,18 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  try {
+    return await handlePost(request)
+  } catch (err) {
+    console.error('[POST /api/vehicles] Unhandled error:', err)
+    const message = process.env.NODE_ENV === 'development' && err instanceof Error
+      ? err.message
+      : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+async function handlePost(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -64,6 +76,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     color?: unknown
     vin?: unknown
     imageUrl?: unknown
+    images?: unknown
+    odometer?: unknown
+    condition?: unknown
+    location?: unknown
+    nextServiceDate?: unknown
   }
   try {
     body = await request.json()
@@ -77,7 +94,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   const model = body.model?.toString().trim()
   const color = body.color?.toString().trim()
   const vin = body.vin?.toString().trim()
-  const imageUrl = body.imageUrl?.toString().trim()
+  const condition = body.condition?.toString().trim() || null
+  const location = body.location?.toString().trim() || null
+  const nextServiceDate = body.nextServiceDate?.toString().trim() || null
+  const odometerRaw = body.odometer
+  const odometerInt = odometerRaw !== undefined && odometerRaw !== null
+    ? (typeof odometerRaw === 'number' ? Math.trunc(odometerRaw) : parseInt(String(odometerRaw), 10))
+    : 0
+
+  // images[] takes precedence; imageUrl falls back to first image
+  let images: string[] = []
+  if (Array.isArray(body.images)) {
+    images = (body.images as unknown[]).filter((v): v is string => typeof v === 'string')
+  }
+  const imageUrl = images[0] ?? (body.imageUrl?.toString().trim() || null)
 
   if (!plate || !make || !model || year === undefined || year === null || !status) {
     return NextResponse.json(
@@ -127,12 +157,19 @@ export async function POST(request: Request): Promise<NextResponse> {
         status: status as VehicleStatus,
         color: (color as string | null | undefined) ?? null,
         vin: (vin as string | null | undefined) ?? null,
-        imageUrl: (imageUrl as string | null | undefined) ?? null,
+        imageUrl: imageUrl ?? null,
+        images,
+        odometer: Number.isFinite(odometerInt) ? odometerInt : 0,
+        mileage: Number.isFinite(odometerInt) ? odometerInt : 0,
+        condition: condition ?? 'Good',
+        location: location ?? null,
+        nextServiceDate: nextServiceDate ?? null,
       })
       .returning()
 
     return NextResponse.json(inserted, { status: 201 })
   } catch (error) {
+    console.error('[POST /api/vehicles] DB error:', error)
     if (
       error !== null &&
       typeof error === 'object' &&
@@ -141,6 +178,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     ) {
       return NextResponse.json({ error: 'Plate number already exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const message = process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

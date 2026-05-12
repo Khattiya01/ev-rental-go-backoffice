@@ -64,6 +64,7 @@ export async function PATCH(
     vin?: string | null
     status?: VehicleStatus
     imageUrl?: string | null
+    images?: string[]
     location?: string | null
     condition?: string | null
     nextServiceDate?: string | null
@@ -133,6 +134,18 @@ export async function PATCH(
       }
       fields[field] = val as string | null
     }
+  }
+
+  if (body.images !== undefined) {
+    if (
+      !Array.isArray(body.images) ||
+      (body.images as unknown[]).some(v => typeof v !== 'string')
+    ) {
+      return NextResponse.json({ error: 'images must be an array of strings' }, { status: 400 })
+    }
+    const imgs = body.images as string[]
+    fields.images = imgs
+    fields.imageUrl = imgs[0] ?? null
   }
 
   if (Object.keys(fields).length === 0) {
