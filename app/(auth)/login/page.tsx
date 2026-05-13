@@ -20,6 +20,23 @@ export default function LoginPage() {
         {/* <div className="flex items-center gap-2 mb-6 justify-center">
           <Car className="text-cyan-400 w-7 h-7" />
           <span className="text-white font-bold text-xl tracking-wide">EV Rental Go</span>
+        </div> */}
+
+        <div className="flex items-center justify-center gap-3 px-4 py-4 ">
+          <Image
+            src={logo}
+            alt="EV Rental Go"
+            height={60}
+            style={{ width: 'auto' }}
+            className="object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(45,212,191,0.4)]"
+            priority
+          />
+          <div className="flex flex-col leading-none">
+            <div className="flex items-baseline gap-1">
+              <span className="text-white font-bold text-2xl tracking-wide">EV Rental</span>
+              <span className="text-teal-400 font-extrabold text-2xl tracking-wider">Go</span>
+            </div>
+          </div>
         </div>
 
         <h1 className="text-white font-bold text-2xl text-center mb-1">{t('title')}</h1>
