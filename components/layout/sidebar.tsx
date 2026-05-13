@@ -187,7 +187,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/customers',
       children: [
         { href: '/customers', label: t('allCustomers'), icon: Users },
-        { href: '/customers/kyc', label: t('kycApproval'), icon: BadgeCheck },
+        // { href: '/customers/kyc', label: t('kycApproval'), icon: BadgeCheck },
         { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
       ],
     },

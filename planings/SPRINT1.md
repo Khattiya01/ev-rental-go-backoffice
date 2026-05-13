@@ -15,8 +15,8 @@
 | Core | G3: UI Theme | — | ✅ | ✅ Done |
 | Fleet | B1: Vehicle List | ✅ | ✅ | ✅ Done |
 | Fleet | B2: Vehicle Detail | ✅ | ✅ | ✅ Done |
-| Customer | C1: Customer List | ⬜ | ✅ | 🟡 FE Done, BE Pending |
-| Customer | C2: e-KYC Review | ⬜ | ✅ | 🟡 FE Done, BE Pending |
+| Customer | C1: Customer List | ✅ | ✅ | ✅ Done |
+| Customer | C2: e-KYC Review | ✅ | ✅ | ✅ Done |
 | Contract | D1: Active Rentals | ⬜ | ✅ | 🟡 FE Done, BE Pending |
 | Billing | E1: Invoice List | ⬜ | ✅ | 🟡 FE Done, BE Pending |
 | Settings | F1: Users Mgmt | ✅ | ✅ | ✅ Done |
@@ -62,13 +62,16 @@
 - [x] เชื่อม `fleet/vehicles/page.tsx` กับ API จริง (ลบ `mockVehicles`)
 - [x] เชื่อม `fleet/vehicles/[id]/page.tsx` กับ API จริง
 
-#### Day 3 — 13 พ.ค.
+#### Day 3 — 13 พ.ค. ✅ DONE
 **Focus: Customer API**
 
-- [ ] `app/api/customers/route.ts` — GET (list + filter)
-- [ ] `app/api/customers/[id]/route.ts` — GET single
-- [ ] `app/api/customers/[id]/route.ts` — PATCH (update status / blacklist)
-- [ ] เชื่อม `customers/page.tsx` + `customers/[id]/page.tsx` กับ API จริง
+- [x] `app/api/customers/route.ts` — GET (list + filter + pagination)
+- [x] `app/api/customers/[id]/route.ts` — GET single
+- [x] `app/api/customers/[id]/route.ts` — PATCH (update status / blacklist, bannedBy/bannedDate server-side)
+- [x] เชื่อม `customers/page.tsx` กับ API จริง (ลบ mock)
+- [x] เชื่อม `customers/[id]/page.tsx` กับ API จริง + blacklist confirm modal
+- [x] เชื่อม `customers/kyc/page.tsx` กับ API จริง — Approve/Reject calls PATCH
+- [x] เชื่อม `customers/blacklist/page.tsx` กับ API จริง — Unban calls PATCH
 
 #### Day 4 — 14 พ.ค.
 **Focus: e-KYC API + Contract API**

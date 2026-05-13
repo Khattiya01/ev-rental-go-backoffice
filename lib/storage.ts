@@ -24,7 +24,7 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/gif': 'gif',
 }
 
-export async function uploadFile(file: File): Promise<StorageResult> {
+export async function uploadFile(file: File, folder = 'vehicles'): Promise<StorageResult> {
   if (!ALLOWED_TYPES[file.type]) {
     throw new Error('Invalid file type. Only JPEG, PNG, WebP and GIF are allowed.')
   }
@@ -36,10 +36,10 @@ export async function uploadFile(file: File): Promise<StorageResult> {
   const provider = process.env.STORAGE_PROVIDER ?? 'local'
 
   if (provider === 's3') {
-    return uploadToS3(file)
+    return uploadToS3(file, folder)
   }
 
-  return uploadToLocal(file)
+  return uploadToLocal(file, folder)
 }
 
 export async function deleteFile(key: string): Promise<void> {
@@ -61,10 +61,10 @@ export async function deleteFile(key: string): Promise<void> {
 // Local adapter (dev)
 // ---------------------------------------------------------------------------
 
-async function uploadToLocal(file: File): Promise<StorageResult> {
+async function uploadToLocal(file: File, folder: string): Promise<StorageResult> {
   const ext = ALLOWED_TYPES[file.type] ?? 'jpg'
-  const key = `vehicles/${crypto.randomUUID()}.${ext}`
-  const destDir = path.join(process.cwd(), 'public', 'uploads', 'vehicles')
+  const key = `${folder}/${crypto.randomUUID()}.${ext}`
+  const destDir = path.join(process.cwd(), 'public', 'uploads', folder)
 
   await fs.mkdir(destDir, { recursive: true })
 
@@ -79,7 +79,7 @@ async function uploadToLocal(file: File): Promise<StorageResult> {
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function uploadToS3(_file: File): Promise<StorageResult> {
+async function uploadToS3(_file: File, _folder: string): Promise<StorageResult> {
   /**
    * When ready, install: pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
    *
@@ -94,7 +94,7 @@ async function uploadToS3(_file: File): Promise<StorageResult> {
    * const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
    * const client = new S3Client({ region: process.env.AWS_REGION })
    * const ext = ALLOWED_TYPES[file.type] ?? 'jpg'
-   * const key = `vehicles/${crypto.randomUUID()}.${ext}`
+   * const key = `${_folder}/${crypto.randomUUID()}.${ext}`
    * const buffer = Buffer.from(await file.arrayBuffer())
    * await client.send(new PutObjectCommand({
    *   Bucket: process.env.S3_BUCKET_NAME,

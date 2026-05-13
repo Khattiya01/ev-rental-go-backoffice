@@ -6,14 +6,8 @@ import { ArrowLeft, Save, Car } from 'lucide-react'
 import type { Vehicle, VehicleStatus } from '@/lib/types'
 import ImageUploader from '@/components/ui/image-uploader'
 import MultiImageUploader from '@/components/ui/multi-image-uploader'
-
-const STATUS_LABELS: Record<VehicleStatus, string> = {
-  available: 'Available',
-  rented: 'Rented',
-  charging: 'Charging',
-  under_repair: 'Under Repair',
-  offline: 'Offline',
-}
+import { useTranslations } from 'next-intl'
+import { useToast } from '@/components/ui/toast'
 
 const STATUS_OPTIONS: VehicleStatus[] = ['available', 'rented', 'charging', 'under_repair', 'offline']
 
@@ -24,6 +18,17 @@ interface VehicleFormProps {
 
 export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
   const router = useRouter()
+  const t = useTranslations('vehicleForm')
+  const td = useTranslations('vehicles')
+  const { success, error: toastError } = useToast()
+
+  const STATUS_LABELS: Record<VehicleStatus, string> = {
+    available: td('status.available'),
+    rented: td('status.rented'),
+    charging: td('status.charging'),
+    under_repair: td('status.under_repair'),
+    offline: td('status.offline'),
+  }
 
   const [plate, setPlate] = useState(initialData?.plate ?? '')
   const [make, setMake] = useState(initialData?.make ?? '')
@@ -74,14 +79,19 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
       })
 
       if (res.status === 201 || res.status === 200) {
+        success(mode === 'add' ? t('toast.created') : t('toast.updated'))
         router.push('/fleet/vehicles')
         router.refresh()
       } else {
         const data = await res.json() as { error?: string }
-        setError(data?.error ?? 'An unexpected error occurred.')
+        const msg = data?.error ?? (mode === 'add' ? t('toast.createError') : t('toast.updateError'))
+        setError(msg)
+        toastError(msg)
       }
     } catch {
-      setError('Network error. Please try again.')
+      const msg = t('networkError')
+      setError(msg)
+      toastError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -108,10 +118,10 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
           </div>
           <div>
             <h1 className="text-slate-800 text-xl font-bold">
-              {mode === 'add' ? 'Add New Vehicle' : `Edit Vehicle — ${initialData?.plate}`}
+              {mode === 'add' ? t('addTitle') : t('editTitle', { plate: initialData?.plate ?? '' })}
             </h1>
             <p className="text-slate-500 text-sm">
-              {mode === 'add' ? 'Register a new EV to the fleet' : 'Update vehicle information'}
+              {mode === 'add' ? t('addSubtitle') : t('editSubtitle')}
             </p>
           </div>
         </div>
@@ -126,23 +136,23 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
 
         {/* Vehicle Identity */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">Vehicle Identity</h2>
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">{t('sectionIdentity')}</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
             {/* Photo — left column */}
-            <MultiImageUploader value={images} onChange={setImages} label="Vehicle Photos" />
+            <MultiImageUploader value={images} onChange={setImages} label={t('photosLabel')} />
 
             {/* Fields — right column */}
             <div className="space-y-5">
               <div>
                 <label htmlFor="plate" className={labelClass}>
-                  Plate Number <span className="text-red-500">*</span>
+                  {t('plateLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="plate"
                   type="text"
                   required
-                  placeholder="e.g. กข 1234 กรุงเทพ"
+                  placeholder={t('platePlaceholder')}
                   value={plate}
                   onChange={e => setPlate(e.target.value)}
                   className={inputClass}
@@ -152,13 +162,13 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label htmlFor="make" className={labelClass}>
-                    Make <span className="text-red-500">*</span>
+                    {t('makeLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="make"
                     type="text"
                     required
-                    placeholder="e.g. Tesla, BYD, Hyundai"
+                    placeholder={t('makePlaceholder')}
                     value={make}
                     onChange={e => setMake(e.target.value)}
                     className={inputClass}
@@ -167,13 +177,13 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
 
                 <div>
                   <label htmlFor="model" className={labelClass}>
-                    Model <span className="text-red-500">*</span>
+                    {t('modelLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="model"
                     type="text"
                     required
-                    placeholder="e.g. Model 3, Atto 3, Ioniq 5"
+                    placeholder={t('modelPlaceholder')}
                     value={model}
                     onChange={e => setModel(e.target.value)}
                     className={inputClass}
@@ -182,7 +192,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
 
                 <div>
                   <label htmlFor="year" className={labelClass}>
-                    Year <span className="text-red-500">*</span>
+                    {t('yearLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="year"
@@ -197,11 +207,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                 </div>
 
                 <div>
-                  <label htmlFor="color" className={labelClass}>Color</label>
+                  <label htmlFor="color" className={labelClass}>{t('colorLabel')}</label>
                   <input
                     id="color"
                     type="text"
-                    placeholder="e.g. White, Black, Blue"
+                    placeholder={t('colorPlaceholder')}
                     value={color}
                     onChange={e => setColor(e.target.value)}
                     className={inputClass}
@@ -226,10 +236,10 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
 
         {/* Current Status */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">Current Status</h2>
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">{t('sectionStatus')}</h2>
 
           <div>
-            <label htmlFor="status" className={labelClass}>Status</label>
+            <label htmlFor="status" className={labelClass}>{t('statusLabel')}</label>
             <select
               id="status"
               value={status}
@@ -244,7 +254,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="odometer" className={labelClass}>Odometer (km)</label>
+              <label htmlFor="odometer" className={labelClass}>{t('odometerLabel')}</label>
               <input
                 id="odometer"
                 type="number"
@@ -256,25 +266,25 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
             </div>
 
             <div>
-              <label htmlFor="condition" className={labelClass}>Condition</label>
+              <label htmlFor="condition" className={labelClass}>{t('conditionLabel')}</label>
               <select
                 id="condition"
                 value={condition}
                 onChange={e => setCondition(e.target.value)}
                 className={inputClass}
               >
-                {['Excellent', 'Good', 'Fair', 'Poor'].map(c => (
-                  <option key={c} value={c}>{c}</option>
+                {(['Excellent', 'Good', 'Fair', 'Poor'] as const).map(c => (
+                  <option key={c} value={c}>{t(`conditions.${c}` as Parameters<typeof t>[0])}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="location" className={labelClass}>Home Location</label>
+              <label htmlFor="location" className={labelClass}>{t('locationLabel')}</label>
               <input
                 id="location"
                 type="text"
-                placeholder="e.g. Lat Phrao Depot"
+                placeholder={t('locationPlaceholder')}
                 value={location}
                 onChange={e => setLocation(e.target.value)}
                 className={inputClass}
@@ -282,7 +292,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
             </div>
 
             <div>
-              <label htmlFor="nextServiceDate" className={labelClass}>Next Service Date</label>
+              <label htmlFor="nextServiceDate" className={labelClass}>{t('nextServiceLabel')}</label>
               <input
                 id="nextServiceDate"
                 type="date"
@@ -302,7 +312,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
             disabled={submitting}
             className="px-5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -310,7 +320,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             <Save size={15} />
-            {submitting ? 'Saving…' : mode === 'add' ? 'Add Vehicle' : 'Save Changes'}
+            {submitting ? t('saving') : mode === 'add' ? t('addVehicle') : t('saveChanges')}
           </button>
         </div>
       </form>

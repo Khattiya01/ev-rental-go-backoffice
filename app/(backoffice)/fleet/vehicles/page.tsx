@@ -8,6 +8,7 @@ import { Plus, Search, Eye, Pencil, Trash2, Zap, Gauge, ChevronLeft, ChevronRigh
 import Badge from '@/components/ui/badge'
 import CircularProgress from '@/components/ui/circular-progress'
 import Modal from '@/components/ui/modal'
+import { useToast } from '@/components/ui/toast'
 import type { Vehicle } from '@/lib/types'
 
 const PAGE_SIZE = 20
@@ -23,6 +24,7 @@ const STATUS_DOT: Record<string, string> = {
 export default function VehiclesPage() {
   const t = useTranslations('vehicles')
   const router = useRouter()
+  const { success, error: toastError } = useToast()
 
   const statusOptions = [
     { label: t('filterAll'), value: '' },
@@ -87,10 +89,13 @@ export default function VehiclesPage() {
         setIsDeleteOpen(false)
         setSelectedVehicle(null)
         setDeleteError(null)
+        success(t('toast.deleted', { plate: selectedVehicle.plate }))
         void doFetch(search, statusFilter, page)
       } else {
         const data = await res.json() as { error?: string }
-        setDeleteError(data.error ?? 'Failed to delete')
+        const msg = data.error ?? t('toast.deleteError')
+        setDeleteError(msg)
+        toastError(msg)
       }
     } finally {
       setDeleting(false)
@@ -106,7 +111,7 @@ export default function VehiclesPage() {
         <div>
           <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {total > 0 ? `${total} vehicles in fleet` : 'Manage your EV fleet'}
+            {total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
           </p>
         </div>
         <Link
@@ -160,13 +165,13 @@ export default function VehiclesPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-200">
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Vehicle</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Plate</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Make / Model</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Status</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Battery</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Odometer</th>
-              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Actions</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.vehicle')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.plate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.makeModel')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.status')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.battery')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.odometer')}</th>
+              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -190,7 +195,7 @@ export default function VehiclesPage() {
                       <Zap size={22} className="text-slate-300" />
                     </div>
                     <p className="font-medium text-slate-500">{t('empty')}</p>
-                    <p className="text-sm">Try adjusting your search or filters</p>
+                    <p className="text-sm">{t('emptyHint')}</p>
                   </div>
                 </td>
               </tr>
@@ -243,21 +248,21 @@ export default function VehiclesPage() {
                       <Link
                         href={`/fleet/vehicles/${v.id}`}
                         className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="View Details"
+                        title={t('viewDetails')}
                       >
                         <Eye size={15} />
                       </Link>
                       <Link
                         href={`/fleet/vehicles/${v.id}/edit`}
                         className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="Edit"
+                        title={t('edit')}
                       >
                         <Pencil size={15} />
                       </Link>
                       <button
                         onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
                         className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="Delete"
+                        title={t('delete')}
                       >
                         <Trash2 size={15} />
                       </button>
@@ -300,29 +305,27 @@ export default function VehiclesPage() {
       <Modal
         isOpen={isDeleteOpen}
         onClose={() => { setIsDeleteOpen(false); setDeleteError(null) }}
-        title="Delete Vehicle"
+        title={t('deleteModal.title')}
         footer={
           <>
             <button
               onClick={() => { setIsDeleteOpen(false); setDeleteError(null) }}
               className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              Cancel
+              {t('deleteModal.cancel')}
             </button>
             <button
               onClick={() => void handleDelete()}
               disabled={deleting}
               className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
-              {deleting ? 'Deleting...' : 'Delete'}
+              {deleting ? t('deleteModal.deleting') : t('deleteModal.confirm')}
             </button>
           </>
         }
       >
         <p className="text-slate-600 text-sm leading-relaxed">
-          Are you sure you want to delete vehicle{' '}
-          <span className="font-semibold text-slate-900 font-mono">{selectedVehicle?.plate}</span>?
-          {' '}This action cannot be undone.
+          {t('deleteModal.message', { plate: selectedVehicle?.plate ?? '' })}
         </p>
         {deleteError && <p className="text-red-500 text-sm mt-3">{deleteError}</p>}
       </Modal>

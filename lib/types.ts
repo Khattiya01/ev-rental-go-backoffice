@@ -1,5 +1,5 @@
 export type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair' | 'offline'
-export type CustomerStatus = 'pending_kyc' | 'active' | 'blacklisted'
+export type CustomerStatus = 'pending_kyc' | 'active' | 'suspended' | 'blacklisted'
 export type ContractStatus = 'active' | 'completed' | 'overdue'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
 export type AlertSeverity = 'critical' | 'warning' | 'info'
@@ -36,6 +36,13 @@ export interface Customer {
   driverType: DriverType
   status: CustomerStatus
   avatarUrl: string
+  idCardNumber?: string
+  dateOfBirth?: string
+  idCardFrontUrl?: string
+  idCardBackUrl?: string
+  driverLicenseUrl?: string
+  grabBoltScreenshotUrl?: string
+  notes?: string | null
   creditScore: number
   rating: number
   bannedDate?: string

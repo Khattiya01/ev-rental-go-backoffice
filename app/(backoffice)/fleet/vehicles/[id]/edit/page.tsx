@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import VehicleForm from '@/components/ui/vehicle-form'
 import type { Vehicle } from '@/lib/types'
 
 export default function EditVehiclePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const t = useTranslations('vehicleDetail')
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -39,12 +41,12 @@ export default function EditVehiclePage({ params }: { params: Promise<{ id: stri
   if (notFound || !vehicle) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-slate-500">Vehicle not found.</p>
+        <p className="text-slate-500">{t('notFound')}</p>
         <button
           onClick={() => router.push('/fleet/vehicles')}
           className="text-blue-500 hover:underline text-sm"
         >
-          Back to Vehicles
+          {t('backToList')}
         </button>
       </div>
     )

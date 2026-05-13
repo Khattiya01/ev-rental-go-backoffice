@@ -110,10 +110,34 @@
       "deleteError": "ไม่สามารถลบผู้ใช้ได้"
     }
   },
+  "common": {
+    "imageUploader": {
+      "dropOrBrowse": "วางรูปที่นี่ หรือ",
+      "browse": "เลือกไฟล์",
+      "hint": "JPEG, PNG, WebP, GIF \u2014 ขนาดไม่เกิน 5 MB",
+      "uploading": "กำลังอัปโหลด\u2026",
+      "replace": "เปลี่ยนรูป",
+      "removeTitle": "ลบรูปภาพ",
+      "uploadError": "อัปโหลดไม่สำเร็จ กรุณาลองใหม่",
+      "networkError": "เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่"
+    },
+    "multiImageUploader": {
+      "addPhoto": "เพิ่มรูป",
+      "dragHere": "หรือลากมาวาง",
+      "coverBadge": "ภาพหน้าปก",
+      "setCoverTitle": "ตั้งเป็นภาพหน้าปก",
+      "removeTitle": "ลบ",
+      "hint": "เลื่อนเมาส์ไปที่รูปเพื่อตั้งเป็นภาพหน้าปกหรือลบ ภาพหน้าปกจะแสดงในรายการรถ",
+      "uploadError": "อัปโหลดไม่สำเร็จ",
+      "networkError": "เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่"
+    }
+  },
   "vehicles": {
     "title": "รายการรถยนต์ EV",
+    "subtitleCount": "{count} คันในฝูง",
+    "subtitleDefault": "จัดการฝูง EV ของคุณ",
     "addVehicle": "เพิ่มรถ",
-    "searchPlaceholder": "ค้นหาป้ายทะเบียน, รุ่น...",
+    "searchPlaceholder": "ค้นหาทะเบียน, รุ่น...",
     "filterAll": "ทั้งหมด",
     "filterAvailable": "ว่าง",
     "filterRented": "เช่าแล้ว",
@@ -123,14 +147,19 @@
     "columns": {
       "vehicle": "รถ",
       "plate": "ทะเบียน",
+      "makeModel": "ยี่ห้อ / รุ่น",
       "status": "สถานะ",
       "battery": "แบตเตอรี่",
+      "odometer": "เลขไมล์",
       "location": "ตำแหน่ง",
       "actions": "จัดการ"
     },
-    "empty": "ไม่พบข้อมูลรถ",
+    "empty": "ไม่พบรถ",
+    "emptyHint": "ลองเปลี่ยนคำค้นหาหรือตัวกรอง",
     "showing": "แสดง {count} จาก {total} คัน",
     "viewDetails": "ดูรายละเอียด",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
     "status": {
       "available": "ว่าง",
       "rented": "เช่าแล้ว",
@@ -138,7 +167,18 @@
       "under_repair": "ซ่อมอยู่",
       "offline": "ออฟไลน์"
     },
-    "fetchError": "ไม่สามารถโหลดข้อมูลรถได้"
+    "deleteModal": {
+      "title": "ลบรถ",
+      "message": "คุณแน่ใจหรือไม่ว่าต้องการลบรถทะเบียน {plate}? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      "cancel": "ยกเลิก",
+      "confirm": "ลบ",
+      "deleting": "กำลังลบ..."
+    },
+    "fetchError": "ไม่สามารถโหลดข้อมูลรถได้",
+    "toast": {
+      "deleted": "ลบรถทะเบียน {plate} เรียบร้อยแล้ว",
+      "deleteError": "ไม่สามารถลบรถได้"
+    }
   },
   "vehicleDetail": {
     "backToList": "กลับไปรายการรถ",
@@ -153,6 +193,10 @@
       "remote": "ควบคุมระยะไกล"
     },
     "info": {
+      "photos": "รูปภาพ",
+      "noPhoto": "ยังไม่มีรูปภาพ",
+      "registrationDetails": "ข้อมูลทะเบียน",
+      "currentStatus": "สถานะปัจจุบัน",
       "plateNumber": "ป้ายทะเบียน",
       "vin": "เลขตัวถัง (VIN)",
       "make": "ยี่ห้อ",
@@ -168,6 +212,12 @@
     "telematics": {
       "batteryLevel": "ระดับแบตเตอรี่",
       "socTitle": "สถานะการชาร์จ (SoC)",
+      "currentChargeLevel": "ระดับชาร์จปัจจุบัน",
+      "sohTitle": "สุขภาพแบตเตอรี่ (SoH)",
+      "stateOfHealth": "สถานะสุขภาพ",
+      "temperature": "อุณหภูมิ",
+      "chargeCycles": "รอบการชาร์จ (เต็มรอบ)",
+      "deepDischarge": "จำนวนครั้งแบตเตอรี่หมด",
       "tempTitle": "อุณหภูมิ",
       "rangeTitle": "ระยะทางโดยประมาณ",
       "noData": "ไม่มีข้อมูลเทเลเมติกส์"
@@ -183,7 +233,202 @@
       "cutoffButton": "ตัดพลังงานมอเตอร์",
       "iotReset": "รีเซ็ตอุปกรณ์ IoT",
       "iotResetDesc": "รีสตาร์ทอุปกรณ์ IoT บนรถเพื่อคืนการเชื่อมต่อ",
-      "resetButton": "รีเซ็ตอุปกรณ์ IoT"
+      "resetButton": "รีเซ็ตอุปกรณ์ IoT",
+      "cutoffModal": {
+        "title": "ยืนยันการตัดพลังงานมอเตอร์",
+        "warning": "การกระทำนี้จะปิดมอเตอร์รถทันที ใช้เฉพาะในกรณีฉุกเฉินเท่านั้น",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยันและตัดพลังงาน"
+      },
+      "resetModal": {
+        "title": "รีเซ็ตอุปกรณ์ IoT",
+        "message": "คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตอุปกรณ์ IoT ของรถ {plate}? อุปกรณ์จะออฟไลน์ 1\u20132 นาทีระหว่างรีสตาร์ท",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยันรีเซ็ต"
+      }
+    }
+  },
+  "vehicleForm": {
+    "addTitle": "เพิ่มรถใหม่",
+    "editTitle": "แก้ไขรถ \u2014 {plate}",
+    "addSubtitle": "ลงทะเบียนรถ EV ใหม่เข้าฝูง",
+    "editSubtitle": "อัปเดตข้อมูลรถ",
+    "sectionIdentity": "ข้อมูลรถ",
+    "sectionStatus": "สถานะปัจจุบัน",
+    "photosLabel": "รูปภาพรถ",
+    "plateLabel": "ป้ายทะเบียน",
+    "platePlaceholder": "เช่น กข 1234 กรุงเทพ",
+    "makeLabel": "ยี่ห้อ",
+    "makePlaceholder": "เช่น Tesla, BYD, Hyundai",
+    "modelLabel": "รุ่น",
+    "modelPlaceholder": "เช่น Model 3, Atto 3, Ioniq 5",
+    "yearLabel": "ปี",
+    "colorLabel": "สี",
+    "colorPlaceholder": "เช่น ขาว, ดำ, น้ำเงิน",
+    "vinLabel": "เลขตัวถัง (VIN)",
+    "vinPlaceholder": "VIN 17 หลัก",
+    "statusLabel": "สถานะ",
+    "odometerLabel": "เลขไมล์ (km)",
+    "conditionLabel": "สภาพ",
+    "conditions": {
+      "Excellent": "ดีเยี่ยม",
+      "Good": "ดี",
+      "Fair": "พอใช้ได้",
+      "Poor": "ซ่อมเสื่อม"
+    },
+    "locationLabel": "ตำแหน่งประจำ",
+    "locationPlaceholder": "เช่น คลังลาดพร้าว",
+    "nextServiceLabel": "วันเซอร์วิสครั้งต่อไป",
+    "cancel": "ยกเลิก",
+    "saving": "กำลังบันทึก...",
+    "addVehicle": "เพิ่มรถ",
+    "saveChanges": "บันทึกการเปลี่ยนแปลง",
+    "networkError": "เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่",
+    "toast": {
+      "created": "เพิ่มรถเรียบร้อยแล้ว",
+      "updated": "อัปเดตข้อมูลรถเรียบร้อยแล้ว",
+      "createError": "ไม่สามารถเพิ่มรถได้",
+      "updateError": "ไม่สามารถอัปเดตข้อมูลรถได้"
+    }
+  },
+  "customers": {
+    "title": "จัดการลูกค้า",
+    "subtitleCount": "{count} ลูกค้า",
+    "subtitleDefault": "จัดการลูกค้าของคุณ",
+    "addCustomer": "เพิ่มลูกค้าใหม่",
+    "searchPlaceholder": "ค้นหาชื่อหรือเบอร์โทร...",
+    "filterAll": "ทั้งหมด",
+    "filterPendingKyc": "รอยืนยัน KYC",
+    "filterActive": "ปกติ",
+    "filterBlacklisted": "บัญชีดำ",
+    "columns": {
+      "customer": "ลูกค้า",
+      "phone": "เบอร์โทร",
+      "driverType": "ประเภทคนขับ",
+      "status": "สถานะบัญชี",
+      "actions": "จัดการ"
+    },
+    "empty": "ไม่พบลูกค้า",
+    "emptyHint": "ลองเปลี่ยนคำค้นหาหรือตัวกรอง",
+    "showing": "แสดง {count} จาก {total} คน",
+    "fetchError": "ไม่สามารถโหลดข้อมูลลูกค้าได้",
+    "detail": {
+      "back": "กลับ",
+      "title": "จัดการลูกค้า",
+      "subtitle": "รายละเอียดโปรไฟล์ลูกค้า",
+      "loading": "กำลังโหลด...",
+      "notFound": "ไม่พบข้อมูลลูกค้า",
+      "edit": "แก้ไข",
+      "noRating": "ยังไม่มีคะแนน",
+      "personalInfo": "ข้อมูลส่วนตัว",
+      "emailLabel": "อีเมล",
+      "phoneLabel": "เบอร์โทร",
+      "addressLabel": "ที่อยู่",
+      "idCardLabel": "เลขบัตรประชาชน",
+      "dobLabel": "วันเกิด",
+      "driverTypeLabel": "ประเภทคนขับ",
+      "creditScore": "เครดิตสกอร์คนขับ",
+      "noCreditScore": "ยังไม่มีเครดิตสกอร์",
+      "rentalHistory": "ประวัติการเช่า",
+      "noRentalHistory": "ยังไม่มีประวัติการเช่า",
+      "kycDocuments": "เอกสาร KYC",
+      "kycNotUploaded": "ยังไม่ได้อัปโหลด",
+      "kycIdFront": "บัตรประชาชน (ด้านหน้า)",
+      "kycIdBack": "บัตรประชาชน (ด้านหลัง)",
+      "kycLicense": "ใบขับขี่",
+      "kycGrabBolt": "สกรีนช็อต Grab/Bolt",
+      "adminNotes": "ประวัติอุบัติเหตุ / บันทึกแอดมิน",
+      "noAdminNotes": "ไม่มีบันทึกจากแอดมิน",
+      "accountStatus": "สถานะบัญชี",
+      "accountStatusHint": "จัดการสถานะบัญชีของลูกค้า",
+      "currentStatus": "สถานะปัจจุบัน:",
+      "bannedOn": "แบนเมื่อ {date}",
+      "bannedBy": "โดย {name}",
+      "banReason": "เหตุผลในการแบน",
+      "blacklistReasonLabel": "เหตุผลในการแบน (จำเป็น)",
+      "blacklistReasonPlaceholder": "ระบุเหตุผลการแบน...",
+      "actions": {
+        "activate": "เปิดใช้งานบัญชี",
+        "suspend": "ระงับบัญชี",
+        "blacklist": "ขึ้นบัญชีดำ",
+        "reactivate": "กู้คืนบัญชี",
+        "reactivateAccount": "กู้คืนบัญชี"
+      },
+      "suspendModal": {
+        "title": "ระงับบัญชี",
+        "message": "คุณต้องการระงับบัญชีของ {name} ใช่หรือไม่?",
+        "note": "ลูกค้าจะไม่สามารถสร้างสัญญาเช่าใหม่ได้",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยันระงับบัญชี"
+      },
+      "blacklistModal": {
+        "title": "ยืนยันการขึ้นบัญชีดำ",
+        "message": "คุณต้องการขึ้นบัญชีดำ {name} ใช่หรือไม่?",
+        "reason": "เหตุผล: {reason}",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยันขึ้นบัญชีดำ"
+      },
+      "reactivateModal": {
+        "activateTitle": "เปิดใช้งานบัญชี",
+        "reactivateTitle": "กู้คืนบัญชี",
+        "messageActivate": "เปิดใช้งานบัญชีของ {name}? ลูกค้าจะสามารถสร้างสัญญาเช่าได้ทันที",
+        "messageReactivate": "กู้คืนบัญชีของ {name}? สถานะจะถูกตั้งค่ากลับเป็น Active และการแบนทั้งหมดจะถูกล้าง",
+        "cancel": "ยกเลิก",
+        "activate": "เปิดใช้งาน",
+        "reactivate": "กู้คืนบัญชี"
+      },
+      "toast": {
+        "activated": "เปิดใช้งานบัญชีเรียบร้อยแล้ว",
+        "suspended": "ระงับบัญชีเรียบร้อยแล้ว",
+        "blacklisted": "ขึ้นบัญชีดำเรียบร้อยแล้ว",
+        "reactivated": "กู้คืนบัญชีเรียบร้อยแล้ว",
+        "actionError": "เกิดข้อผิดพลาด กรุณาลองใหม่",
+        "fetchError": "ไม่สามารถโหลดข้อมูลลูกค้าได้"
+      }
+    },
+    "form": {
+      "addTitle": "เพิ่มลูกค้าใหม่",
+      "addSubtitle": "ลงทะเบียนลูกค้าใหม่หน้าร้าน",
+      "editTitle": "แก้ไขลูกค้า — {name}",
+      "editSubtitle": "อัปเดตข้อมูลลูกค้า",
+      "sectionPersonal": "ข้อมูลส่วนตัว",
+      "sectionDriver": "ข้อมูลคนขับ",
+      "sectionKyc": "เอกสาร KYC",
+      "nameLabel": "ชื่อ-นามสกุล",
+      "namePlaceholder": "เช่น สมชาย ใจดี",
+      "phoneLabel": "เบอร์โทรศัพท์",
+      "phonePlaceholder": "+66 8X XXX XXXX",
+      "emailLabel": "อีเมล",
+      "emailPlaceholder": "เช่น somchai@email.com",
+      "dobLabel": "วันเกิด",
+      "idCardLabel": "เลขบัตรประชาชน",
+      "idCardPlaceholder": "X-XXXX-XXXXX-XX-X",
+      "addressLabel": "ที่อยู่",
+      "addressPlaceholder": "กรอกที่อยู่เต็ม",
+      "ratingLabel": "คะแนนคนขับ",
+      "ratingHint": "(0.0 – 5.0)",
+      "ratingPlaceholder": "เช่น 4.5",
+      "notesLabel": "บันทึกแอดมิน",
+      "notesHint": "(อุบัติเหตุ, เคลม, หมายเหตุ)",
+      "notesPlaceholder": "เช่น รอยขีดข่วนเล็กน้อย ต.ค. 2567 – แก้ไขแล้ว",
+      "driverTypeLabel": "ประเภทคนขับ",
+      "avatarLabel": "รูปโปรไฟล์",
+      "kycIdFront": "บัตรประชาชน (ด้านหน้า)",
+      "kycIdBack": "บัตรประชาชน (ด้านหลัง)",
+      "kycLicense": "ใบขับขี่",
+      "kycGrabBolt": "สกรีนช็อต Grab/Bolt",
+      "verifiedLabel": "ตรวจสอบเอกสารที่หน้าร้านแล้ว (Verified at counter)",
+      "verifiedHint": "เมื่อติ๊ก ระบบจะตั้งสถานะลูกค้าเป็น Active ทันที หากไม่ติ๊ก ลูกค้าจะอยู่ในคิว KYC Review",
+      "saving": "กำลังบันทึก…",
+      "saveCustomer": "บันทึกลูกค้า",
+      "saveChanges": "บันทึกการเปลี่ยนแปลง",
+      "networkError": "เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่",
+      "toast": {
+        "created": "เพิ่มลูกค้าเรียบร้อยแล้ว",
+        "updated": "อัปเดตข้อมูลลูกค้าเรียบร้อยแล้ว",
+        "createError": "ไม่สามารถเพิ่มลูกค้าได้",
+        "updateError": "ไม่สามารถอัปเดตข้อมูลลูกค้าได้"
+      }
     }
   }
 }

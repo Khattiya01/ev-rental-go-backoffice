@@ -1,35 +1,179 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams } from 'next/navigation'
-import { mockCustomers, mockContracts } from '@/lib/mock-data'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, Pencil, ClipboardList } from 'lucide-react'
+import type { Customer } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
+import { useTranslations } from 'next-intl'
+import { useToast } from '@/components/ui/toast'
 
 export default function CustomerProfilePage() {
   const params = useParams()
-  const customer = mockCustomers.find(c => c.id === params.id) ?? mockCustomers[0]
+  const router = useRouter()
+  const t = useTranslations('customers')
+  const { success, error: toastError } = useToast()
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  // Blacklist state
   const [blacklistReason, setBlacklistReason] = useState('')
   const [blacklistModalOpen, setBlacklistModalOpen] = useState(false)
+  const [blacklistError, setBlacklistError] = useState('')
 
-  const customerContracts = mockContracts.filter(c => c.customerId === customer.id)
+  // Suspend state
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false)
+
+  // Reactivate state
+  const [reactivateModalOpen, setReactivateModalOpen] = useState(false)
+
+  const fetchCustomer = useCallback(async () => {
+    setLoading(true)
+    setError(false)
+    try {
+      const res = await fetch(`/api/customers/${params.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setCustomer(data)
+      } else {
+        setError(true)
+      }
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [params.id])
+
+  useEffect(() => {
+    fetchCustomer()
+  }, [fetchCustomer])
+
+  const handleBlacklist = async () => {
+    if (!customer) return
+    if (!blacklistReason.trim()) {
+      setBlacklistError('Please provide a reason for blacklisting.')
+      return
+    }
+    setBlacklistError('')
+    const res = await fetch(`/api/customers/${customer.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'blacklisted', bannedReason: blacklistReason }),
+    })
+    if (res.ok) {
+      setCustomer(prev => prev ? { ...prev, status: 'blacklisted' } : prev)
+      setBlacklistModalOpen(false)
+      success(t('detail.toast.blacklisted'))
+      router.refresh()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      const msg = data.error ?? t('detail.toast.actionError')
+      setBlacklistError(msg)
+    }
+  }
+
+  const handleSuspend = async () => {
+    if (!customer) return
+    const res = await fetch(`/api/customers/${customer.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'suspended' }),
+    })
+    if (res.ok) {
+      setCustomer(prev => prev ? { ...prev, status: 'suspended' } : prev)
+      setSuspendModalOpen(false)
+      success(t('detail.toast.suspended'))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      toastError(data.error ?? t('detail.toast.actionError'))
+    }
+  }
+
+  const handleActivate = async () => {
+    if (!customer) return
+    const isPendingKyc = customer.status === 'pending_kyc'
+    const res = await fetch(`/api/customers/${customer.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active' }),
+    })
+    if (res.ok) {
+      setCustomer(prev =>
+        prev
+          ? { ...prev, status: 'active', bannedDate: undefined, bannedReason: undefined, bannedBy: undefined }
+          : prev
+      )
+      setReactivateModalOpen(false)
+      success(isPendingKyc ? t('detail.toast.activated') : t('detail.toast.reactivated'))
+    } else {
+      toastError(t('detail.toast.actionError'))
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-slate-400">{t('detail.loading')}</div>
+    )
+  }
+
+  if (error || !customer) {
+    return (
+      <div className="flex items-center justify-center py-20 text-slate-400">
+        {t('detail.notFound')}
+      </div>
+    )
+  }
 
   const stars = Array.from({ length: 5 }, (_, i) => i < Math.floor(customer.rating))
 
+  const driverTypeBadgeColor =
+    customer.driverType === 'Grab'
+      ? 'bg-green-500/20 text-green-400 border-green-500/30'
+      : customer.driverType === 'Bolt'
+        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+        : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+
+  const kycDocs: { label: string; url?: string }[] = [
+    { label: t('detail.kycIdFront'), url: customer.idCardFrontUrl },
+    { label: t('detail.kycIdBack'), url: customer.idCardBackUrl },
+    { label: t('detail.kycLicense'), url: customer.driverLicenseUrl },
+    { label: t('detail.kycGrabBolt'), url: customer.grabBoltScreenshotUrl },
+  ]
+
   return (
     <div className="space-y-5">
-      <h1 className="text-slate-800 text-xl font-bold">Customer Management</h1>
-      <p className="text-slate-500 text-sm -mt-3">Individual Customer Profile Details</p>
+      {/* Page title */}
+      <div>
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          {t('detail.back')}
+        </button>
+        <h1 className="text-slate-800 text-xl font-bold">{t('detail.title')}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{t('detail.subtitle')}</p>
+      </div>
 
       {/* Profile header */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={customer.avatarUrl.replace('150', '200')}
-            alt={customer.name}
-            className="w-20 h-20 rounded-full object-cover border-2 border-blue-500/50"
-          />
+          {customer.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={customer.avatarUrl}
+              alt={customer.name}
+              className="w-20 h-20 rounded-full object-cover border-2 border-blue-500/50"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full border-2 border-slate-200 flex items-center justify-center bg-slate-50">
+              <UserCircle size={48} className="text-slate-300" />
+            </div>
+          )}
           <div>
             <h2 className="text-slate-800 text-2xl font-bold">{customer.name}</h2>
             <div className="flex items-center gap-1 mt-1">
@@ -39,55 +183,82 @@ export default function CustomerProfilePage() {
                 </span>
               ))}
               <span className="text-slate-500 text-sm ml-1">
-                {customer.rating > 0 ? customer.rating.toFixed(1) : 'No rating'}
+                {customer.rating > 0 ? customer.rating.toFixed(1) : t('detail.noRating')}
               </span>
+            </div>
+            <div className="mt-2">
+              <Badge variant={customer.status} />
             </div>
           </div>
         </div>
-        <Badge
-          variant={
-            customer.status === 'pending_kyc'
-              ? 'pending_kyc'
-              : customer.status === 'active'
-                ? 'active'
-                : 'blacklisted'
-          }
-        />
+
+        <Link
+          href={`/customers/${customer.id}/edit`}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition-colors"
+        >
+          <Pencil size={14} />
+          {t('detail.edit')}
+        </Link>
       </div>
 
       {/* Info grid */}
       <div className="grid grid-cols-3 gap-5">
-        {/* Personal Info */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">Personal Info</h3>
+        {/* Col 1 — Personal Info */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.personalInfo')}</h3>
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-slate-500 text-lg">✉️</span>
+            <div className="flex items-start gap-3">
+              <Mail size={16} className="text-slate-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-slate-400 text-xs">Email</p>
+                <p className="text-slate-400 text-xs">{t('detail.emailLabel')}</p>
                 <p className="text-slate-700 text-sm">{customer.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-500 text-lg">📞</span>
+            <div className="flex items-start gap-3">
+              <Phone size={16} className="text-slate-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-slate-400 text-xs">Phone</p>
+                <p className="text-slate-400 text-xs">{t('detail.phoneLabel')}</p>
                 <p className="text-slate-700 text-sm">{customer.phone}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-500 text-lg">📍</span>
+            <div className="flex items-start gap-3">
+              <MapPin size={16} className="text-slate-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-slate-400 text-xs">Address</p>
+                <p className="text-slate-400 text-xs">{t('detail.addressLabel')}</p>
                 <p className="text-slate-700 text-sm">{customer.address}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CreditCard size={16} className="text-slate-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-slate-400 text-xs">{t('detail.idCardLabel')}</p>
+                <p className="text-slate-700 text-sm">{customer.idCardNumber ?? '—'}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Calendar size={16} className="text-slate-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-slate-400 text-xs">{t('detail.dobLabel')}</p>
+                <p className="text-slate-700 text-sm">{customer.dateOfBirth ?? '—'}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Car size={16} className="text-slate-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-slate-400 text-xs">{t('detail.driverTypeLabel')}</p>
+                <span
+                  className={`inline-block mt-0.5 px-2 py-0.5 text-xs rounded-full border ${driverTypeBadgeColor}`}
+                >
+                  {customer.driverType}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Driver Credit Score */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">Driver Credit Score</h3>
+        {/* Col 2 — Driver Credit Score */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.creditScore')}</h3>
           {customer.creditScore > 0 ? (
             <div className="text-center">
               <div className="relative w-28 h-28 mx-auto mb-3">
@@ -115,121 +286,251 @@ export default function CustomerProfilePage() {
                   <span className="text-slate-500 text-xs">/ 1000</span>
                 </div>
               </div>
-              <p className="text-green-400 text-sm">▲ +15 from last month</p>
-              <div className="mt-3 space-y-1.5 text-left">
-                {[
-                  { icon: '✅', label: 'On-time payments', color: 'text-green-400' },
-                  { icon: '⚠️', label: 'Minor speeding incident', color: 'text-amber-400' },
-                  { icon: '✅', label: 'Low risk driver', color: 'text-green-400' },
-                ].map(item => (
-                  <p key={item.label} className="text-slate-500 text-xs flex items-center gap-2">
-                    <span>{item.icon}</span>
-                    {item.label}
-                  </p>
-                ))}
-              </div>
             </div>
           ) : (
-            <div className="text-center py-6 text-slate-500 text-sm">
-              No credit score yet
-              <br />
-              (pending KYC)
-            </div>
+            <div className="text-center py-6 text-slate-400 text-sm">{t('detail.noCreditScore')}</div>
           )}
         </div>
 
-        {/* Rental History */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">Rental History</h3>
-          <div className="space-y-2">
-            {customerContracts.length > 0 ? (
-              customerContracts.map(c => (
-                <div
-                  key={c.id}
-                  className="flex justify-between items-center py-1.5 border-b border-slate-200"
-                >
-                  <div>
-                    <p className="text-slate-600 text-sm">{c.vehiclePlate}</p>
-                    <p className="text-slate-400 text-xs">{c.startDate}</p>
-                  </div>
-                  <span className="text-slate-700 text-sm font-semibold">
-                    ${(c.dailyRate * 30).toLocaleString()}
-                  </span>
+        {/* Col 3 — Rental History */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.rentalHistory')}</h3>
+          <p className="text-slate-400 text-sm">{t('detail.noRentalHistory')}</p>
+        </div>
+      </div>
+
+      {/* KYC Documents */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h3 className="text-slate-800 font-semibold mb-4">{t('detail.kycDocuments')}</h3>
+        <div className="grid grid-cols-4 gap-4">
+          {kycDocs.map(({ label, url }) => (
+            <div key={label}>
+              <p className="text-slate-400 text-xs mb-2">{label}</p>
+              {url ? (
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={label}
+                    className="w-full h-40 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
+                  />
+                </a>
+              ) : (
+                <div className="w-full h-40 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center">
+                  <p className="text-slate-300 text-xs">{t('detail.kycNotUploaded')}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-slate-400 text-sm">No rental history</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom row: Admin Notes + Account Status */}
+      <div className="grid grid-cols-2 gap-5">
+        {/* Admin Notes */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-slate-800 font-semibold mb-3 flex items-center gap-2">
+            <ClipboardList size={16} className="text-slate-400" />
+            {t('detail.adminNotes')}
+          </h3>
+          <p className="text-slate-600 text-sm whitespace-pre-line">
+            {customer.notes ? customer.notes : <span className="text-slate-400">{t('detail.noAdminNotes')}</span>}
+          </p>
+        </div>
+
+        {/* Account Status Actions */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-slate-800 font-semibold mb-1">{t('detail.accountStatus')}</h3>
+          <p className="text-slate-400 text-xs mb-4">{t('detail.accountStatusHint')}</p>
+
+          {/* Current status display */}
+          <div className="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-xl">
+            <span className="text-slate-500 text-sm">{t('detail.currentStatus')}</span>
+            <Badge variant={customer.status} />
+            {customer.status === 'blacklisted' && customer.bannedDate && (
+              <span className="text-slate-400 text-xs ml-auto">
+                {t('detail.bannedOn', { date: customer.bannedDate })}
+                {customer.bannedBy ? ` ${t('detail.bannedBy', { name: customer.bannedBy })}` : ''}
+              </span>
+            )}
+          </div>
+
+          {/* Blacklist reason display */}
+          {customer.status === 'blacklisted' && customer.bannedReason && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-500 text-xs font-medium mb-0.5">{t('detail.banReason')}</p>
+              <p className="text-red-700 text-sm">{customer.bannedReason}</p>
+            </div>
+          )}
+
+          {/* Contextual action buttons */}
+          <div className="space-y-3">
+            {customer.status === 'pending_kyc' && (
+              <button
+                onClick={() => setReactivateModalOpen(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              >
+                {t('detail.actions.activate')}
+              </button>
+            )}
+
+            {customer.status === 'active' && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSuspendModalOpen(true)}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  {t('detail.actions.suspend')}
+                </button>
+                <button
+                  onClick={() => setBlacklistModalOpen(true)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  {t('detail.actions.blacklist')}
+                </button>
+              </div>
+            )}
+
+            {customer.status === 'suspended' && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setReactivateModalOpen(true)}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  {t('detail.actions.reactivate')}
+                </button>
+                <button
+                  onClick={() => setBlacklistModalOpen(true)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  {t('detail.actions.blacklist')}
+                </button>
+              </div>
+            )}
+
+            {customer.status === 'blacklisted' && (
+              <button
+                onClick={() => setReactivateModalOpen(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              >
+                {t('detail.actions.reactivateAccount')}
+              </button>
+            )}
+
+            {/* Blacklist reason textarea (shown when blacklist action is available) */}
+            {(customer.status === 'active' || customer.status === 'suspended') && (
+              <div>
+                <p className="text-slate-400 text-xs mb-1.5">{t('detail.blacklistReasonLabel')}</p>
+                <textarea
+                  value={blacklistReason}
+                  onChange={e => setBlacklistReason(e.target.value)}
+                  placeholder={t('detail.blacklistReasonPlaceholder')}
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
+                />
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-2 gap-5">
-        {/* Claim & Accident History */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">Claim &amp; Accident History</h3>
-          <ul className="space-y-2 text-sm">
-            <li className="text-slate-600">• Minor Scratch (Resolved)</li>
-            <li className="text-slate-500">• No major incidents</li>
-          </ul>
-        </div>
+      {/* Reactivate Confirmation Modal */}
+      <Modal
+        isOpen={reactivateModalOpen}
+        onClose={() => setReactivateModalOpen(false)}
+        title={customer.status === 'pending_kyc' ? t('detail.reactivateModal.activateTitle') : t('detail.reactivateModal.reactivateTitle')}
+        footer={
+          <>
+            <button
+              onClick={() => setReactivateModalOpen(false)}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('detail.reactivateModal.cancel')}
+            </button>
+            <button
+              onClick={handleActivate}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              {customer.status === 'pending_kyc' ? t('detail.reactivateModal.activate') : t('detail.reactivateModal.reactivate')}
+            </button>
+          </>
+        }
+      >
+        <p className="text-slate-500 text-sm">
+          {customer.status === 'pending_kyc'
+            ? t('detail.reactivateModal.messageActivate', { name: customer.name })
+            : t('detail.reactivateModal.messageReactivate', { name: customer.name })
+          }
+        </p>
+      </Modal>
 
-        {/* Danger Zone */}
-        <div className="bg-white rounded-xl border border-red-500/20 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">Danger Zone</h3>
-          <button
-            onClick={() => setBlacklistModalOpen(true)}
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 mb-3"
-          >
-            ⚠️ Add to Blacklist
-          </button>
-          <textarea
-            value={blacklistReason}
-            onChange={e => setBlacklistReason(e.target.value)}
-            placeholder="Reason for blacklisting..."
-            rows={3}
-            className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-500 resize-none"
-          />
-        </div>
-      </div>
+      {/* Suspend Confirmation Modal */}
+      <Modal
+        isOpen={suspendModalOpen}
+        onClose={() => setSuspendModalOpen(false)}
+        title={t('detail.suspendModal.title')}
+        footer={
+          <>
+            <button
+              onClick={() => setSuspendModalOpen(false)}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('detail.suspendModal.cancel')}
+            </button>
+            <button
+              onClick={handleSuspend}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              {t('detail.suspendModal.confirm')}
+            </button>
+          </>
+        }
+      >
+        <p className="text-slate-500 text-sm">
+          {t('detail.suspendModal.message', { name: customer.name })}
+          <br />
+          <br />
+          {t('detail.suspendModal.note')}
+        </p>
+      </Modal>
 
       {/* Blacklist Confirmation Modal */}
       <Modal
         isOpen={blacklistModalOpen}
         onClose={() => setBlacklistModalOpen(false)}
-        title="Confirm Blacklist"
+        title={t('detail.blacklistModal.title')}
         footer={
           <>
             <button
               onClick={() => setBlacklistModalOpen(false)}
               className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
             >
-              Cancel
+              {t('detail.blacklistModal.cancel')}
             </button>
             <button
-              onClick={() => {
-                console.log('Blacklisted:', customer.id, blacklistReason)
-                setBlacklistModalOpen(false)
-              }}
+              onClick={handleBlacklist}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
             >
-              Confirm Blacklist
+              {t('detail.blacklistModal.confirm')}
             </button>
           </>
         }
       >
-        <p className="text-slate-500 text-sm">
-          Are you sure you want to blacklist{' '}
-          <strong className="text-slate-700">{customer.name}</strong>?
-          {blacklistReason && (
-            <>
-              <br />
-              <br />
-              Reason: <em className="text-slate-300">{blacklistReason}</em>
-            </>
+        <div className="space-y-3">
+          <p className="text-slate-500 text-sm">
+            {t('detail.blacklistModal.message', { name: customer.name })}
+            {blacklistReason && (
+              <>
+                <br />
+                <br />
+                {t('detail.blacklistModal.reason', { reason: blacklistReason })}
+              </>
+            )}
+          </p>
+          {blacklistError && (
+            <p className="text-red-500 text-sm">{blacklistError}</p>
           )}
-        </p>
+        </div>
       </Modal>
     </div>
   )

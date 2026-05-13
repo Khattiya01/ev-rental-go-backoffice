@@ -4,6 +4,8 @@ import { useActionState, useState } from 'react'
 import { login } from '@/lib/actions/auth'
 import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
+import logo from '@/public/images/logo.png'
 
 export default function LoginPage() {
   const t = useTranslations('login')
@@ -15,7 +17,7 @@ export default function LoginPage() {
       {/* Card */}
       <div className="bg-[#0d1b2e]/80 backdrop-blur-md rounded-2xl border border-cyan-900/40 p-8 shadow-2xl">
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-6 justify-center">
+        {/* <div className="flex items-center gap-2 mb-6 justify-center">
           <Car className="text-cyan-400 w-7 h-7" />
           <span className="text-white font-bold text-xl tracking-wide">EV Rental Go</span>
         </div>

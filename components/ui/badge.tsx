@@ -1,5 +1,5 @@
 interface BadgeProps {
-  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'blacklisted' | 'paid' | 'overdue' | 'inactive' | 'critical' | 'warning'
+  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'suspended' | 'blacklisted' | 'paid' | 'overdue' | 'inactive' | 'critical' | 'warning'
   label?: string
   className?: string
 }
@@ -13,6 +13,7 @@ const variantStyles: Record<BadgeProps['variant'], string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/30',
   pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   pending_kyc: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  suspended: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   blacklisted: 'bg-red-500/20 text-red-400 border-red-500/30',
   paid: 'bg-green-500/20 text-green-400 border-green-500/30',
   overdue: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -30,6 +31,7 @@ const variantLabels: Record<BadgeProps['variant'], string> = {
   active: 'Active',
   pending: 'Pending',
   pending_kyc: 'Pending KYC',
+  suspended: 'Suspended',
   blacklisted: 'Blacklisted',
   paid: 'Paid',
   overdue: 'Overdue',

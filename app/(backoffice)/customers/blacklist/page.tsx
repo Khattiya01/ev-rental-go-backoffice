@@ -1,6 +1,7 @@
-import { mockCustomers } from '@/lib/mock-data'
+'use client'
 
-const blacklisted = mockCustomers.filter(c => c.status === 'blacklisted')
+import { useState, useEffect } from 'react'
+import type { Customer } from '@/lib/types'
 
 const reasonColor: Record<string, string> = {
   'Vehicle Theft': 'text-red-400',
@@ -9,6 +10,36 @@ const reasonColor: Record<string, string> = {
 }
 
 export default function BlacklistPage() {
+  const [blacklisted, setBlacklisted] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchBlacklisted = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/customers?status=blacklisted&limit=100')
+        if (res.ok) {
+          const json = await res.json()
+          setBlacklisted(json.data ?? [])
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBlacklisted()
+  }, [])
+
+  const handleUnban = async (customer: Customer) => {
+    const res = await fetch(`/api/customers/${customer.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active' }),
+    })
+    if (res.ok) {
+      setBlacklisted(prev => prev.filter(c => c.id !== customer.id))
+    }
+  }
+
   return (
     <div className="space-y-5">
       <h1 className="text-slate-800 text-xl font-bold">Blacklist Management</h1>
@@ -35,7 +66,14 @@ export default function BlacklistPage() {
             </tr>
           </thead>
           <tbody>
-            {blacklisted.map(customer => (
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="text-center py-10 text-slate-400">
+                  Loading...
+                </td>
+              </tr>
+            ) : (
+              blacklisted.map(customer => (
               <tr
                 key={customer.id}
                 className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
@@ -61,15 +99,19 @@ export default function BlacklistPage() {
                 </td>
                 <td className="px-5 py-4 text-slate-500 text-sm">{customer.bannedBy}</td>
                 <td className="px-5 py-4">
-                  <button className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                  <button
+                    onClick={() => handleUnban(customer)}
+                    className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  >
                     Unban
                   </button>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
-        {blacklisted.length === 0 && (
+        {!loading && blacklisted.length === 0 && (
           <div className="text-center py-10 text-slate-400">No blacklisted customers</div>
         )}
       </div>

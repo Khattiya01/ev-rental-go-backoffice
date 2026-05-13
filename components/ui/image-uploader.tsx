@@ -2,19 +2,22 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { Upload, X, ImageIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface ImageUploaderProps {
   value: string
   onChange: (url: string) => void
   label?: string
+  folder?: string
 }
 
 type UploadState = 'idle' | 'uploading' | 'error'
 
 const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif'
 
-export default function ImageUploader({ value, onChange, label = 'Vehicle Photo' }: ImageUploaderProps) {
+export default function ImageUploader({ value, onChange, label = 'Photo', folder = 'vehicles' }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const t = useTranslations('common.imageUploader')
   const [uploadState, setUploadState] = useState<UploadState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -27,11 +30,11 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
     form.append('file', file)
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const res = await fetch(`/api/upload?folder=${folder}`, { method: 'POST', body: form })
       const data = await res.json() as { url?: string; error?: string }
 
       if (!res.ok || !data.url) {
-        setErrorMsg(data.error ?? 'Upload failed. Please try again.')
+        setErrorMsg(data.error ?? t('uploadError'))
         setUploadState('error')
         return
       }
@@ -39,7 +42,7 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
       onChange(data.url)
       setUploadState('idle')
     } catch {
-      setErrorMsg('Network error. Please try again.')
+      setErrorMsg(t('networkError'))
       setUploadState('error')
     }
   }
@@ -83,7 +86,7 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
             type="button"
             onClick={handleRemove}
             className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-            title="Remove image"
+            title={t('removeTitle')}
           >
             <X size={13} />
           </button>
@@ -93,7 +96,7 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
             className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
           >
             <Upload size={12} />
-            Replace
+            {t('replace')}
           </button>
         </div>
       ) : (
@@ -112,7 +115,7 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
           {uploadState === 'uploading' ? (
             <>
               <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-              <p className="text-slate-500 text-sm">Uploading…</p>
+              <p className="text-slate-500 text-sm">{t('uploading')}</p>
             </>
           ) : (
             <>
@@ -121,9 +124,9 @@ export default function ImageUploader({ value, onChange, label = 'Vehicle Photo'
               </div>
               <div className="text-center">
                 <p className="text-slate-600 text-sm font-medium">
-                  Drop image here or <span className="text-blue-500">browse</span>
+                  {t('dropOrBrowse')} <span className="text-blue-500">{t('browse')}</span>
                 </p>
-                <p className="text-slate-400 text-xs mt-0.5">JPEG, PNG, WebP, GIF — max 5 MB</p>
+                <p className="text-slate-400 text-xs mt-0.5">{t('hint')}</p>
               </div>
             </>
           )}

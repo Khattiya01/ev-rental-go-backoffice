@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { Upload, X, ImageIcon, Star } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface MultiImageUploaderProps {
   value: string[]
@@ -17,10 +18,11 @@ const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif'
 export default function MultiImageUploader({
   value,
   onChange,
-  label = 'Vehicle Photos',
+  label = 'Photos',
   max = 10,
 }: MultiImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const t = useTranslations('common.multiImageUploader')
   const [slotState, setSlotState] = useState<SlotState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -32,12 +34,12 @@ export default function MultiImageUploader({
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       const data = await res.json() as { url?: string; error?: string }
       if (!res.ok || !data.url) {
-        setErrorMsg(data.error ?? 'Upload failed.')
+        setErrorMsg(data.error ?? t('uploadError'))
         return null
       }
       return data.url
     } catch {
-      setErrorMsg('Network error. Please try again.')
+      setErrorMsg(t('networkError'))
       return null
     }
   }
@@ -111,7 +113,7 @@ export default function MultiImageUploader({
             {i === 0 && (
               <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-amber-400 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
                 <Star size={9} fill="white" />
-                Cover
+                {t('coverBadge')}
               </div>
             )}
 
@@ -121,7 +123,7 @@ export default function MultiImageUploader({
                 <button
                   type="button"
                   onClick={() => setCover(i)}
-                  title="Set as cover"
+                  title={t('setCoverTitle')}
                   className="w-7 h-7 rounded-full bg-amber-400 hover:bg-amber-500 text-white flex items-center justify-center transition-colors"
                 >
                   <Star size={12} fill="white" />
@@ -130,7 +132,7 @@ export default function MultiImageUploader({
               <button
                 type="button"
                 onClick={() => removeImage(i)}
-                title="Remove"
+                title={t('removeTitle')}
                 className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
               >
                 <X size={12} />
@@ -161,9 +163,9 @@ export default function MultiImageUploader({
                 </div>
                 <div className="text-center px-1">
                   <p className="text-slate-500 text-[11px] font-medium leading-tight">
-                    Add photo
+                    {t('addPhoto')}
                   </p>
-                  <p className="text-slate-400 text-[10px] mt-0.5">or drag here</p>
+                  <p className="text-slate-400 text-[10px] mt-0.5">{t('dragHere')}</p>
                 </div>
               </>
             )}
@@ -186,7 +188,7 @@ export default function MultiImageUploader({
 
       {value.length > 0 && (
         <p className="text-slate-400 text-xs">
-          Hover a photo to set it as cover or remove it. The cover photo appears in the vehicle list.
+          {t('hint')}
         </p>
       )}
     </div>

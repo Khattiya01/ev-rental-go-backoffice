@@ -110,7 +110,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-5">
           {/* Photo Gallery */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">Photos</h2>
+            <h2 className="text-slate-800 font-semibold mb-4">{t('info.photos')}</h2>
             {allImages.length > 0 ? (
               <>
                 <img
@@ -140,7 +140,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center">
                   <span className="text-2xl">🚗</span>
                 </div>
-                <p className="text-slate-400 text-sm">No photo available</p>
+                <p className="text-slate-400 text-sm">{t('info.noPhoto')}</p>
               </div>
             )}
           </div>
@@ -148,7 +148,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
           {/* Registration Details */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-slate-800 font-semibold mb-4">Registration Details</h2>
+              <h2 className="text-slate-800 font-semibold mb-4">{t('info.registrationDetails')}</h2>
               <dl className="space-y-2.5">
                 {([
                   ['VIN', vehicle.vin ?? '-'],
@@ -165,7 +165,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
               </dl>
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-slate-800 font-semibold mb-4">Current Status</h2>
+              <h2 className="text-slate-800 font-semibold mb-4">{t('info.currentStatus')}</h2>
               <dl className="space-y-2.5">
                 {([
                   [t('info.odometer'), `${vehicle.odometer.toLocaleString()} km`],
@@ -179,7 +179,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
                 <div className="flex justify-between">
-                  <dt className="text-slate-400 text-sm">Status</dt>
+                  <dt className="text-slate-400 text-sm">{t('info.status')}</dt>
                   <dd><Badge variant={vehicle.status} /></dd>
                 </div>
               </dl>
@@ -196,7 +196,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-center justify-center">
               <div className="text-center">
                 <div className="text-6xl font-bold text-blue-500">{vehicle.socPercent}%</div>
-                <div className="text-slate-500 text-sm mt-2">Current Charge Level</div>
+                <div className="text-slate-500 text-sm mt-2">{t('telematics.currentChargeLevel')}</div>
                 <div className="mt-4 w-full bg-slate-200 rounded-full h-3 max-w-xs">
                   <div className="bg-blue-500 h-3 rounded-full transition-all" style={{ width: `${vehicle.socPercent}%` }} />
                 </div>
@@ -204,13 +204,13 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">Battery Health (SoH)</h2>
+            <h2 className="text-slate-800 font-semibold mb-4">{t('telematics.sohTitle')}</h2>
             <div className="space-y-4">
               {[
-                { label: 'State of Health', value: '94%' },
-                { label: 'Temperature', value: '28°C' },
-                { label: 'Charge Cycles (Full)', value: '142' },
-                { label: 'Deep Discharge Count', value: '3' },
+                { label: t('telematics.stateOfHealth'), value: '94%' },
+                { label: t('telematics.temperature'), value: '28\u00b0C' },
+                { label: t('telematics.chargeCycles'), value: '142' },
+                { label: t('telematics.deepDischarge'), value: '3' },
               ].map(item => (
                 <div key={item.label}>
                   <div className="flex justify-between text-sm mb-1">
@@ -263,17 +263,17 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       <Modal
         isOpen={cutoffModalOpen}
         onClose={() => { setCutoffModalOpen(false); setPassword('') }}
-        title="Confirm Motor Power Cut-off"
+        title={t('remote.cutoffModal.title')}
         footer={
           <>
-            <button onClick={() => { setCutoffModalOpen(false); setPassword('') }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">Cancel</button>
-            <button onClick={() => { console.log('Motor cutoff executed'); setCutoffModalOpen(false); setPassword('') }} disabled={!password.trim()} className={`flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${password.trim() ? 'hover:bg-red-700' : 'opacity-50 cursor-not-allowed'}`}>Confirm &amp; Cut Power</button>
+            <button onClick={() => { setCutoffModalOpen(false); setPassword('') }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">{t('remote.cutoffModal.cancel')}</button>
+            <button onClick={() => { console.log('Motor cutoff executed'); setCutoffModalOpen(false); setPassword('') }} disabled={!password.trim()} className={`flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${password.trim() ? 'hover:bg-red-700' : 'opacity-50 cursor-not-allowed'}`}>{t('remote.cutoffModal.confirm')}</button>
           </>
         }
       >
         <div className="text-center mb-5">
           <div className="text-5xl mb-3">🔒</div>
-          <p className="text-slate-500 text-sm">This action will immediately disable the vehicle motor. Only use in emergencies.</p>
+          <p className="text-slate-500 text-sm">{t('remote.cutoffModal.warning')}</p>
         </div>
         <label className="block text-slate-500 text-sm mb-2">{t('remote.passwordLabel')}</label>
         <input
@@ -289,15 +289,15 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       <Modal
         isOpen={resetModalOpen}
         onClose={() => setResetModalOpen(false)}
-        title="Reset IoT Device"
+        title={t('remote.resetModal.title')}
         footer={
           <>
-            <button onClick={() => setResetModalOpen(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">Cancel</button>
-            <button onClick={() => { console.log('IoT reset executed'); setResetModalOpen(false) }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Confirm Reset</button>
+            <button onClick={() => setResetModalOpen(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">{t('remote.resetModal.cancel')}</button>
+            <button onClick={() => { console.log('IoT reset executed'); setResetModalOpen(false) }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">{t('remote.resetModal.confirm')}</button>
           </>
         }
       >
-        <p className="text-slate-500 text-sm">Are you sure you want to reset the IoT device for vehicle <strong className="text-slate-700">{vehicle.plate}</strong>? The device will be offline for 1-2 minutes during restart.</p>
+        <p className="text-slate-500 text-sm">{t('remote.resetModal.message', { plate: vehicle.plate })}</p>
       </Modal>
     </div>
   )

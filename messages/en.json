@@ -110,8 +110,32 @@
       "deleteError": "Failed to delete user"
     }
   },
+  "common": {
+    "imageUploader": {
+      "dropOrBrowse": "Drop image here or",
+      "browse": "browse",
+      "hint": "JPEG, PNG, WebP, GIF \u2014 max 5 MB",
+      "uploading": "Uploading\u2026",
+      "replace": "Replace",
+      "removeTitle": "Remove image",
+      "uploadError": "Upload failed. Please try again.",
+      "networkError": "Network error. Please try again."
+    },
+    "multiImageUploader": {
+      "addPhoto": "Add photo",
+      "dragHere": "or drag here",
+      "coverBadge": "Cover",
+      "setCoverTitle": "Set as cover",
+      "removeTitle": "Remove",
+      "hint": "Hover a photo to set it as cover or remove it. The cover photo appears in the vehicle list.",
+      "uploadError": "Upload failed.",
+      "networkError": "Network error. Please try again."
+    }
+  },
   "vehicles": {
     "title": "EV Fleet Vehicles",
+    "subtitleCount": "{count} vehicles in fleet",
+    "subtitleDefault": "Manage your EV fleet",
     "addVehicle": "Add Vehicle",
     "searchPlaceholder": "Search plate, model...",
     "filterAll": "All",
@@ -123,14 +147,19 @@
     "columns": {
       "vehicle": "Vehicle",
       "plate": "Plate",
+      "makeModel": "Make / Model",
       "status": "Status",
       "battery": "Battery",
+      "odometer": "Odometer",
       "location": "Location",
       "actions": "Actions"
     },
     "empty": "No vehicles found",
+    "emptyHint": "Try adjusting your search or filters",
     "showing": "Showing {count} of {total} vehicles",
     "viewDetails": "View Details",
+    "edit": "Edit",
+    "delete": "Delete",
     "status": {
       "available": "Available",
       "rented": "Rented",
@@ -138,7 +167,18 @@
       "under_repair": "Under Repair",
       "offline": "Offline"
     },
-    "fetchError": "Failed to load vehicle data"
+    "deleteModal": {
+      "title": "Delete Vehicle",
+      "message": "Are you sure you want to delete vehicle {plate}? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "fetchError": "Failed to load vehicle data",
+    "toast": {
+      "deleted": "Vehicle {plate} deleted successfully",
+      "deleteError": "Failed to delete vehicle"
+    }
   },
   "vehicleDetail": {
     "backToList": "Back to Vehicles",
@@ -153,6 +193,10 @@
       "remote": "Remote Control"
     },
     "info": {
+      "photos": "Photos",
+      "noPhoto": "No photo available",
+      "registrationDetails": "Registration Details",
+      "currentStatus": "Current Status",
       "plateNumber": "Plate Number",
       "vin": "VIN",
       "make": "Make",
@@ -168,6 +212,12 @@
     "telematics": {
       "batteryLevel": "Battery Level",
       "socTitle": "State of Charge (SoC)",
+      "currentChargeLevel": "Current Charge Level",
+      "sohTitle": "Battery Health (SoH)",
+      "stateOfHealth": "State of Health",
+      "temperature": "Temperature",
+      "chargeCycles": "Charge Cycles (Full)",
+      "deepDischarge": "Deep Discharge Count",
       "tempTitle": "Temperature",
       "rangeTitle": "Estimated Range",
       "noData": "No telematics data available"
@@ -183,7 +233,214 @@
       "cutoffButton": "Cut Motor Power",
       "iotReset": "IoT Device Reset",
       "iotResetDesc": "Restart the onboard IoT device to restore connectivity.",
-      "resetButton": "Reset IoT Device"
+      "resetButton": "Reset IoT Device",
+      "cutoffModal": {
+        "title": "Confirm Motor Power Cut-off",
+        "warning": "This action will immediately disable the vehicle motor. Only use in emergencies.",
+        "cancel": "Cancel",
+        "confirm": "Confirm & Cut Power"
+      },
+      "resetModal": {
+        "title": "Reset IoT Device",
+        "message": "Are you sure you want to reset the IoT device for vehicle {plate}? The device will be offline for 1\u20132 minutes during restart.",
+        "cancel": "Cancel",
+        "confirm": "Confirm Reset"
+      }
+    }
+  },
+  "vehicleForm": {
+    "addTitle": "Add New Vehicle",
+    "editTitle": "Edit Vehicle \u2014 {plate}",
+    "addSubtitle": "Register a new EV to the fleet",
+    "editSubtitle": "Update vehicle information",
+    "sectionIdentity": "Vehicle Identity",
+    "sectionStatus": "Current Status",
+    "photosLabel": "Vehicle Photos",
+    "plateLabel": "Plate Number",
+    "platePlaceholder": "e.g. \u0e01\u0e02 1234 \u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e",
+    "makeLabel": "Make",
+    "makePlaceholder": "e.g. Tesla, BYD, Hyundai",
+    "modelLabel": "Model",
+    "modelPlaceholder": "e.g. Model 3, Atto 3, Ioniq 5",
+    "yearLabel": "Year",
+    "colorLabel": "Color",
+    "colorPlaceholder": "e.g. White, Black, Blue",
+    "vinLabel": "VIN (Vehicle Identification Number)",
+    "vinPlaceholder": "17-character VIN",
+    "statusLabel": "Status",
+    "odometerLabel": "Odometer (km)",
+    "conditionLabel": "Condition",
+    "conditions": {
+      "Excellent": "Excellent",
+      "Good": "Good",
+      "Fair": "Fair",
+      "Poor": "Poor"
+    },
+    "locationLabel": "Home Location",
+    "locationPlaceholder": "e.g. Lat Phrao Depot",
+    "nextServiceLabel": "Next Service Date",
+    "cancel": "Cancel",
+    "saving": "Saving\u2026",
+    "addVehicle": "Add Vehicle",
+    "saveChanges": "Save Changes",
+    "networkError": "Network error. Please try again.",
+    "toast": {
+      "created": "Vehicle added successfully",
+      "updated": "Vehicle updated successfully",
+      "createError": "Failed to add vehicle",
+      "updateError": "Failed to update vehicle"
+    }
+  },
+  "common": {
+    "imageUploader": {
+      "dropOrBrowse": "Drop image here or",
+      "browse": "browse",
+      "hint": "JPEG, PNG, WebP, GIF — max 5 MB",
+      "uploading": "Uploading\u2026",
+      "replace": "Replace",
+      "removeTitle": "Remove image",
+      "uploadError": "Upload failed. Please try again.",
+      "networkError": "Network error. Please try again."
+    }
+  },
+  "customers": {
+    "title": "Customer Management",
+    "subtitleCount": "{count} customers",
+    "subtitleDefault": "Manage your customers",
+    "addCustomer": "Add New Customer",
+    "searchPlaceholder": "Search by name or phone...",
+    "filterAll": "All",
+    "filterPendingKyc": "Pending KYC",
+    "filterActive": "Active",
+    "filterBlacklisted": "Blacklisted",
+    "columns": {
+      "customer": "Customer",
+      "phone": "Phone Number",
+      "driverType": "Driver Type",
+      "status": "Account Status",
+      "actions": "Action"
+    },
+    "empty": "No customers found",
+    "emptyHint": "Try adjusting your search or filters",
+    "showing": "Showing {count} of {total}",
+    "fetchError": "Failed to load customers",
+    "detail": {
+      "back": "Back",
+      "title": "Customer Management",
+      "subtitle": "Individual Customer Profile Details",
+      "loading": "Loading...",
+      "notFound": "Customer not found.",
+      "edit": "Edit",
+      "noRating": "No rating",
+      "personalInfo": "Personal Info",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "addressLabel": "Address",
+      "idCardLabel": "ID Card Number",
+      "dobLabel": "Date of Birth",
+      "driverTypeLabel": "Driver Type",
+      "creditScore": "Driver Credit Score",
+      "noCreditScore": "No credit score yet.",
+      "rentalHistory": "Rental History",
+      "noRentalHistory": "No rental history available",
+      "kycDocuments": "KYC Documents",
+      "kycNotUploaded": "Not uploaded",
+      "kycIdFront": "ID Card (Front)",
+      "kycIdBack": "ID Card (Back)",
+      "kycLicense": "Driver's License",
+      "kycGrabBolt": "Grab/Bolt Screenshot",
+      "adminNotes": "Claim & Accident History / Admin Notes",
+      "noAdminNotes": "No admin notes.",
+      "accountStatus": "Account Status",
+      "accountStatusHint": "Manage this customer's account standing",
+      "currentStatus": "Current status:",
+      "bannedOn": "Banned {date}",
+      "bannedBy": "by {name}",
+      "banReason": "Ban Reason",
+      "blacklistReasonLabel": "Blacklist reason (required before confirming)",
+      "blacklistReasonPlaceholder": "Reason for blacklisting...",
+      "actions": {
+        "activate": "Activate Account",
+        "suspend": "Suspend",
+        "blacklist": "Blacklist",
+        "reactivate": "Reactivate",
+        "reactivateAccount": "Reactivate Account"
+      },
+      "suspendModal": {
+        "title": "Suspend Account",
+        "message": "Are you sure you want to suspend {name}?",
+        "note": "This will prevent the customer from creating new rentals.",
+        "cancel": "Cancel",
+        "confirm": "Confirm Suspend"
+      },
+      "blacklistModal": {
+        "title": "Confirm Blacklist",
+        "message": "Are you sure you want to blacklist {name}?",
+        "reason": "Reason: {reason}",
+        "cancel": "Cancel",
+        "confirm": "Confirm Blacklist"
+      },
+      "reactivateModal": {
+        "activateTitle": "Activate Account",
+        "reactivateTitle": "Reactivate Account",
+        "messageActivate": "Activate {name}'s account? They will be able to create rental contracts immediately.",
+        "messageReactivate": "Reactivate {name}'s account? Their status will be set back to Active and any bans will be cleared.",
+        "cancel": "Cancel",
+        "activate": "Activate",
+        "reactivate": "Reactivate"
+      },
+      "toast": {
+        "activated": "Account activated successfully",
+        "suspended": "Account suspended",
+        "blacklisted": "Customer blacklisted",
+        "reactivated": "Account reactivated successfully",
+        "actionError": "Action failed. Please try again.",
+        "fetchError": "Failed to load customer"
+      }
+    },
+    "form": {
+      "addTitle": "Add New Customer",
+      "addSubtitle": "Register a new customer in-store",
+      "editTitle": "Edit Customer — {name}",
+      "editSubtitle": "Update customer information",
+      "sectionPersonal": "Personal Information",
+      "sectionDriver": "Driver Information",
+      "sectionKyc": "KYC Documents",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "e.g. สมชาย ใจดี",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "+66 8X XXX XXXX",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "e.g. somchai@email.com",
+      "dobLabel": "Date of Birth",
+      "idCardLabel": "ID Card Number",
+      "idCardPlaceholder": "X-XXXX-XXXXX-XX-X",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Enter full address",
+      "ratingLabel": "Driver Rating",
+      "ratingHint": "(0.0 – 5.0)",
+      "ratingPlaceholder": "e.g. 4.5",
+      "notesLabel": "Admin Notes",
+      "notesHint": "(incidents, claims, remarks)",
+      "notesPlaceholder": "e.g. Minor scratch incident Oct 2024 – resolved. Consistent on-time payment.",
+      "driverTypeLabel": "Driver Type",
+      "avatarLabel": "Profile Photo",
+      "kycIdFront": "ID Card (Front)",
+      "kycIdBack": "ID Card (Back)",
+      "kycLicense": "Driver's License",
+      "kycGrabBolt": "Grab/Bolt Screenshot",
+      "verifiedLabel": "ตรวจสอบเอกสารที่หน้าร้านแล้ว (Verified at counter)",
+      "verifiedHint": "เมื่อติ๊ก ระบบจะตั้งสถานะลูกค้าเป็น Active ทันที หากไม่ติ๊ก ลูกค้าจะอยู่ในคิว KYC Review",
+      "saving": "Saving…",
+      "saveCustomer": "Save Customer",
+      "saveChanges": "Save Changes",
+      "networkError": "Network error. Please try again.",
+      "toast": {
+        "created": "Customer registered successfully",
+        "updated": "Customer updated successfully",
+        "createError": "Failed to register customer",
+        "updateError": "Failed to update customer"
+      }
     }
   }
 }
