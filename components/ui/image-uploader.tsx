@@ -9,13 +9,14 @@ interface ImageUploaderProps {
   onChange: (url: string) => void
   label?: string
   folder?: string
+  uploadUrl?: string
 }
 
 type UploadState = 'idle' | 'uploading' | 'error'
 
 const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif'
 
-export default function ImageUploader({ value, onChange, label = 'Photo', folder = 'vehicles' }: ImageUploaderProps) {
+export default function ImageUploader({ value, onChange, label = 'Photo', folder = 'vehicles', uploadUrl }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const t = useTranslations('common.imageUploader')
   const [uploadState, setUploadState] = useState<UploadState>('idle')
@@ -30,7 +31,7 @@ export default function ImageUploader({ value, onChange, label = 'Photo', folder
     form.append('file', file)
 
     try {
-      const res = await fetch(`/api/upload?folder=${folder}`, { method: 'POST', body: form })
+      const res = await fetch(uploadUrl ?? `/api/upload?folder=${folder}`, { method: 'POST', body: form })
       const data = await res.json() as { url?: string; error?: string }
 
       if (!res.ok || !data.url) {

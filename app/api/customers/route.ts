@@ -5,7 +5,7 @@ import { customers } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import type { CustomerStatus, DriverType } from '@/lib/types'
 
-const VALID_CUSTOMER_STATUSES: CustomerStatus[] = ['pending_kyc', 'active', 'suspended', 'blacklisted']
+const VALID_CUSTOMER_STATUSES: CustomerStatus[] = ['pending_kyc', 'rejected', 'active', 'suspended', 'blacklisted']
 const VALID_DRIVER_TYPES: DriverType[] = ['Grab', 'Bolt', 'Private']
 
 export async function GET(request: Request): Promise<NextResponse> {

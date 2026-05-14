@@ -299,6 +299,7 @@
     "searchPlaceholder": "ค้นหาชื่อหรือเบอร์โทร...",
     "filterAll": "ทั้งหมด",
     "filterPendingKyc": "รอยืนยัน KYC",
+    "filterRejected": "เอกสารไม่ผ่าน",
     "filterActive": "ปกติ",
     "filterBlacklisted": "บัญชีดำ",
     "columns": {
@@ -312,6 +313,44 @@
     "emptyHint": "ลองเปลี่ยนคำค้นหาหรือตัวกรอง",
     "showing": "แสดง {count} จาก {total} คน",
     "fetchError": "ไม่สามารถโหลดข้อมูลลูกค้าได้",
+    "reviewKyc": "ตรวจสอบ KYC",
+    "kyc": {
+      "backToList": "กลับรายการลูกค้า",
+      "title": "ตรวจสอบ KYC: {name}",
+      "loading": "กำลังโหลด...",
+      "profilePhoto": "รูปโปรไฟล์",
+      "noPhotoUploaded": "ยังไม่ได้อัปโหลดรูป",
+      "noImage": "ไม่มีรูป",
+      "personalInfo": "ข้อมูลส่วนตัว",
+      "approve": "อนุมัติ",
+      "reject": "ปฏิเสธ",
+      "processing": "กำลังดำเนินการ...",
+      "kycDocuments": "เอกสาร KYC",
+      "driverTypeScreenshot": "สกรีนช็อต {driverType}",
+      "fields": {
+        "fullName": "ชื่อ-นามสกุล",
+        "idNumber": "เลขบัตรประชาชน",
+        "dateOfBirth": "วันเกิด",
+        "address": "ที่อยู่",
+        "driverType": "ประเภทคนขับ"
+      },
+      "rejectionHistory": "ประวัติการ Reject KYC",
+      "noRejectionHistory": "ยังไม่เคยถูก Reject",
+      "rejectModal": {
+        "title": "ปฏิเสธการสมัคร KYC",
+        "message": "ระบุเหตุผลในการปฏิเสธ {name}",
+        "placeholder": "เช่น รูปเอกสารไม่ชัด / บัตรประชาชนหมดอายุ / ชื่อไม่ตรงกัน...",
+        "cancel": "ยกเลิก",
+        "confirmReject": "ยืนยันการปฏิเสธ",
+        "rejecting": "กำลังดำเนินการ..."
+      },
+      "toast": {
+        "approved": "อนุมัติ KYC เรียบร้อย",
+        "rejected": "ปฏิเสธ KYC เรียบร้อย",
+        "approveError": "อนุมัติ KYC ไม่สำเร็จ กรุณาลองใหม่",
+        "rejectError": "ปฏิเสธ KYC ไม่สำเร็จ กรุณาลองใหม่"
+      }
+    },
     "detail": {
       "back": "กลับ",
       "title": "จัดการลูกค้า",
@@ -347,6 +386,17 @@
       "banReason": "เหตุผลในการแบน",
       "blacklistReasonLabel": "เหตุผลในการแบน (จำเป็น)",
       "blacklistReasonPlaceholder": "ระบุเหตุผลการแบน...",
+      "blacklistReasonRequired": "กรุณาระบุเหตุผลในการแบน",
+      "reviewKycDocuments": "ตรวจสอบเอกสาร KYC →",
+      "activateDirectly": "เปิดใช้งานโดยตรง",
+      "activateDirectlyHint": "ใช้เมื่อตรวจสอบเอกสารที่เคาน์เตอร์แล้วเท่านั้น",
+      "directActivateModal": {
+        "title": "เปิดใช้งานโดยตรง",
+        "message": "ยืนยันการเปิดใช้งาน {name} โดยไม่ผ่านขั้นตอน KYC review",
+        "note": "ใช้เมื่อได้ตรวจสอบเอกสารที่เคาน์เตอร์แล้วเท่านั้น",
+        "cancel": "ยกเลิก",
+        "confirm": "เปิดใช้งาน"
+      },
       "actions": {
         "activate": "เปิดใช้งานบัญชี",
         "suspend": "ระงับบัญชี",

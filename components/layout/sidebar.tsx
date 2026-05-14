@@ -201,8 +201,8 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
         { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
       ],
     },
-    { href: '/maintenance', label: t('maintenance'), icon: Wrench },
-    { href: '/reports', label: t('reports'), icon: BarChart3 },
+    // { href: '/maintenance', label: t('maintenance'), icon: Wrench },
+    // { href: '/reports', label: t('reports'), icon: BarChart3 },
     {
       label: t('settings'),
       icon: Settings,

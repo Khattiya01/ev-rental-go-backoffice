@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Customer } from '@/lib/types'
+import { useToast } from '@/components/ui/toast'
 
 const reasonColor: Record<string, string> = {
   'Vehicle Theft': 'text-red-400',
@@ -10,6 +11,7 @@ const reasonColor: Record<string, string> = {
 }
 
 export default function BlacklistPage() {
+  const { success, error: toastError } = useToast()
   const [blacklisted, setBlacklisted] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -37,6 +39,9 @@ export default function BlacklistPage() {
     })
     if (res.ok) {
       setBlacklisted(prev => prev.filter(c => c.id !== customer.id))
+      success(`ยกเลิก Blacklist ${customer.name} เรียบร้อย`)
+    } else {
+      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
     }
   }
 

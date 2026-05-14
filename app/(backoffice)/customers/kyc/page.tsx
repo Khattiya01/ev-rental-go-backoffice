@@ -1,200 +1,267 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { CheckCircle, XCircle, ImageOff, ArrowLeft } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { Customer } from '@/lib/types'
+import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
+import { useToast } from '@/components/ui/toast'
+
 
 export default function KYCApprovalPage() {
-  const [pendingCustomers, setPendingCustomers] = useState<Customer[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const t = useTranslations('customers')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const { success, error: toastError } = useToast()
+  const customerId = searchParams.get('id')
+
+  const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
+  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null)
 
   useEffect(() => {
-    const fetchPending = async () => {
+    if (!customerId) {
+      router.replace('/customers')
+      return
+    }
+    const fetchCustomer = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/customers?status=pending_kyc&limit=100')
+        const res = await fetch(`/api/customers/${customerId}`)
         if (res.ok) {
-          const json = await res.json()
-          setPendingCustomers(json.data ?? [])
+          setCustomer(await res.json())
+        } else {
+          router.replace('/customers')
         }
       } finally {
         setLoading(false)
       }
     }
-    fetchPending()
-  }, [])
+    fetchCustomer()
+  }, [customerId, router])
 
   const handleApprove = async () => {
-    const customer = pendingCustomers[currentIndex]
-    if (!customer) return
+    if (!customer || submitting) return
+    setSubmitting(true)
     const res = await fetch(`/api/customers/${customer.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'active' }),
     })
+    setSubmitting(false)
     if (res.ok) {
-      setPendingCustomers(prev => prev.filter((_, i) => i !== currentIndex))
-      setCurrentIndex(i => Math.min(i, Math.max(0, pendingCustomers.length - 2)))
+      success(t('kyc.toast.approved'))
+      router.push('/customers')
+    } else {
+      toastError(t('kyc.toast.approveError'))
     }
   }
 
-  const handleReject = async () => {
-    const customer = pendingCustomers[currentIndex]
-    if (!customer) return
+  const handleRejectConfirm = async () => {
+    if (!customer || submitting || !rejectReason.trim()) return
+    setSubmitting(true)
     const res = await fetch(`/api/customers/${customer.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'blacklisted', bannedReason: 'KYC Rejected' }),
+      body: JSON.stringify({ status: 'rejected', kycRejectReason: rejectReason.trim() }),
     })
+    setSubmitting(false)
     if (res.ok) {
-      setPendingCustomers(prev => prev.filter((_, i) => i !== currentIndex))
-      setCurrentIndex(i => Math.min(i, Math.max(0, pendingCustomers.length - 2)))
+      success(t('kyc.toast.rejected'))
+      setRejectModalOpen(false)
+      router.push('/customers')
+    } else {
+      toastError(t('kyc.toast.rejectError'))
     }
   }
 
-  const customer = pendingCustomers[currentIndex]
-
   const extractedData = customer
     ? [
-        { label: 'Full Name', value: customer.name },
-        { label: 'ID Number', value: '—' },
-        { label: 'Date of Birth', value: '—' },
-        { label: 'Address', value: customer.address ?? '—' },
-        { label: 'Expiry Date', value: '—' },
+        { label: t('kyc.fields.fullName'), value: customer.name || null },
+        { label: t('kyc.fields.idNumber'), value: customer.idCardNumber || null },
+        { label: t('kyc.fields.dateOfBirth'), value: customer.dateOfBirth || null },
+        { label: t('kyc.fields.address'), value: customer.address || null },
+        { label: t('kyc.fields.driverType'), value: customer.driverType || null },
       ]
     : []
 
+  if (loading || !customer) {
+    return <div className="text-center py-20 text-slate-400">{t('kyc.loading')}</div>
+  }
+
   return (
     <div className="space-y-5">
-      <h1 className="text-slate-800 text-xl font-bold">
-        {customer ? `KYC Verification: ${customer.name}` : 'KYC Verification'}
-      </h1>
+      {/* Header */}
+      <div>
+        <button
+          onClick={() => router.push('/customers')}
+          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors"
+        >
+          <ArrowLeft size={16} /> {t('kyc.backToList')}
+        </button>
+        <h1 className="text-slate-800 text-xl font-bold">
+          {t('kyc.title', { name: customer.name })}
+        </h1>
+      </div>
 
-      {/* Pending counter */}
-      <div className="grid grid-cols-1 gap-4 max-w-xs">
-        <div className="bg-purple-500/20 rounded-xl border border-slate-200 p-4 flex items-center justify-between">
-          <div>
-            <p className="text-slate-500 text-xs">Pending e-KYC</p>
-            <p className="text-slate-800 text-2xl font-bold">{pendingCustomers.length}</p>
+      {/* Top row: Profile + Personal Info + Actions */}
+      <div className="grid grid-cols-3 gap-5">
+        {/* Profile photo */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.profilePhoto')}</h2>
+          {customer.avatarUrl ? (
+            <ClickableImage
+              src={customer.avatarUrl}
+              alt={t('kyc.profilePhoto')}
+              className="w-full rounded-xl object-cover aspect-square"
+              onClick={() => setPreview({ src: customer.avatarUrl, label: `${customer.name} — ${t('kyc.profilePhoto')}` })}
+            />
+          ) : (
+            <div className="w-full rounded-xl bg-slate-100 aspect-square flex items-center justify-center">
+              <div className="text-center text-slate-400">
+                <ImageOff size={32} className="mx-auto mb-2" />
+                <p className="text-xs">{t('kyc.noPhotoUploaded')}</p>
+              </div>
+            </div>
+          )}
+          <div className="mt-3 space-y-1">
+            <p className="text-slate-800 text-sm font-semibold">{customer.name}</p>
+            <p className="text-slate-500 text-xs">{customer.phone}</p>
+            <span className="inline-block text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+              {customer.driverType}
+            </span>
           </div>
-          <span className="text-2xl">👤</span>
+        </div>
+
+        {/* Personal Info + Actions — spans 2 cols */}
+        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-5 flex flex-col">
+          <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.personalInfo')}</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4 flex-1">
+            {extractedData.map(item => (
+              <div key={item.label}>
+                <p className="text-slate-400 text-xs mb-0.5">{item.label}</p>
+                {item.value
+                  ? <p className="text-slate-700 text-sm font-medium">{item.value}</p>
+                  : <p className="text-slate-300 text-sm italic">—</p>
+                }
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 mt-6 pt-5 border-t border-slate-100">
+            <button
+              onClick={handleApprove}
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              <CheckCircle size={16} />
+              {submitting ? t('kyc.processing') : t('kyc.approve')}
+            </button>
+            <button
+              onClick={() => setRejectModalOpen(true)}
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              <XCircle size={16} />
+              {t('kyc.reject')}
+            </button>
+          </div>
         </div>
       </div>
 
-      {loading && (
-        <div className="text-center py-10 text-slate-400">Loading...</div>
-      )}
+      {/* KYC Rejection History */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 className="text-slate-800 font-semibold mb-3">{t('kyc.rejectionHistory')}</h2>
+        {customer.kycNotes ? (
+          <div className="space-y-2">
+            {customer.kycNotes.split('\n').map((entry, i) => (
+              <div key={i} className="flex gap-3 p-3 bg-rose-50 border border-rose-100 rounded-xl text-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+                <p className="text-rose-800 leading-relaxed">{entry}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-slate-400 text-sm">{t('kyc.noRejectionHistory')}</p>
+        )}
+      </div>
 
-      {!loading && pendingCustomers.length === 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400">
-          No pending KYC applications
+      {/* Bottom: KYC Documents — full width 2×2 grid */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.kycDocuments')}</h2>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: t('detail.kycIdFront'), url: customer.idCardFrontUrl },
+            { label: t('detail.kycIdBack'), url: customer.idCardBackUrl },
+            { label: t('detail.kycLicense'), url: customer.driverLicenseUrl },
+            { label: t('kyc.driverTypeScreenshot', { driverType: customer.driverType }), url: customer.grabBoltScreenshotUrl },
+          ].map(({ label, url }) => (
+            <div key={label}>
+              <p className="text-slate-500 text-xs font-medium mb-2">{label}</p>
+              {url ? (
+                <ClickableImage
+                  src={url}
+                  alt={label}
+                  className="w-full object-contain aspect-[3/2] rounded-xl bg-slate-50"
+                  onClick={() => setPreview({ src: url, label })}
+                />
+              ) : (
+                <div className="w-full aspect-[3/2] rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 bg-slate-50/50">
+                  <ImageOff size={24} className="text-slate-300" />
+                  <p className="text-slate-300 text-xs">{t('kyc.noImage')}</p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Image lightbox */}
+      {preview && (
+        <ImageLightbox
+          src={preview.src}
+          label={preview.label}
+          onClose={() => setPreview(null)}
+        />
       )}
 
-      {!loading && customer && (
-        <>
-          {/* Queue navigation */}
-          {pendingCustomers.length > 1 && (
-            <div className="flex items-center gap-3">
-              <span className="text-slate-500 text-sm">
-                Reviewing {currentIndex + 1} of {pendingCustomers.length} pending
-              </span>
+      {/* Reject reason modal */}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h3 className="text-slate-800 text-lg font-bold">{t('kyc.rejectModal.title')}</h3>
+            <p className="text-slate-500 text-sm">
+              {t('kyc.rejectModal.message', { name: customer.name })}
+            </p>
+            <textarea
+              rows={3}
+              autoFocus
+              placeholder={t('kyc.rejectModal.placeholder')}
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors resize-none"
+            />
+            <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-                disabled={currentIndex === 0}
-                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs transition-colors"
+                onClick={() => { setRejectModalOpen(false); setRejectReason('') }}
+                className="px-4 py-2 text-slate-600 hover:text-slate-800 text-sm transition-colors"
               >
-                ← Prev
+                {t('kyc.rejectModal.cancel')}
               </button>
               <button
-                onClick={() => setCurrentIndex(i => Math.min(pendingCustomers.length - 1, i + 1))}
-                disabled={currentIndex === pendingCustomers.length - 1}
-                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs transition-colors"
+                onClick={handleRejectConfirm}
+                disabled={submitting || !rejectReason.trim()}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
               >
-                Next →
+                {submitting ? t('kyc.rejectModal.rejecting') : t('kyc.rejectModal.confirmReject')}
               </button>
-            </div>
-          )}
-
-          {/* KYC comparison */}
-          <div className="grid grid-cols-3 gap-5">
-            {/* Selfie */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-slate-800 font-semibold mb-4">User Selfie</h2>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={customer.avatarUrl.replace('150', '300')}
-                alt="User Selfie"
-                className="w-full rounded-xl object-cover aspect-square"
-              />
-            </div>
-
-            {/* Document comparison */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-slate-800 font-semibold">Document Comparison</h2>
-                <span className="text-green-400 text-sm font-semibold bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded-full">
-                  98% Match
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-slate-400 text-xs mb-2 text-center">ID Card (Front)</p>
-                  <div className="bg-slate-100 rounded-xl p-4 h-36 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">🪴</div>
-                      <p className="text-slate-500 text-xs">ID Card</p>
-                      <p className="text-slate-700 text-xs font-medium mt-1">{customer.name}</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-slate-400 text-xs mb-2 text-center">Driver&apos;s License</p>
-                  <div className="bg-slate-100 rounded-xl p-4 h-36 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">🚗</div>
-                      <p className="text-slate-500 text-xs">Driver License</p>
-                      <p className="text-slate-700 text-xs font-medium mt-1">{customer.name}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Extracted data */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-slate-800 font-semibold">Extracted Personal Data</h2>
-                <span className="text-green-400 text-xs flex items-center gap-1">✅ Verified</span>
-              </div>
-              <div className="space-y-3">
-                {extractedData.map(item => (
-                  <div key={item.label} className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-slate-400 text-xs">{item.label}</p>
-                      <p className="text-slate-700 text-sm font-medium">{item.value}</p>
-                    </div>
-                    <span className="text-green-400 text-xs whitespace-nowrap">✅ Verified</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={handleApprove}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={handleReject}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  Reject ▼
-                </button>
-              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

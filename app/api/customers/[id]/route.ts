@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/dal'
 import type { CustomerStatus, DriverType } from '@/lib/types'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const VALID_CUSTOMER_STATUSES: CustomerStatus[] = ['pending_kyc', 'active', 'suspended', 'blacklisted']
+const VALID_CUSTOMER_STATUSES: CustomerStatus[] = ['pending_kyc', 'rejected', 'active', 'suspended', 'blacklisted']
 const VALID_DRIVER_TYPES: DriverType[] = ['Grab', 'Bolt', 'Private']
 const optStr = (val: unknown): string | null | undefined => {
   if (val === undefined) return undefined
@@ -89,6 +89,7 @@ export async function PATCH(
     grabBoltScreenshotUrl?: string | null
     rating?: number
     notes?: string | null
+    kycNotes?: string | null
   } = {}
 
   // --- Editable profile fields ---
@@ -112,6 +113,7 @@ export async function PATCH(
   if (body.driverLicenseUrl !== undefined) fields.driverLicenseUrl = optStr(body.driverLicenseUrl) ?? null
   if (body.grabBoltScreenshotUrl !== undefined) fields.grabBoltScreenshotUrl = optStr(body.grabBoltScreenshotUrl) ?? null
   if (body.notes !== undefined) fields.notes = optStr(body.notes) ?? null
+  if (body.kycNotes !== undefined) fields.kycNotes = optStr(body.kycNotes) ?? null
   if (body.driverType !== undefined) {
     if (!(VALID_DRIVER_TYPES as string[]).includes(body.driverType as string)) {
       return NextResponse.json({ error: `driverType must be one of: ${VALID_DRIVER_TYPES.join(', ')}` }, { status: 400 })
@@ -151,12 +153,21 @@ export async function PATCH(
         )
       }
       fields.bannedReason = body.bannedReason.trim()
+    } else if (newStatus === 'rejected') {
+      const reason = typeof body.kycRejectReason === 'string' ? body.kycRejectReason.trim() : ''
+      if (!reason) {
+        return NextResponse.json({ error: 'kycRejectReason is required when rejecting KYC' }, { status: 400 })
+      }
+      const [existing] = await db.select({ kycNotes: customers.kycNotes }).from(customers).where(eq(customers.id, id)).limit(1)
+      const dateStr = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
+      const entry = `[${dateStr} · ${currentUser.name}] ${reason}`
+      fields.kycNotes = existing?.kycNotes ? `${entry}\n${existing.kycNotes}` : entry
     } else if (newStatus === 'active') {
       fields.bannedDate = null
       fields.bannedReason = null
       fields.bannedBy = null
     }
-    // suspended: no extra ban fields needed
+    // suspended / pending_kyc: no extra fields needed
   } else if (body.bannedReason !== undefined) {
     if (typeof body.bannedReason !== 'string' || body.bannedReason.trim() === '') {
       return NextResponse.json({ error: 'bannedReason must be a non-empty string' }, { status: 400 })

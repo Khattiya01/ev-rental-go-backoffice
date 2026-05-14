@@ -291,18 +291,6 @@
       "updateError": "Failed to update vehicle"
     }
   },
-  "common": {
-    "imageUploader": {
-      "dropOrBrowse": "Drop image here or",
-      "browse": "browse",
-      "hint": "JPEG, PNG, WebP, GIF — max 5 MB",
-      "uploading": "Uploading\u2026",
-      "replace": "Replace",
-      "removeTitle": "Remove image",
-      "uploadError": "Upload failed. Please try again.",
-      "networkError": "Network error. Please try again."
-    }
-  },
   "customers": {
     "title": "Customer Management",
     "subtitleCount": "{count} customers",
@@ -311,6 +299,7 @@
     "searchPlaceholder": "Search by name or phone...",
     "filterAll": "All",
     "filterPendingKyc": "Pending KYC",
+    "filterRejected": "KYC Rejected",
     "filterActive": "Active",
     "filterBlacklisted": "Blacklisted",
     "columns": {
@@ -324,6 +313,44 @@
     "emptyHint": "Try adjusting your search or filters",
     "showing": "Showing {count} of {total}",
     "fetchError": "Failed to load customers",
+    "reviewKyc": "Review KYC",
+    "kyc": {
+      "backToList": "Back to Customers",
+      "title": "KYC Verification: {name}",
+      "loading": "Loading...",
+      "profilePhoto": "Profile Photo",
+      "noPhotoUploaded": "No photo uploaded",
+      "noImage": "No image",
+      "personalInfo": "Personal Information",
+      "approve": "Approve",
+      "reject": "Reject",
+      "processing": "Processing...",
+      "kycDocuments": "KYC Documents",
+      "driverTypeScreenshot": "{driverType} Screenshot",
+      "fields": {
+        "fullName": "Full Name",
+        "idNumber": "ID Number",
+        "dateOfBirth": "Date of Birth",
+        "address": "Address",
+        "driverType": "Driver Type"
+      },
+      "rejectionHistory": "KYC Rejection History",
+      "noRejectionHistory": "No rejections yet",
+      "rejectModal": {
+        "title": "Reject KYC Application",
+        "message": "Provide reason for rejecting {name}",
+        "placeholder": "e.g. Blurry documents / Expired ID / Name mismatch...",
+        "cancel": "Cancel",
+        "confirmReject": "Confirm Reject",
+        "rejecting": "Rejecting..."
+      },
+      "toast": {
+        "approved": "KYC approved successfully",
+        "rejected": "KYC rejected",
+        "approveError": "Failed to approve KYC, please try again",
+        "rejectError": "Failed to reject KYC, please try again"
+      }
+    },
     "detail": {
       "back": "Back",
       "title": "Customer Management",
@@ -359,6 +386,17 @@
       "banReason": "Ban Reason",
       "blacklistReasonLabel": "Blacklist reason (required before confirming)",
       "blacklistReasonPlaceholder": "Reason for blacklisting...",
+      "blacklistReasonRequired": "Please provide a reason for blacklisting.",
+      "reviewKycDocuments": "Review KYC Documents →",
+      "activateDirectly": "Activate Directly",
+      "activateDirectlyHint": "Use when documents were verified at the counter.",
+      "directActivateModal": {
+        "title": "Activate Directly",
+        "message": "Confirm activating {name} without going through the KYC review process.",
+        "note": "Use only when documents were verified at the counter.",
+        "cancel": "Cancel",
+        "confirm": "Activate"
+      },
       "actions": {
         "activate": "Activate Account",
         "suspend": "Suspend",

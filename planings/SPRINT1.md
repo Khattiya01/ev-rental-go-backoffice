@@ -16,7 +16,7 @@
 | Fleet | B1: Vehicle List | ✅ | ✅ | ✅ Done |
 | Fleet | B2: Vehicle Detail | ✅ | ✅ | ✅ Done |
 | Customer | C1: Customer List | ✅ | ✅ | ✅ Done |
-| Customer | C2: e-KYC Review | ✅ | ✅ | ✅ Done |
+| Customer | C2: e-KYC Review | ✅ | ✅ | ✅ Done (real docs + reject modal) |
 | Contract | D1: Active Rentals | ⬜ | ✅ | 🟡 FE Done, BE Pending |
 | Billing | E1: Invoice List | ⬜ | ✅ | 🟡 FE Done, BE Pending |
 | Settings | F1: Users Mgmt | ✅ | ✅ | ✅ Done |
@@ -73,11 +73,14 @@
 - [x] เชื่อม `customers/kyc/page.tsx` กับ API จริง — Approve/Reject calls PATCH
 - [x] เชื่อม `customers/blacklist/page.tsx` กับ API จริง — Unban calls PATCH
 
-#### Day 4 — 14 พ.ค.
+#### Day 4 — 14 พ.ค. ✅ DONE
 **Focus: e-KYC API + Contract API**
 
-- [ ] `app/api/customers/[id]/kyc/route.ts` — POST approve/reject
-- [ ] เชื่อม KYC page กับ API
+- [x] `app/api/customers/[id]/kyc/route.ts` — ✅ covered by PATCH `/api/customers/[id]` (status: active / blacklisted)
+- [x] เชื่อม KYC page กับ API — approve/reject ผ่าน PATCH ทำงานแล้ว
+- [x] KYC page แสดง document images จริง (idCardFront, idCardBack, driverLicense, grabBoltScreenshot)
+- [x] KYC page แสดง extracted data จริง (idCardNumber, dateOfBirth)
+- [x] Reject reason modal — admin ต้องกรอกเหตุผลก่อน reject
 - [ ] `app/api/contracts/route.ts` — GET list
 - [ ] `app/api/contracts/[id]/route.ts` — GET single
 - [ ] เชื่อม contracts pages กับ API จริง
@@ -165,3 +168,4 @@ app/api/
 <!-- บันทึก blockers หรือ decisions ที่ตัดสินใจระหว่าง sprint ตรงนี้ -->
 
 - **11 พ.ค.:** เริ่ม Sprint 1 Day 1 — Mock UI พร้อมแล้ว เริ่ม BE + DB
+- **14 พ.ค.:** e-KYC flow ใช้ Option B (Manual + Document Upload) — Admin upload docs ตอน add customer, KYC page แสดงรูปจริง + reject reason modal. ไม่สร้าง `/kyc/route.ts` แยก เพราะ PATCH `/api/customers/[id]` ครอบคลุมแล้ว

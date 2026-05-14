@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { decrypt } from '@/lib/session'
 
-const PUBLIC_ROUTES = ['/login']
+const PUBLIC_ROUTES = ['/login', '/register']
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
-  if (session && !isExpired && isPublicRoute) {
+  if (session && !isExpired && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\"; pnpm tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | Where-Object { $_ -notmatch \"wave-background|vehicle-form-modal|mock-data|seed\\\\.ts|drizzle\\\\.config\" })",
+      "PowerShell(Select-String -Path \"node_modules/zod/v4/classic/schemas.d.ts\" -Pattern \"export declare function enum\" | Select-Object -First 5 | ForEach-Object { $_.Line })",
+      "PowerShell(pnpm tsc --noEmit 2>&1 | Select-String -Pattern \"register\" | ForEach-Object { $_.Line })",
+      "PowerShell(pnpm tsc --noEmit 2>&1 | Where-Object { $_ -match \"register|hookform|zod\" })",
+      "PowerShell($output = pnpm tsc --noEmit 2>&1; $output | Where-Object { $_ -match \"register\" })",
+      "PowerShell(pnpm tsc --noEmit 2>&1 | Out-File -FilePath \"tsc-output.txt\" -Encoding utf8; Get-Content \"tsc-output.txt\" | Where-Object { $_ -match \"register\" })",
+      "PowerShell(pnpm tsc --noEmit > tsc-output.txt 2>&1; Get-Content tsc-output.txt | Select-Object -First 80)"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 export type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair' | 'offline'
-export type CustomerStatus = 'pending_kyc' | 'active' | 'suspended' | 'blacklisted'
+export type CustomerStatus = 'pending_kyc' | 'rejected' | 'active' | 'suspended' | 'blacklisted'
 export type ContractStatus = 'active' | 'completed' | 'overdue'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
 export type AlertSeverity = 'critical' | 'warning' | 'info'
@@ -48,6 +48,7 @@ export interface Customer {
   bannedDate?: string
   bannedReason?: string
   bannedBy?: string
+  kycNotes?: string | null
 }
 
 export interface Contract {

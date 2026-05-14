@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, 
 import type { Customer } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
+import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
 
@@ -19,6 +20,8 @@ export default function CustomerProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null)
+
   // Blacklist state
   const [blacklistReason, setBlacklistReason] = useState('')
   const [blacklistModalOpen, setBlacklistModalOpen] = useState(false)
@@ -27,8 +30,9 @@ export default function CustomerProfilePage() {
   // Suspend state
   const [suspendModalOpen, setSuspendModalOpen] = useState(false)
 
-  // Reactivate state
+  // Reactivate / direct activate state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false)
+  const [directActivateModalOpen, setDirectActivateModalOpen] = useState(false)
 
   const fetchCustomer = useCallback(async () => {
     setLoading(true)
@@ -55,7 +59,7 @@ export default function CustomerProfilePage() {
   const handleBlacklist = async () => {
     if (!customer) return
     if (!blacklistReason.trim()) {
-      setBlacklistError('Please provide a reason for blacklisting.')
+      setBlacklistError(t('detail.blacklistReasonRequired'))
       return
     }
     setBlacklistError('')
@@ -163,11 +167,11 @@ export default function CustomerProfilePage() {
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {customer.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <ClickableImage
               src={customer.avatarUrl}
               alt={customer.name}
               className="w-20 h-20 rounded-full object-cover border-2 border-blue-500/50"
+              onClick={() => setPreview({ src: customer.avatarUrl, label: customer.name })}
             />
           ) : (
             <div className="w-20 h-20 rounded-full border-2 border-slate-200 flex items-center justify-center bg-slate-50">
@@ -307,14 +311,12 @@ export default function CustomerProfilePage() {
             <div key={label}>
               <p className="text-slate-400 text-xs mb-2">{label}</p>
               {url ? (
-                <a href={url} target="_blank" rel="noopener noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={label}
-                    className="w-full h-40 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-                </a>
+                <ClickableImage
+                  src={url}
+                  alt={label}
+                  className="w-full h-40 object-cover rounded-xl border border-slate-200"
+                  onClick={() => setPreview({ src: url, label })}
+                />
               ) : (
                 <div className="w-full h-40 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center">
                   <p className="text-slate-300 text-xs">{t('detail.kycNotUploaded')}</p>
@@ -366,12 +368,23 @@ export default function CustomerProfilePage() {
           {/* Contextual action buttons */}
           <div className="space-y-3">
             {customer.status === 'pending_kyc' && (
-              <button
-                onClick={() => setReactivateModalOpen(true)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-              >
-                {t('detail.actions.activate')}
-              </button>
+              <div className="space-y-2">
+                <Link
+                  href={`/customers/kyc?id=${customer.id}`}
+                  className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  {t('detail.reviewKycDocuments')}
+                </Link>
+                <button
+                  onClick={() => setDirectActivateModalOpen(true)}
+                  className="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                >
+                  {t('detail.activateDirectly')}
+                </button>
+                <p className="text-slate-400 text-xs text-center">
+                  {t('detail.activateDirectlyHint')}
+                </p>
+              </div>
             )}
 
             {customer.status === 'active' && (
@@ -433,6 +446,15 @@ export default function CustomerProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Image lightbox */}
+      {preview && (
+        <ImageLightbox
+          src={preview.src}
+          label={preview.label}
+          onClose={() => setPreview(null)}
+        />
+      )}
 
       {/* Reactivate Confirmation Modal */}
       <Modal
@@ -531,6 +553,35 @@ export default function CustomerProfilePage() {
             <p className="text-red-500 text-sm">{blacklistError}</p>
           )}
         </div>
+      </Modal>
+
+      {/* Direct Activate Confirmation Modal */}
+      <Modal
+        isOpen={directActivateModalOpen}
+        onClose={() => setDirectActivateModalOpen(false)}
+        title={t('detail.directActivateModal.title')}
+        footer={
+          <>
+            <button
+              onClick={() => setDirectActivateModalOpen(false)}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('detail.directActivateModal.cancel')}
+            </button>
+            <button
+              onClick={() => { setDirectActivateModalOpen(false); handleActivate() }}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              {t('detail.directActivateModal.confirm')}
+            </button>
+          </>
+        }
+      >
+        <p className="text-slate-500 text-sm">
+          {t('detail.directActivateModal.message', { name: customer.name })}
+          <br /><br />
+          {t('detail.directActivateModal.note')}
+        </p>
       </Modal>
     </div>
   )
