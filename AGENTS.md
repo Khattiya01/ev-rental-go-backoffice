@@ -86,37 +86,67 @@ Next.js App (this repo)
 
 ```
 app/
-  (auth)/           # Login / auth-gated layout
-  (backoffice)/     # All admin pages (protected)
+  (auth)/
+    login/            # Login page
+  (backoffice)/       # All admin pages (protected)
     dashboard/
     fleet/
-      map/          # Live tracking map
-      vehicles/     # Vehicle list
-      vehicles/[id]/ # Vehicle detail (tabs: info, telematics, history, remote-control)
+      map/            # Live tracking map
+      vehicles/       # Vehicle list
+        new/          # Add new vehicle form
+        [id]/         # Vehicle detail (tabs: info, telematics, history, remote-control)
+          edit/       # Edit vehicle
       geofencing/
-    customers/
-      list/
-      kyc/          # e-KYC approval
-      [id]/         # Customer profile
+    customers/        # Customer list (index page)
+      new/            # Add new customer form
+      kyc/            # e-KYC approval queue
+      [id]/           # Customer profile
+        edit/         # Edit customer
       blacklist/
-    contracts/
-      active/
-      [id]/
+    contracts/        # Active rentals list (index page)
+      [id]/           # Contract detail
     billing/
       invoices/
       overdue/
-    maintenance/
-      tickets/
-      reports/
+    maintenance/      # Maintenance overview (tickets & reports as tabs or sub-pages)
     reports/
-  api/              # Route Handlers (backend API)
-components/         # Shared UI components
-  ui/               # Primitive components (buttons, modals, tables, etc.)
-  charts/           # Chart components
-  maps/             # Map components
-db/                 # Database schema & query helpers
-lib/                # Shared utilities, constants, types
-middleware.ts       # Auth / route protection
+    settings/         # System settings
+      pricing/        # Pricing configuration
+      users/          # Admin user management
+  register/           # Public customer self-registration (unauthenticated)
+  api/                # Route Handlers (backend API)
+    customers/
+      [id]/
+    vehicles/
+      [id]/
+    users/
+      [id]/
+    upload/           # Internal file upload
+    registration-links/
+    public/           # Unauthenticated endpoints
+      register/
+      upload/
+components/           # Shared UI components
+  ui/                 # Primitive components (buttons, modals, tables, etc.)
+  charts/             # Chart components (Recharts wrappers)
+  maps/               # Map components (always "use client")
+  dashboard/          # Dashboard-specific composite components
+  layout/             # Shell, sidebar, header
+db/                   # Database layer
+  schema/             # One file per table; re-export from index.ts
+  index.ts            # Drizzle client + schema barrel
+  seed.ts             # Development seed data
+lib/                  # Shared utilities, constants, types
+  actions/            # Server Actions (auth, locale, etc.)
+  dal.ts              # Data Access Layer — server-only DB helpers
+  session.ts          # Session helpers (NextAuth / JWT)
+  storage.ts          # File storage helpers
+  types.ts            # Shared TypeScript types
+i18n/                 # next-intl request config
+messages/             # Locale message files (en.json, th.json)
+public/               # Static assets
+  uploads/            # User-uploaded files (customers/, vehicles/)
+middleware.ts         # Auth / route protection + i18n routing
 ```
 
 ---
