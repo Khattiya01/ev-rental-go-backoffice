@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/dal'
 import { uploadFile } from '@/lib/storage'
 
-const ALLOWED_FOLDERS = ['vehicles', 'customers'] as const
+const ALLOWED_FOLDERS = ['vehicles', 'customers', 'contracts', 'invoices'] as const
 
 export async function POST(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
@@ -13,7 +13,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const folder = new URL(request.url).searchParams.get('folder') ?? 'vehicles'
   if (!(ALLOWED_FOLDERS as readonly string[]).includes(folder)) {
     return NextResponse.json(
-      { error: 'Invalid folder. Must be one of: vehicles, customers' },
+      { error: 'Invalid folder. Must be one of: vehicles, customers, contracts' },
       { status: 400 },
     )
   }

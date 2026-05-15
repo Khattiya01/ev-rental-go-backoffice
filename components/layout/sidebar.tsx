@@ -11,7 +11,7 @@ import type { CurrentUser } from '@/lib/dal'
 import {
   LayoutDashboard, Car, Map, Locate, Users, BadgeCheck, Ban,
   FileText, Receipt, AlertTriangle, Wrench, BarChart3, UserCog, DollarSign,
-  Settings, ChevronDown,
+  Settings, ChevronDown, QrCode,
   type LucideIcon
 } from 'lucide-react'
 
@@ -210,6 +210,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       children: [
         { href: '/settings/users', label: t('users'), icon: UserCog },
         { href: '/settings/pricing', label: t('pricing'), icon: DollarSign },
+        { href: '/settings/payment', label: t('payment'), icon: QrCode },
       ],
     },
   ]

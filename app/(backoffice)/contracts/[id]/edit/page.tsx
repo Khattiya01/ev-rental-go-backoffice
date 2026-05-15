@@ -1,0 +1,37 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import ContractForm from '@/components/ui/contract-form'
+import type { Contract } from '@/lib/types'
+
+export default function EditContractPage() {
+  const params = useParams()
+  const [contract, setContract] = useState<Contract | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/contracts/${params.id}`)
+        if (res.ok) setContract(await res.json())
+        else setError(true)
+      } catch {
+        setError(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [params.id])
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">กำลังโหลด...</div>
+  }
+  if (error || !contract) {
+    return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">ไม่พบสัญญา</div>
+  }
+
+  return <ContractForm mode="edit" initialData={contract} />
+}

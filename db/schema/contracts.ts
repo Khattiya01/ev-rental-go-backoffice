@@ -17,6 +17,7 @@ export const contracts = pgTable('contracts', {
   dailyRate: real('daily_rate').notNull(),
   monthlyRate: real('monthly_rate').notNull(),
   depositAmount: real('deposit_amount').notNull(),
+  documentUrl: varchar('document_url', { length: 500 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

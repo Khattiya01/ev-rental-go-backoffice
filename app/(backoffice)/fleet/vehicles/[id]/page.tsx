@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl'
 import type { Vehicle } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
+import { ArrowLeft, Pencil } from 'lucide-react'
+import Link from 'next/link'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
@@ -40,7 +42,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       }
     }
     void load()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
 
   if (loading) {
@@ -79,13 +81,31 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-slate-800 text-xl font-bold">{vehicle.make} {vehicle.model}</h1>
-          <Badge variant={vehicle.status} />
+
+        <div className="flex items-center gap-4">
+
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft size={16} />
+          </button>
+
+          <div className="flex items-center gap-3">
+            <h1 className="text-slate-800 text-xl font-bold">{vehicle.make} {vehicle.model}</h1>
+            <Badge variant={vehicle.status} />
+          </div>
+
         </div>
-        <div className="text-slate-500 text-sm">
-          Dashboard / <span className="text-slate-600">Vehicles</span> / <span className="text-slate-700">{vehicle.plate}</span>
-        </div>
+
+        <button
+          onClick={() => router.push(`/fleet/vehicles/${vehicle.id}/edit`)}
+          className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+        >
+          <Pencil size={14} />
+          {t('edit')}
+        </button>
       </div>
 
       {/* Tabs */}
@@ -94,11 +114,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === tab.key
-                ? 'border-blue-500 text-blue-500'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.key
+              ? 'border-blue-500 text-blue-500'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
           >
             {tab.label}
           </button>
@@ -125,9 +144,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                       <button
                         key={img}
                         onClick={() => setSelectedImage(i)}
-                        className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedImage === i ? 'border-blue-500' : 'border-slate-200'
-                        }`}
+                        className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-colors ${selectedImage === i ? 'border-blue-500' : 'border-slate-200'
+                          }`}
                       >
                         <img src={img} alt="" className="w-full h-full object-cover" />
                       </button>
@@ -227,7 +245,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       {/* Tab: Rental History */}
       {activeTab === 'history' && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
+          <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
         </div>
       )}
 

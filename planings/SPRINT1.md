@@ -17,8 +17,8 @@
 | Fleet | B2: Vehicle Detail | ✅ | ✅ | ✅ Done |
 | Customer | C1: Customer List | ✅ | ✅ | ✅ Done |
 | Customer | C2: e-KYC Review | ✅ | ✅ | ✅ Done (real docs + reject modal) |
-| Contract | D1: Active Rentals | ⬜ | ✅ | 🟡 FE Done, BE Pending |
-| Billing | E1: Invoice List | ⬜ | ✅ | 🟡 FE Done, BE Pending |
+| Contract | D1: Active Rentals | ✅ | ✅ | ✅ Done |
+| Billing | E1: Invoice List | ✅ | ✅ | ✅ Done |
 | Settings | F1: Users Mgmt | ✅ | ✅ | ✅ Done |
 
 ---
@@ -81,15 +81,16 @@
 - [x] KYC page แสดง document images จริง (idCardFront, idCardBack, driverLicense, grabBoltScreenshot)
 - [x] KYC page แสดง extracted data จริง (idCardNumber, dateOfBirth)
 - [x] Reject reason modal — admin ต้องกรอกเหตุผลก่อน reject
-- [ ] `app/api/contracts/route.ts` — GET list
-- [ ] `app/api/contracts/[id]/route.ts` — GET single
-- [ ] เชื่อม contracts pages กับ API จริง
+- [x] `app/api/contracts/route.ts` — GET list
+- [x] `app/api/contracts/[id]/route.ts` — GET single
+- [x] เชื่อม contracts pages กับ API จริง
 
-#### Day 5 — 15 พ.ค.
+#### Day 5 — 15 พ.ค. ✅ DONE
 **Focus: Invoice API**
 
-- [ ] `app/api/invoices/route.ts` — GET (list + overdue filter)
-- [ ] เชื่อม billing pages กับ API จริง
+- [x] `app/api/invoices/route.ts` — GET (list + overdue filter + summary stats) + POST create
+- [x] `app/api/invoices/[id]/route.ts` — PATCH (edit / mark paid + slipUrl) + DELETE
+- [x] เชื่อม billing/invoices/page.tsx กับ API จริง + QR PromptPay + slip upload
 
 ### WEEK 2 (18–24 พ.ค.)
 

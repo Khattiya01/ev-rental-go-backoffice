@@ -123,9 +123,6 @@ export default function CustomerForm({ mode, initialData }: CustomerFormProps) {
           <ArrowLeft size={16} />
         </button>
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 bg-blue-500/10 rounded-xl">
-            {mode === 'add' ? <UserPlus size={18} className="text-blue-600" /> : <Pencil size={18} className="text-blue-600" />}
-          </div>
           <div>
             <h1 className="text-slate-800 text-xl font-bold">
               {mode === 'add' ? t('form.addTitle') : t('form.editTitle', { name: initialData?.name ?? '' })}

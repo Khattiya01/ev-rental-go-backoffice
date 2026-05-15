@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, Pencil, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, Pencil, ClipboardList, FileText } from 'lucide-react'
 import type { Customer } from '@/lib/types'
+import type { Contract } from '@/db/schema'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
 import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
@@ -19,6 +20,8 @@ export default function CustomerProfilePage() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contractsLoading, setContractsLoading] = useState(false)
 
   const [preview, setPreview] = useState<{ src: string; label: string } | null>(null)
 
@@ -55,6 +58,16 @@ export default function CustomerProfilePage() {
   useEffect(() => {
     fetchCustomer()
   }, [fetchCustomer])
+
+  useEffect(() => {
+    if (!params.id) return
+    setContractsLoading(true)
+    fetch(`/api/contracts?customerId=${params.id}&limit=100`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then((json: { data: Contract[] }) => setContracts(json.data ?? []))
+      .catch(() => setContracts([]))
+      .finally(() => setContractsLoading(false))
+  }, [params.id])
 
   const handleBlacklist = async () => {
     if (!customer) return
@@ -151,20 +164,33 @@ export default function CustomerProfilePage() {
   return (
     <div className="space-y-5">
       {/* Page title */}
-      <div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 className="text-slate-800 text-xl font-bold">{t('detail.title')}</h1>
+            <p className="text-slate-500 text-sm mt-0.5">{t('detail.subtitle')}</p>
+          </div>
+        </div>
+
         <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors"
+          onClick={() => router.push(`/customers/${customer.id}/edit`)}
+          className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
         >
-          <ArrowLeft size={16} />
-          {t('detail.back')}
+          <Pencil size={14} />
+          {t('detail.edit')}
         </button>
-        <h1 className="text-slate-800 text-xl font-bold">{t('detail.title')}</h1>
-        <p className="text-slate-500 text-sm mt-0.5">{t('detail.subtitle')}</p>
       </div>
 
       {/* Profile header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <div className="flex items-center gap-4">
           {customer.avatarUrl ? (
             <ClickableImage
@@ -195,18 +221,10 @@ export default function CustomerProfilePage() {
             </div>
           </div>
         </div>
-
-        <Link
-          href={`/customers/${customer.id}/edit`}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Pencil size={14} />
-          {t('detail.edit')}
-        </Link>
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Col 1 — Personal Info */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5">
           <h3 className="text-slate-800 font-semibold mb-4">{t('detail.personalInfo')}</h3>
@@ -297,16 +315,53 @@ export default function CustomerProfilePage() {
         </div>
 
         {/* Col 3 — Rental History */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col">
           <h3 className="text-slate-800 font-semibold mb-4">{t('detail.rentalHistory')}</h3>
-          <p className="text-slate-400 text-sm">{t('detail.noRentalHistory')}</p>
+          {contractsLoading ? (
+            <p className="text-slate-400 text-sm">กำลังโหลด...</p>
+          ) : contracts.length === 0 ? (
+            <p className="text-slate-400 text-sm">{t('detail.noRentalHistory')}</p>
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-56">
+              {contracts.map(c => {
+                const statusColor =
+                  c.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                    c.status === 'overdue' ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-500'
+                const statusLabel =
+                  c.status === 'active' ? 'กำลังเช่า' :
+                    c.status === 'overdue' ? 'เกินกำหนด' : 'เสร็จสิ้น'
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/contracts/${c.id}`}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-slate-100 group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                      <FileText size={14} className="text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-700 text-xs font-semibold">{c.contractNo}</p>
+                      <p className="text-slate-400 text-xs truncate">{c.vehiclePlate} · {c.startDate} – {c.dueDate}</p>
+                    </div>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+          {contracts.length > 0 && (
+            <p className="text-slate-400 text-xs mt-3">{contracts.length} สัญญา</p>
+          )}
         </div>
       </div>
 
       {/* KYC Documents */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <h3 className="text-slate-800 font-semibold mb-4">{t('detail.kycDocuments')}</h3>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kycDocs.map(({ label, url }) => (
             <div key={label}>
               <p className="text-slate-400 text-xs mb-2">{label}</p>
@@ -328,7 +383,7 @@ export default function CustomerProfilePage() {
       </div>
 
       {/* Bottom row: Admin Notes + Account Status */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Admin Notes */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5">
           <h3 className="text-slate-800 font-semibold mb-3 flex items-center gap-2">

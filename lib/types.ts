@@ -2,6 +2,7 @@ export type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair'
 export type CustomerStatus = 'pending_kyc' | 'rejected' | 'active' | 'suspended' | 'blacklisted'
 export type ContractStatus = 'active' | 'completed' | 'overdue'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
+export type BillingType = 'daily' | 'monthly' | 'one_time'
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 export type DriverType = 'Grab' | 'Bolt' | 'Private'
 export type AdminRole = 'super_admin' | 'admin' | 'viewer'
@@ -64,18 +65,27 @@ export interface Contract {
   dailyRate: number
   monthlyRate: number
   status: ContractStatus
+  documentUrl?: string | null
+  createdAt: string
 }
 
 export interface Invoice {
   id: string
-  contractId: string
+  invoiceNo: string
+  contractId?: string | null
+  customerId?: string | null
   customerName: string
+  vehiclePlate?: string | null
+  billingType: BillingType
+  description?: string | null
   amount: number
   dueDate: string
   status: InvoiceStatus
-  slipUrl?: string
-  lastContacted?: string
-  daysOverdue?: number
+  paidAt?: string | null
+  daysOverdue?: number | null
+  lastContacted?: string | null
+  slipUrl?: string | null
+  createdAt: string
 }
 
 export interface Alert {
