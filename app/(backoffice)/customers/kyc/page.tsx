@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import type { Customer } from '@/lib/types'
 import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 
 
 export default function KYCApprovalPage() {
@@ -14,6 +15,7 @@ export default function KYCApprovalPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite()
   const customerId = searchParams.get('id')
 
   const [customer, setCustomer] = useState<Customer | null>(null)
@@ -152,24 +154,26 @@ export default function KYCApprovalPage() {
             ))}
           </div>
 
-          <div className="flex gap-3 mt-6 pt-5 border-t border-slate-100">
-            <button
-              onClick={handleApprove}
-              disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-            >
-              <CheckCircle size={16} />
-              {submitting ? t('kyc.processing') : t('kyc.approve')}
-            </button>
-            <button
-              onClick={() => setRejectModalOpen(true)}
-              disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-            >
-              <XCircle size={16} />
-              {t('kyc.reject')}
-            </button>
-          </div>
+          {canWrite && (
+            <div className="flex gap-3 mt-6 pt-5 border-t border-slate-100">
+              <button
+                onClick={handleApprove}
+                disabled={submitting}
+                className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              >
+                <CheckCircle size={16} />
+                {submitting ? t('kyc.processing') : t('kyc.approve')}
+              </button>
+              <button
+                onClick={() => setRejectModalOpen(true)}
+                disabled={submitting}
+                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              >
+                <XCircle size={16} />
+                {t('kyc.reject')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

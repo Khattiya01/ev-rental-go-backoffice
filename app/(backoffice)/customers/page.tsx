@@ -12,6 +12,7 @@ import Badge from '@/components/ui/badge'
 import RegistrationLinkModal from '@/components/ui/registration-link-modal'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 
 const PAGE_SIZE = 20
 
@@ -27,6 +28,7 @@ type FilterTab = 'all' | CustomerStatus
 export default function CustomersPage() {
   const t = useTranslations('customers')
   const { error: toastError } = useToast()
+  const canWrite = useCanWrite()
 
   const FILTER_OPTIONS: { key: FilterTab; label: string }[] = [
     { key: 'all', label: t('filterAll') },
@@ -161,22 +163,24 @@ export default function CustomersPage() {
             {total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setLinkModalOpen(true)}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-          >
-            <Link2 size={16} />
-            สร้างลิ้งลงทะเบียน
-          </button>
-          <Link
-            href="/customers/new"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-          >
-            <UserPlus size={16} />
-            {t('addCustomer')}
-          </Link>
-        </div>
+        {canWrite && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLinkModalOpen(true)}
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              <Link2 size={16} />
+              สร้างลิ้งลงทะเบียน
+            </button>
+            <Link
+              href="/customers/new"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              <UserPlus size={16} />
+              {t('addCustomer')}
+            </Link>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -338,13 +342,15 @@ export default function CustomersPage() {
                       >
                         <Eye size={15} />
                       </Link>
-                      <Link
-                        href={`/customers/${customer.id}/edit`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title={t('detail.edit')}
-                      >
-                        <Pencil size={15} />
-                      </Link>
+                      {canWrite && (
+                        <Link
+                          href={`/customers/${customer.id}/edit`}
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title={t('detail.edit')}
+                        >
+                          <Pencil size={15} />
+                        </Link>
+                      )}
                     </div>
                   </td>
                 </tr>

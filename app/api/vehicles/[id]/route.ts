@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { isDuplicateKeyError } from '@/lib/db-errors'
 import type { VehicleStatus } from '@/lib/types'
 
 const VALID_STATUSES: VehicleStatus[] = ['available', 'rented', 'charging', 'under_repair', 'offline']
@@ -165,12 +166,7 @@ export async function PATCH(
 
     return NextResponse.json(rows[0])
   } catch (error) {
-    if (
-      error !== null &&
-      typeof error === 'object' &&
-      'code' in error &&
-      (error as { code: string }).code === '23505'
-    ) {
+    if (isDuplicateKeyError(error)) {
       return NextResponse.json({ error: 'Plate number already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

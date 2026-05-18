@@ -9,6 +9,7 @@ import Badge from '@/components/ui/badge'
 import CircularProgress from '@/components/ui/circular-progress'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 import type { Vehicle } from '@/lib/types'
 
 const PAGE_SIZE = 20
@@ -25,6 +26,7 @@ export default function VehiclesPage() {
   const t = useTranslations('vehicles')
   const router = useRouter()
   const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite()
 
   const statusOptions = [
     { label: t('filterAll'), value: '' },
@@ -114,13 +116,15 @@ export default function VehiclesPage() {
             {total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
           </p>
         </div>
-        <Link
-          href="/fleet/vehicles/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          {t('addVehicle')}
-        </Link>
+        {canWrite && (
+          <Link
+            href="/fleet/vehicles/new"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            {t('addVehicle')}
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -252,20 +256,24 @@ export default function VehiclesPage() {
                       >
                         <Eye size={15} />
                       </Link>
-                      <Link
-                        href={`/fleet/vehicles/${v.id}/edit`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title={t('edit')}
-                      >
-                        <Pencil size={15} />
-                      </Link>
-                      <button
-                        onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title={t('delete')}
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {canWrite && (
+                        <>
+                          <Link
+                            href={`/fleet/vehicles/${v.id}/edit`}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            title={t('edit')}
+                          >
+                            <Pencil size={15} />
+                          </Link>
+                          <button
+                            onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title={t('delete')}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

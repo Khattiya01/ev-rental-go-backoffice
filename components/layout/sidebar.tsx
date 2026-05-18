@@ -169,6 +169,8 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('sidebar')
 
+  const isSuperAdmin = user?.role === 'super_admin'
+
   const navItems: NavItem[] = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     {
@@ -208,7 +210,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       icon: Settings,
       basePath: '/settings',
       children: [
-        { href: '/settings/users', label: t('users'), icon: UserCog },
+        ...(isSuperAdmin ? [{ href: '/settings/users', label: t('users'), icon: UserCog }] : []),
         { href: '/settings/pricing', label: t('pricing'), icon: DollarSign },
         { href: '/settings/payment', label: t('payment'), icon: QrCode },
       ],
@@ -333,7 +335,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
                 {user?.name ?? 'Admin'}
               </p>
               <p className="text-slate-400 text-xs mt-0.5">
-                {roleLabelFor(user?.role ?? '') || 'Admin'}
+                {user?.role ? roleLabelFor(user.role) : 'Admin'}
               </p>
             </div>
           </div>

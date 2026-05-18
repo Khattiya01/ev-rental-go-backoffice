@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Badge from '@/components/ui/badge'
 import type { Contract, ContractStatus } from '@/lib/types'
+import { useCanWrite } from '@/lib/user-context'
 
 const PAGE_SIZE = 20
 
@@ -26,6 +27,7 @@ const FILTER_OPTIONS: { key: FilterTab; label: string }[] = [
 ]
 
 export default function ContractsPage() {
+  const canWrite = useCanWrite()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
   const [search, setSearch] = useState('')
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -85,13 +87,15 @@ export default function ContractsPage() {
             {total > 0 ? `${total} สัญญาทั้งหมด` : 'จัดการสัญญาเช่ารถทั้งหมด'}
           </p>
         </div>
-        <Link
-          href="/contracts/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          สร้างสัญญา
-        </Link>
+        {canWrite && (
+          <Link
+            href="/contracts/new"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            สร้างสัญญา
+          </Link>
+        )}
       </div>
 
       {error && (

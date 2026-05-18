@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import type { Invoice, BillingType, InvoiceStatus, Customer, Vehicle } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 
 // ─── Constants ────────────────────────────────────────────────
 const PAGE_SIZE = 20
@@ -545,6 +546,7 @@ interface Summary {
 // ─── Main page ────────────────────────────────────────────────
 export default function InvoicesPage() {
   const { error: toastError } = useToast()
+  const canWrite = useCanWrite()
 
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -602,13 +604,15 @@ export default function InvoicesPage() {
           <h1 className="text-slate-800 text-xl font-bold">ใบแจ้งหนี้ &amp; การชำระเงิน</h1>
           <p className="text-slate-500 text-sm mt-0.5">จัดการ Invoice และติดตามการชำระค่าเช่า</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          สร้าง Invoice
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            สร้าง Invoice
+          </button>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -758,16 +762,18 @@ export default function InvoicesPage() {
                       </Link>
 
                       {/* Edit */}
-                      <button
-                        onClick={() => setEditTarget(inv)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="แก้ไข"
-                      >
-                        <Pencil size={14} />
-                      </button>
+                      {canWrite && (
+                        <button
+                          onClick={() => setEditTarget(inv)}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title="แก้ไข"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
 
                       {/* Delete */}
-                      {inv.status !== 'paid' && (
+                      {canWrite && inv.status !== 'paid' && (
                         <button
                           onClick={() => setDeleteTarget(inv)}
                           className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"

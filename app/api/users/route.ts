@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { isDuplicateKeyError } from '@/lib/db-errors'
 
 const VALID_ROLES = ['super_admin', 'admin', 'viewer'] as const
 
@@ -72,12 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(inserted, { status: 201 })
   } catch (error) {
-    if (
-      error !== null &&
-      typeof error === 'object' &&
-      'code' in error &&
-      (error as { code: string }).code === '23505'
-    ) {
+    if (isDuplicateKeyError(error)) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

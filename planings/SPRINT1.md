@@ -97,9 +97,9 @@
 #### Day 6–7 — 18–19 พ.ค.
 **Focus: Seed Data + Integration Testing**
 
-- [ ] `db/seed.ts` — seed realistic Thai EV rental data
-- [ ] ทดสอบทุก API endpoint ด้วย cursor / Postman
-- [ ] Fix bugs จาก integration
+- [x] `db/seed.ts` — seed realistic Thai EV rental data
+- [x] ทดสอบทุก API endpoint ด้วย cursor / Postman
+- [x] Fix bugs จาก integration
 
 #### Day 8–9 — 20–21 พ.ค.
 **Focus: RBAC + Auth Polish**

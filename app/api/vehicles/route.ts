@@ -3,6 +3,7 @@ import { eq, ilike, or, and, count } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { isDuplicateKeyError } from '@/lib/db-errors'
 import type { VehicleStatus } from '@/lib/types'
 
 const VALID_STATUSES: VehicleStatus[] = ['available', 'rented', 'charging', 'under_repair', 'offline']
@@ -170,12 +171,7 @@ async function handlePost(request: Request): Promise<NextResponse> {
     return NextResponse.json(inserted, { status: 201 })
   } catch (error) {
     console.error('[POST /api/vehicles] DB error:', error)
-    if (
-      error !== null &&
-      typeof error === 'object' &&
-      'code' in error &&
-      (error as { code: string }).code === '23505'
-    ) {
+    if (isDuplicateKeyError(error)) {
       return NextResponse.json({ error: 'Plate number already exists' }, { status: 409 })
     }
     const message = process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : 'Internal server error'
