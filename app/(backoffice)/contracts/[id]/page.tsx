@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Badge from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 import type { Contract, Invoice, BillingType, InvoiceStatus } from '@/lib/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -258,6 +259,7 @@ export default function ContractDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { error: toastError } = useToast()
+  const canWrite = useCanWrite()
 
   const [contract, setContract] = useState<Contract | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -330,7 +332,7 @@ export default function ContractDetailPage() {
           <Badge variant={badgeVariant} />
         </div>
         <div className="flex gap-2">
-          {contract.status !== 'completed' && (
+          {canWrite && contract.status !== 'completed' && (
             <button
               onClick={() => setCloseModalOpen(true)}
               className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -338,13 +340,15 @@ export default function ContractDetailPage() {
               ปิดสัญญา
             </button>
           )}
-          <Link
-            href={`/contracts/${contract.id}/edit`}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-          >
-            <Pencil className="w-4 h-4" />
-            แก้ไข
-          </Link>
+          {canWrite && (
+            <Link
+              href={`/contracts/${contract.id}/edit`}
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+              แก้ไข
+            </Link>
+          )}
           {contract.documentUrl && (
             <a
               href={contract.documentUrl}
@@ -516,7 +520,7 @@ export default function ContractDetailPage() {
               <p className="text-slate-400 text-xs">ค้างชำระ</p>
               <p className="text-amber-600 font-bold">฿{fmt(totalPending)}</p>
             </div>
-            {contract.status !== 'completed' && (
+            {canWrite && contract.status !== 'completed' && (
               <button
                 onClick={() => setInvoiceModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-medium transition-colors"
@@ -534,7 +538,7 @@ export default function ContractDetailPage() {
           <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
             <Receipt size={28} className="text-slate-200" />
             <p className="text-sm">ยังไม่มีใบแจ้งหนี้</p>
-            {contract.status !== 'completed' && (
+            {canWrite && contract.status !== 'completed' && (
               <button
                 onClick={() => setInvoiceModalOpen(true)}
                 className="mt-1 flex items-center gap-1.5 text-violet-600 hover:text-violet-700 text-sm font-medium transition-colors"

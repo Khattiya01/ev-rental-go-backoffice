@@ -101,13 +101,43 @@
 - [x] ทดสอบทุก API endpoint ด้วย cursor / Postman
 - [x] Fix bugs จาก integration
 
-#### Day 8–9 — 20–21 พ.ค.
+#### Day 8–9 — 20–21 พ.ค. ✅ DONE
 **Focus: RBAC + Auth Polish**
 
-- [ ] Role: `super_admin`, `admin`, `viewer`
-- [ ] Middleware check roles per route group
-- [ ] UI แสดง/ซ่อน action ตาม role
-- [ ] Error states + loading states ทุกหน้า
+**Middleware (`middleware.ts`)**
+- [x] `super_admin` only: `/settings/users`
+- [x] `admin+` block (viewer redirect → `/dashboard`): `/settings/pricing`, ทุก route ที่ลงท้าย `/new` หรือ `/edit`
+
+**Sidebar (`components/layout/sidebar.tsx`)**
+- [x] `/settings/users` — ซ่อนสำหรับ non-super_admin (มีอยู่แล้ว)
+- [x] `/settings/pricing` — ซ่อนสำหรับ `viewer`
+
+**UI — `useCanWrite()` hook ทุกหน้าที่มี write action**
+- [x] `fleet/vehicles/page.tsx` — ซ่อนปุ่ม Add / Edit / Delete
+- [x] `fleet/vehicles/[id]/page.tsx` — ซ่อนปุ่ม Edit + Tab Remote Control
+- [x] `customers/page.tsx` — ซ่อนปุ่ม Add / Edit / Registration Link
+- [x] `customers/[id]/page.tsx` — ซ่อนปุ่ม Edit + Blacklist / Suspend / Reactivate actions ทั้งหมด
+- [x] `customers/kyc/page.tsx` — ซ่อนปุ่ม Approve / Reject
+- [x] `customers/blacklist/page.tsx` — ซ่อนปุ่ม Unban
+- [x] `contracts/page.tsx` — ซ่อนปุ่ม Add
+- [x] `contracts/[id]/page.tsx` — ซ่อนปุ่ม ปิดสัญญา / แก้ไข / ออกใบแจ้งหนี้ (2 จุด)
+- [x] `billing/invoices/page.tsx` — ซ่อนปุ่ม Add / Edit / Delete / Mark Paid
+- [x] `billing/invoices/[id]/page.tsx` — ซ่อนปุ่ม Edit / Delete / Mark Paid / Upload Slip
+- [x] `settings/payment/page.tsx` — inputs เป็น `readOnly` + ซ่อนปุ่ม Save
+
+**API — role check ทุก write endpoint (`admin+` → 403)**
+- [x] `POST /api/invoices`
+- [x] `PATCH /api/invoices/[id]`
+- [x] `DELETE /api/invoices/[id]`
+- [x] `POST /api/contracts`
+- [x] `PATCH /api/contracts/[id]`
+- [x] `PATCH /api/settings`
+- [x] `POST /api/upload`
+- [x] (vehicles, customers, users, registration-links — มี check อยู่แล้วจาก Day ก่อน)
+
+**Global UI Polish**
+- [x] `app/(backoffice)/error.tsx` — global error boundary (retry button)
+- [x] `app/(backoffice)/loading.tsx` — global loading skeleton (table + header)
 
 #### Day 10–11 — 22–23 พ.ค.
 **Focus: UI Polish + Edge Cases**

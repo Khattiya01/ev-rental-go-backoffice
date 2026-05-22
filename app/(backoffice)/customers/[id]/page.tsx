@@ -11,12 +11,14 @@ import Modal from '@/components/ui/modal'
 import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 
 export default function CustomerProfilePage() {
   const params = useParams()
   const router = useRouter()
   const t = useTranslations('customers')
   const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite()
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -180,13 +182,15 @@ export default function CustomerProfilePage() {
           </div>
         </div>
 
-        <button
-          onClick={() => router.push(`/customers/${customer.id}/edit`)}
-          className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Pencil size={14} />
-          {t('detail.edit')}
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => router.push(`/customers/${customer.id}/edit`)}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Pencil size={14} />
+            {t('detail.edit')}
+          </button>
+        )}
       </div>
 
       {/* Profile header */}
@@ -422,82 +426,86 @@ export default function CustomerProfilePage() {
 
           {/* Contextual action buttons */}
           <div className="space-y-3">
-            {customer.status === 'pending_kyc' && (
-              <div className="space-y-2">
-                <Link
-                  href={`/customers/kyc?id=${customer.id}`}
-                  className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {t('detail.reviewKycDocuments')}
-                </Link>
-                <button
-                  onClick={() => setDirectActivateModalOpen(true)}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                >
-                  {t('detail.activateDirectly')}
-                </button>
-                <p className="text-slate-400 text-xs text-center">
-                  {t('detail.activateDirectlyHint')}
-                </p>
-              </div>
-            )}
+            {canWrite ? (
+              <>
+                {customer.status === 'pending_kyc' && (
+                  <div className="space-y-2">
+                    <Link
+                      href={`/customers/kyc?id=${customer.id}`}
+                      className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t('detail.reviewKycDocuments')}
+                    </Link>
+                    <button
+                      onClick={() => setDirectActivateModalOpen(true)}
+                      className="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    >
+                      {t('detail.activateDirectly')}
+                    </button>
+                    <p className="text-slate-400 text-xs text-center">
+                      {t('detail.activateDirectlyHint')}
+                    </p>
+                  </div>
+                )}
 
-            {customer.status === 'active' && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setSuspendModalOpen(true)}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {t('detail.actions.suspend')}
-                </button>
-                <button
-                  onClick={() => setBlacklistModalOpen(true)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {t('detail.actions.blacklist')}
-                </button>
-              </div>
-            )}
+                {customer.status === 'active' && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setSuspendModalOpen(true)}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t('detail.actions.suspend')}
+                    </button>
+                    <button
+                      onClick={() => setBlacklistModalOpen(true)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t('detail.actions.blacklist')}
+                    </button>
+                  </div>
+                )}
 
-            {customer.status === 'suspended' && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setReactivateModalOpen(true)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {t('detail.actions.reactivate')}
-                </button>
-                <button
-                  onClick={() => setBlacklistModalOpen(true)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {t('detail.actions.blacklist')}
-                </button>
-              </div>
-            )}
+                {customer.status === 'suspended' && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setReactivateModalOpen(true)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t('detail.actions.reactivate')}
+                    </button>
+                    <button
+                      onClick={() => setBlacklistModalOpen(true)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t('detail.actions.blacklist')}
+                    </button>
+                  </div>
+                )}
 
-            {customer.status === 'blacklisted' && (
-              <button
-                onClick={() => setReactivateModalOpen(true)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-              >
-                {t('detail.actions.reactivateAccount')}
-              </button>
-            )}
+                {customer.status === 'blacklisted' && (
+                  <button
+                    onClick={() => setReactivateModalOpen(true)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t('detail.actions.reactivateAccount')}
+                  </button>
+                )}
 
-            {/* Blacklist reason textarea (shown when blacklist action is available) */}
-            {(customer.status === 'active' || customer.status === 'suspended') && (
-              <div>
-                <p className="text-slate-400 text-xs mb-1.5">{t('detail.blacklistReasonLabel')}</p>
-                <textarea
-                  value={blacklistReason}
-                  onChange={e => setBlacklistReason(e.target.value)}
-                  placeholder={t('detail.blacklistReasonPlaceholder')}
-                  rows={3}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
-                />
-              </div>
-            )}
+                {/* Blacklist reason textarea (shown when blacklist action is available) */}
+                {(customer.status === 'active' || customer.status === 'suspended') && (
+                  <div>
+                    <p className="text-slate-400 text-xs mb-1.5">{t('detail.blacklistReasonLabel')}</p>
+                    <textarea
+                      value={blacklistReason}
+                      onChange={e => setBlacklistReason(e.target.value)}
+                      placeholder={t('detail.blacklistReasonPlaceholder')}
+                      rows={3}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
+                    />
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
         </div>
       </div>

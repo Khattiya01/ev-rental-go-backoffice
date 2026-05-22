@@ -6,6 +6,15 @@ const PUBLIC_ROUTES = ['/login', '/register']
 // Pages that only super_admin can access
 const SUPER_ADMIN_ROUTES = ['/settings/users']
 
+// Pages that require admin or super_admin (viewers are blocked)
+const ADMIN_PLUS_ROUTES = ['/settings/pricing']
+
+// Routes matching these patterns require admin+ (write access)
+// Covers: /fleet/vehicles/new, /fleet/vehicles/[id]/edit, /customers/new, etc.
+function isWriteRoute(pathname: string): boolean {
+  return pathname.endsWith('/new') || pathname.endsWith('/edit')
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
@@ -30,6 +39,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (session && !isExpired) {
     const isSuperAdminRoute = SUPER_ADMIN_ROUTES.some(route => pathname.startsWith(route))
     if (isSuperAdminRoute && session.role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    const isAdminPlusRoute =
+      ADMIN_PLUS_ROUTES.some(route => pathname.startsWith(route)) ||
+      isWriteRoute(pathname)
+    if (isAdminPlusRoute && session.role === 'viewer') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

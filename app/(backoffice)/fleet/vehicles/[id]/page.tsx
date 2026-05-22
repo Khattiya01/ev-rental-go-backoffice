@@ -8,12 +8,14 @@ import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import Link from 'next/link'
+import { useCanWrite } from '@/lib/user-context'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
 export default function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const t = useTranslations('vehicleDetail')
+  const canWrite = useCanWrite()
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -74,7 +76,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     { key: 'general', label: t('tabs.info') },
     { key: 'telematics', label: t('tabs.telematics') },
     { key: 'history', label: t('tabs.history') },
-    { key: 'remote', label: t('tabs.remote') },
+    ...(canWrite ? [{ key: 'remote' as Tab, label: t('tabs.remote') }] : []),
   ]
 
   return (
@@ -99,13 +101,15 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
 
         </div>
 
-        <button
-          onClick={() => router.push(`/fleet/vehicles/${vehicle.id}/edit`)}
-          className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Pencil size={14} />
-          {t('edit')}
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => router.push(`/fleet/vehicles/${vehicle.id}/edit`)}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Pencil size={14} />
+            {t('edit')}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}

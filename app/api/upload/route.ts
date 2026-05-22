@@ -9,6 +9,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const folder = new URL(request.url).searchParams.get('folder') ?? 'vehicles'
   if (!(ALLOWED_FOLDERS as readonly string[]).includes(folder)) {

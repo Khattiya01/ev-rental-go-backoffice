@@ -34,6 +34,9 @@ export async function GET(): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   let body: unknown
   try { body = await request.json() } catch {

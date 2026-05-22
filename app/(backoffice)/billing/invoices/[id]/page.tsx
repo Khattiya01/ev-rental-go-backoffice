@@ -14,6 +14,7 @@ import type { Invoice, BillingType, InvoiceStatus } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
 import ImageUploader from '@/components/ui/image-uploader'
 import ImageLightbox from '@/components/ui/image-lightbox'
+import { useCanWrite } from '@/lib/user-context'
 
 const PROMPTPAY_DEFAULTS = { promptpayId: '', promptpayName: '' }
 
@@ -218,6 +219,7 @@ export default function InvoiceDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite()
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
@@ -330,24 +332,26 @@ export default function InvoiceDetailPage() {
           </span>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setEditOpen(true)}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-          >
-            <Pencil size={14} />
-            แก้ไข
-          </button>
-          {invoice.status !== 'paid' && (
+        {canWrite && (
+          <div className="flex gap-2">
             <button
-              onClick={() => setDeleteOpen(true)}
-              className="flex items-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              onClick={() => setEditOpen(true)}
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
             >
-              <Trash2 size={14} />
-              ลบ
+              <Pencil size={14} />
+              แก้ไข
             </button>
-          )}
-        </div>
+            {invoice.status !== 'paid' && (
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="flex items-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              >
+                <Trash2 size={14} />
+                ลบ
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Body */}
@@ -433,7 +437,7 @@ export default function InvoiceDetailPage() {
                   {invoice.paidAt && <p className="text-slate-400 text-sm">{invoice.paidAt}</p>}
                 </div>
               </div>
-            ) : (
+            ) : canWrite ? (
               <div className="space-y-5">
                 {/* QR Code */}
                 <div className="flex gap-6 items-start">
@@ -482,7 +486,7 @@ export default function InvoiceDetailPage() {
                   <p className="text-slate-400 text-xs text-center mt-2">จะบันทึกเวลาชำระและสลิป (ถ้ามี) พร้อมกัน</p>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Slip */}
@@ -516,8 +520,8 @@ export default function InvoiceDetailPage() {
                 <FileText size={16} />
                 <p className="text-sm">ไม่มีสลิปแนบ</p>
               </div>
-            ) : (
-              /* Not paid → allow upload */
+            ) : canWrite ? (
+              /* Not paid → allow upload (admin only) */
               <div className="space-y-3">
                 <ImageUploader
                   value={slipUrl}
@@ -537,7 +541,7 @@ export default function InvoiceDetailPage() {
                 )}
                 <p className="text-slate-400 text-xs">อัปโหลดสลิปก่อน แล้วกด &quot;ยืนยันชำระแล้ว&quot; เพื่อปิดบิล</p>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

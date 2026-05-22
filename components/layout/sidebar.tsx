@@ -170,6 +170,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
   const t = useTranslations('sidebar')
 
   const isSuperAdmin = user?.role === 'super_admin'
+  const isViewer = user?.role === 'viewer'
 
   const navItems: NavItem[] = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -211,7 +212,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/settings',
       children: [
         ...(isSuperAdmin ? [{ href: '/settings/users', label: t('users'), icon: UserCog }] : []),
-        { href: '/settings/pricing', label: t('pricing'), icon: DollarSign },
+        ...(!isViewer ? [{ href: '/settings/pricing', label: t('pricing'), icon: DollarSign }] : []),
         { href: '/settings/payment', label: t('payment'), icon: QrCode },
       ],
     },

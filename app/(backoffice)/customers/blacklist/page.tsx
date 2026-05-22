@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Customer } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
+import { useCanWrite } from '@/lib/user-context'
 
 const reasonColor: Record<string, string> = {
   'Vehicle Theft': 'text-red-400',
@@ -12,6 +13,7 @@ const reasonColor: Record<string, string> = {
 
 export default function BlacklistPage() {
   const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite()
   const [blacklisted, setBlacklisted] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -104,12 +106,14 @@ export default function BlacklistPage() {
                 </td>
                 <td className="px-5 py-4 text-slate-500 text-sm">{customer.bannedBy}</td>
                 <td className="px-5 py-4">
-                  <button
-                    onClick={() => handleUnban(customer)}
-                    className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  >
-                    Unban
-                  </button>
+                  {canWrite && (
+                    <button
+                      onClick={() => handleUnban(customer)}
+                      className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Unban
+                    </button>
+                  )}
                 </td>
               </tr>
               ))

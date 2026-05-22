@@ -27,6 +27,9 @@ export async function PATCH(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const { id } = await params
 
@@ -98,6 +101,9 @@ export async function DELETE(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const { id } = await params
 
