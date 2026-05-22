@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Download, Receipt, Plus,
+  Download, Receipt, Plus,
   X, Loader2, CheckCircle2, AlertCircle, Clock, AlertTriangle, Pencil,
   Eye, ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -12,6 +12,8 @@ import Badge from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
 import type { Contract, Invoice, BillingType, InvoiceStatus } from '@/lib/types'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
 
 // ─── Helpers ─────────────────────────────────────────────────────
 function fmt(n: number) {
@@ -295,7 +297,11 @@ export default function ContractDetailPage() {
   useEffect(() => { loadInvoices() }, [loadInvoices])
 
   if (loadingContract) {
-    return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">กำลังโหลด...</div>
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
+    )
   }
   if (!contract) return null
 
@@ -318,58 +324,46 @@ export default function ContractDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <PageHeader
+        onBack={() => router.back()}
+        title={<>สัญญา #{contract.contractNo} <Badge variant={badgeVariant} /></>}
+      >
+        {canWrite && contract.status !== 'completed' && (
           <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+            onClick={() => setCloseModalOpen(true)}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
-            <ArrowLeft size={16} />
+            ปิดสัญญา
           </button>
-          <h1 className="text-slate-800 text-xl font-bold">สัญญา #{contract.contractNo}</h1>
-          <Badge variant={badgeVariant} />
-        </div>
-        <div className="flex gap-2">
-          {canWrite && contract.status !== 'completed' && (
-            <button
-              onClick={() => setCloseModalOpen(true)}
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-            >
-              ปิดสัญญา
-            </button>
-          )}
-          {canWrite && (
-            <Link
-              href={`/contracts/${contract.id}/edit`}
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-            >
-              <Pencil className="w-4 h-4" />
-              แก้ไข
-            </Link>
-          )}
-          {contract.documentUrl && (
-            <a
-              href={contract.documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              ดาวน์โหลด PDF
-            </a>
-          )}
-        </div>
-      </div>
+        )}
+        {canWrite && (
+          <Link
+            href={`/contracts/${contract.id}/edit`}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Pencil className="w-4 h-4" />
+            แก้ไข
+          </Link>
+        )}
+        {contract.documentUrl && (
+          <a
+            href={contract.documentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            ดาวน์โหลด PDF
+          </a>
+        )}
+      </PageHeader>
 
       {/* Main grid */}
       <div className="grid grid-cols-5 gap-5">
         {/* ── Left column ── */}
         <div className="col-span-2 space-y-4">
           {/* Contract details */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">รายละเอียดสัญญา</h2>
+          <SectionCard title="รายละเอียดสัญญา">
             <dl className="space-y-3">
               <div>
                 <dt className="text-slate-400 text-xs">เงินมัดจำ</dt>
@@ -402,11 +396,10 @@ export default function ContractDetailPage() {
                 <dd className="text-slate-500 text-xs mt-0.5">ความจุลดเกิน 5% คิดเพิ่ม ฿200</dd>
               </div>
             </dl>
-          </div>
+          </SectionCard>
 
           {/* Customer & Vehicle */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">ผู้เช่า & รถ</h2>
+          <SectionCard title="ผู้เช่า & รถ">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -424,7 +417,7 @@ export default function ContractDetailPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
         </div>
 
@@ -533,7 +526,9 @@ export default function ContractDetailPage() {
         </div>
 
         {loadingInvoices ? (
-          <div className="px-5 py-8 text-center text-slate-400 text-sm">กำลังโหลด...</div>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400" />
+          </div>
         ) : invoices.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
             <Receipt size={28} className="text-slate-200" />

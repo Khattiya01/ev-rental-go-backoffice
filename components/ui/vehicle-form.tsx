@@ -1,15 +1,36 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Car } from 'lucide-react'
+import { Save, Loader2 } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import type { Vehicle, VehicleStatus } from '@/lib/types'
-import ImageUploader from '@/components/ui/image-uploader'
 import MultiImageUploader from '@/components/ui/multi-image-uploader'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
+import ErrorAlert from '@/components/ui/error-alert'
 
 const STATUS_OPTIONS: VehicleStatus[] = ['available', 'rented', 'charging', 'under_repair', 'offline']
+
+const vehicleSchema = z.object({
+  plate: z.string().min(1, 'กรุณากรอกทะเบียน'),
+  make: z.string().min(1, 'กรุณากรอกยี่ห้อ'),
+  model: z.string().min(1, 'กรุณากรอกรุ่น'),
+  year: z.string().min(1, 'กรุณากรอกปี'),
+  color: z.string(),
+  vin: z.string(),
+  status: z.enum(['available', 'rented', 'charging', 'under_repair', 'offline']),
+  images: z.array(z.string()),
+  odometer: z.string(),
+  condition: z.string(),
+  location: z.string(),
+  nextServiceDate: z.string(),
+})
+
+type VehicleFormData = z.infer<typeof vehicleSchema>
 
 interface VehicleFormProps {
   mode: 'add' | 'edit'
@@ -30,42 +51,49 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
     offline: td('status.offline'),
   }
 
-  const [plate, setPlate] = useState(initialData?.plate ?? '')
-  const [make, setMake] = useState(initialData?.make ?? '')
-  const [model, setModel] = useState(initialData?.model ?? '')
-  const [year, setYear] = useState(String(initialData?.year ?? new Date().getFullYear()))
-  const [color, setColor] = useState(initialData?.color ?? '')
-  const [vin, setVin] = useState(initialData?.vin ?? '')
-  const [status, setStatus] = useState<VehicleStatus>(initialData?.status ?? 'available')
-  const [images, setImages] = useState<string[]>(initialData?.images ?? (initialData?.imageUrl ? [initialData.imageUrl] : []))
-  const [odometer, setOdometer] = useState(String(initialData?.odometer ?? '0'))
-  const [condition, setCondition] = useState(initialData?.condition ?? 'Good')
-  const [location, setLocation] = useState(initialData?.location ?? '')
-  const [nextServiceDate, setNextServiceDate] = useState(initialData?.nextServiceDate ?? '')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const {
+    register,
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<VehicleFormData>({
+    resolver: zodResolver(vehicleSchema),
+    defaultValues: {
+      plate: initialData?.plate ?? '',
+      make: initialData?.make ?? '',
+      model: initialData?.model ?? '',
+      year: String(initialData?.year ?? new Date().getFullYear()),
+      color: initialData?.color ?? '',
+      vin: initialData?.vin ?? '',
+      status: initialData?.status ?? 'available',
+      images: initialData?.images ?? (initialData?.imageUrl ? [initialData.imageUrl] : []),
+      odometer: String(initialData?.odometer ?? '0'),
+      condition: initialData?.condition ?? 'Good',
+      location: initialData?.location ?? '',
+      nextServiceDate: initialData?.nextServiceDate ?? '',
+    },
+  })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const apiError = errors.root?.message
+
+  async function onSubmit(data: VehicleFormData) {
     if (mode === 'edit' && !initialData) return
 
-    setSubmitting(true)
-    setError('')
-
     const body = {
-      plate,
-      make,
-      model,
-      year: parseInt(year, 10),
-      color: color || null,
-      vin: vin || null,
-      imageUrl: images[0] ?? null,
-      images,
-      status,
-      odometer: parseInt(odometer, 10) || 0,
-      condition: condition || null,
-      location: location || null,
-      nextServiceDate: nextServiceDate || null,
+      plate: data.plate,
+      make: data.make,
+      model: data.model,
+      year: parseInt(data.year, 10),
+      color: data.color || null,
+      vin: data.vin || null,
+      imageUrl: data.images[0] ?? null,
+      images: data.images,
+      status: data.status,
+      odometer: parseInt(data.odometer, 10) || 0,
+      condition: data.condition || null,
+      location: data.location || null,
+      nextServiceDate: data.nextServiceDate || null,
     }
 
     try {
@@ -83,61 +111,49 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
         router.push('/fleet/vehicles')
         router.refresh()
       } else {
-        const data = await res.json() as { error?: string }
-        const msg = data?.error ?? (mode === 'add' ? t('toast.createError') : t('toast.updateError'))
-        setError(msg)
+        const responseData = await res.json() as { error?: string }
+        const msg = responseData?.error ?? (mode === 'add' ? t('toast.createError') : t('toast.updateError'))
+        setError('root', { message: msg })
         toastError(msg)
       }
     } catch {
       const msg = t('networkError')
-      setError(msg)
+      setError('root', { message: msg })
       toastError(msg)
-    } finally {
-      setSubmitting(false)
     }
   }
 
   const inputClass =
     'w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors'
+  const inputErrorClass =
+    'w-full bg-white border border-red-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1.5'
+  const fieldErrorClass = 'text-red-500 text-xs mt-1'
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-slate-800 text-xl font-bold">
-              {mode === 'add' ? t('addTitle') : t('editTitle', { plate: initialData?.plate ?? '' })}
-            </h1>
-            <p className="text-slate-500 text-sm">
-              {mode === 'add' ? t('addSubtitle') : t('editSubtitle')}
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.back()}
+        title={mode === 'add' ? t('addTitle') : t('editTitle', { plate: initialData?.plate ?? '' })}
+        subtitle={mode === 'add' ? t('addSubtitle') : t('editSubtitle')}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <ErrorAlert message={apiError} />
 
         {/* Vehicle Identity */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <SectionCard className="p-6">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">{t('sectionIdentity')}</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
             {/* Photo — left column */}
-            <MultiImageUploader value={images} onChange={setImages} label={t('photosLabel')} />
+            <Controller
+              name="images"
+              control={control}
+              render={({ field }) => (
+                <MultiImageUploader value={field.value} onChange={field.onChange} label={t('photosLabel')} />
+              )}
+            />
 
             {/* Fields — right column */}
             <div className="space-y-5">
@@ -148,12 +164,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                 <input
                   id="plate"
                   type="text"
-                  required
                   placeholder={t('platePlaceholder')}
-                  value={plate}
-                  onChange={e => setPlate(e.target.value)}
-                  className={inputClass}
+                  {...register('plate')}
+                  className={errors.plate ? inputErrorClass : inputClass}
                 />
+                {errors.plate && <p className={fieldErrorClass}>{errors.plate.message}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -164,12 +179,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                   <input
                     id="make"
                     type="text"
-                    required
                     placeholder={t('makePlaceholder')}
-                    value={make}
-                    onChange={e => setMake(e.target.value)}
-                    className={inputClass}
+                    {...register('make')}
+                    className={errors.make ? inputErrorClass : inputClass}
                   />
+                  {errors.make && <p className={fieldErrorClass}>{errors.make.message}</p>}
                 </div>
 
                 <div>
@@ -179,12 +193,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                   <input
                     id="model"
                     type="text"
-                    required
                     placeholder={t('modelPlaceholder')}
-                    value={model}
-                    onChange={e => setModel(e.target.value)}
-                    className={inputClass}
+                    {...register('model')}
+                    className={errors.model ? inputErrorClass : inputClass}
                   />
+                  {errors.model && <p className={fieldErrorClass}>{errors.model.message}</p>}
                 </div>
 
                 <div>
@@ -194,13 +207,12 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                   <input
                     id="year"
                     type="number"
-                    required
                     min={1990}
                     max={2030}
-                    value={year}
-                    onChange={e => setYear(e.target.value)}
-                    className={inputClass}
+                    {...register('year')}
+                    className={errors.year ? inputErrorClass : inputClass}
                   />
+                  {errors.year && <p className={fieldErrorClass}>{errors.year.message}</p>}
                 </div>
 
                 <div>
@@ -209,8 +221,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                     id="color"
                     type="text"
                     placeholder={t('colorPlaceholder')}
-                    value={color}
-                    onChange={e => setColor(e.target.value)}
+                    {...register('color')}
                     className={inputClass}
                   />
                 </div>
@@ -222,25 +233,23 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                   id="vin"
                   type="text"
                   placeholder="17-character VIN"
-                  value={vin}
-                  onChange={e => setVin(e.target.value)}
+                  {...register('vin')}
                   className={inputClass}
                 />
               </div>
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Current Status */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+        <SectionCard className="p-6 space-y-5">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">{t('sectionStatus')}</h2>
 
           <div>
             <label htmlFor="status" className={labelClass}>{t('statusLabel')}</label>
             <select
               id="status"
-              value={status}
-              onChange={e => setStatus(e.target.value as VehicleStatus)}
+              {...register('status')}
               className={inputClass}
             >
               {STATUS_OPTIONS.map(s => (
@@ -256,8 +265,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                 id="odometer"
                 type="number"
                 min={0}
-                value={odometer}
-                onChange={e => setOdometer(e.target.value)}
+                {...register('odometer')}
                 className={inputClass}
               />
             </div>
@@ -266,8 +274,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
               <label htmlFor="condition" className={labelClass}>{t('conditionLabel')}</label>
               <select
                 id="condition"
-                value={condition}
-                onChange={e => setCondition(e.target.value)}
+                {...register('condition')}
                 className={inputClass}
               >
                 {(['Excellent', 'Good', 'Fair', 'Poor'] as const).map(c => (
@@ -282,8 +289,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                 id="location"
                 type="text"
                 placeholder={t('locationPlaceholder')}
-                value={location}
-                onChange={e => setLocation(e.target.value)}
+                {...register('location')}
                 className={inputClass}
               />
             </div>
@@ -293,31 +299,30 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
               <input
                 id="nextServiceDate"
                 type="date"
-                value={nextServiceDate}
-                onChange={e => setNextServiceDate(e.target.value)}
+                {...register('nextServiceDate')}
                 className={inputClass}
               />
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Footer Actions */}
         <div className="flex items-center justify-end gap-3 py-2">
           <button
             type="button"
             onClick={() => router.back()}
-            disabled={submitting}
+            disabled={isSubmitting}
             className="px-5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
             {t('cancel')}
           </button>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isSubmitting}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            <Save size={15} />
-            {submitting ? t('saving') : mode === 'add' ? t('addVehicle') : t('saveChanges')}
+            {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {isSubmitting ? t('saving') : mode === 'add' ? t('addVehicle') : t('saveChanges')}
           </button>
         </div>
       </form>

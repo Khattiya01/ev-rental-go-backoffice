@@ -3,14 +3,34 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Save, FileText, User, Car, CalendarDays,
+  Save, FileText, User, Car, CalendarDays,
   Loader2, X, Search,
 } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import FileUploader from '@/components/ui/file-uploader'
 import { useToast } from '@/components/ui/toast'
 import type { Contract, Customer, Vehicle } from '@/lib/types'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
+import ErrorAlert from '@/components/ui/error-alert'
 
-// ─── Customer search picker ───────────────────────────────────────
+// ─── Schema ───────────────────────────────────────────────────────
+const contractSchema = z.object({
+  customerId: z.string().min(1, 'กรุณาเลือกลูกค้า'),
+  vehicleId: z.string().min(1, 'กรุณาเลือกรถ'),
+  startDate: z.string().min(1, 'กรุณาระบุวันเริ่มสัญญา'),
+  dueDate: z.string().min(1, 'กรุณาระบุวันสิ้นสุดสัญญา'),
+  dailyRate: z.string(),
+  monthlyRate: z.string(),
+  depositAmount: z.string(),
+  documentUrl: z.string(),
+})
+
+type ContractFormData = z.infer<typeof contractSchema>
+
+// ─── Customer search picker ───────────────────────────────────────────
 function CustomerPicker({
   value, onChange, disabled,
 }: {
@@ -233,10 +253,8 @@ interface ContractFormProps {
 export default function ContractForm({ mode, initialData }: ContractFormProps) {
   const router = useRouter()
   const { success, error: toastError } = useToast()
-  const [submitting, setSubmitting] = useState(false)
-  const [formError, setFormError] = useState('')
 
-  // Customer & vehicle
+  // Display state for pickers (not in RHF — we sync IDs via setValue)
   const [customer, setCustomer] = useState<{ id: string; name: string; phone: string } | null>(
     initialData ? { id: initialData.customerId, name: initialData.customerName, phone: '' } : null
   )
@@ -244,30 +262,44 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
     initialData ? { id: initialData.vehicleId, plate: initialData.vehiclePlate, model: '', make: '' } : null
   )
 
-  // Dates & rates
-  const [startDate, setStartDate] = useState(initialData?.startDate ?? '')
-  const [dueDate, setDueDate] = useState(initialData?.dueDate ?? '')
-  const [dailyRate, setDailyRate] = useState(initialData ? String(initialData.dailyRate) : '')
-  const [monthlyRate, setMonthlyRate] = useState(initialData ? String(initialData.monthlyRate) : '')
-  const [depositAmount, setDepositAmount] = useState(initialData ? String(initialData.depositAmount) : '')
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ContractFormData>({
+    resolver: zodResolver(contractSchema),
+    defaultValues: {
+      customerId: initialData?.customerId ?? '',
+      vehicleId: initialData?.vehicleId ?? '',
+      startDate: initialData?.startDate ?? '',
+      dueDate: initialData?.dueDate ?? '',
+      dailyRate: initialData ? String(initialData.dailyRate) : '',
+      monthlyRate: initialData ? String(initialData.monthlyRate) : '',
+      depositAmount: initialData ? String(initialData.depositAmount) : '',
+      documentUrl: initialData?.documentUrl ?? '',
+    },
+  })
 
-  // Document
-  const [documentUrl, setDocumentUrl] = useState(initialData?.documentUrl ?? '')
+  function handleCustomerChange(c: { id: string; name: string; phone: string } | null) {
+    setCustomer(c)
+    setValue('customerId', c?.id ?? '', { shouldValidate: true })
+  }
+
+  function handleVehicleChange(v: { id: string; plate: string; model: string; make: string } | null) {
+    setVehicle(v)
+    setValue('vehicleId', v?.id ?? '', { shouldValidate: true })
+  }
+
+  const apiError = errors.root?.message
 
   const inputClass = 'w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1.5'
+  const fieldErrorClass = 'text-red-500 text-xs mt-1'
 
-  async function handleSubmit(e: { preventDefault(): void }) {
-    e.preventDefault()
-    setFormError('')
-
-    if (mode === 'add') {
-      if (!customer) { toastError('กรุณาเลือกลูกค้า'); return }
-      if (!vehicle) { toastError('กรุณาเลือกรถ'); return }
-    }
-    if (!startDate || !dueDate) { toastError('กรุณาระบุวันเริ่มและวันสิ้นสุดสัญญา'); return }
-
-    setSubmitting(true)
+  async function onSubmit(data: ContractFormData) {
     try {
       let res: Response
 
@@ -276,20 +308,20 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customerId: customer!.id,
-            vehicleId: vehicle!.id,
-            startDate,
-            dueDate,
-            dailyRate: parseFloat(dailyRate) || 0,
-            monthlyRate: parseFloat(monthlyRate) || 0,
-            depositAmount: parseFloat(depositAmount) || 0,
-            documentUrl: documentUrl || undefined,
+            customerId: data.customerId,
+            vehicleId: data.vehicleId,
+            startDate: data.startDate,
+            dueDate: data.dueDate,
+            dailyRate: parseFloat(data.dailyRate) || 0,
+            monthlyRate: parseFloat(data.monthlyRate) || 0,
+            depositAmount: parseFloat(data.depositAmount) || 0,
+            documentUrl: data.documentUrl || undefined,
           }),
         })
         if (res.status === 201) {
-          const data = await res.json() as { contractNo: string; id: string }
-          success(`สร้างสัญญา ${data.contractNo} เรียบร้อย`)
-          router.push(`/contracts/${data.id}`)
+          const responseData = await res.json() as { contractNo: string; id: string }
+          success(`สร้างสัญญา ${responseData.contractNo} เรียบร้อย`)
+          router.push(`/contracts/${responseData.id}`)
           router.refresh()
           return
         }
@@ -298,12 +330,12 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            startDate,
-            dueDate,
-            dailyRate: parseFloat(dailyRate) || 0,
-            monthlyRate: parseFloat(monthlyRate) || 0,
-            depositAmount: parseFloat(depositAmount) || 0,
-            documentUrl: documentUrl || '',
+            startDate: data.startDate,
+            dueDate: data.dueDate,
+            dailyRate: parseFloat(data.dailyRate) || 0,
+            monthlyRate: parseFloat(data.monthlyRate) || 0,
+            depositAmount: parseFloat(data.depositAmount) || 0,
+            documentUrl: data.documentUrl || '',
           }),
         })
         if (res.ok) {
@@ -314,72 +346,58 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
         }
       }
 
-      const data = await res.json() as { error?: string }
-      const msg = data?.error ?? (mode === 'add' ? 'สร้างสัญญาไม่สำเร็จ' : 'อัปเดตสัญญาไม่สำเร็จ')
-      setFormError(msg)
+      const responseData = await res.json() as { error?: string }
+      const msg = responseData?.error ?? (mode === 'add' ? 'สร้างสัญญาไม่สำเร็จ' : 'อัปเดตสัญญาไม่สำเร็จ')
+      setError('root', { message: msg })
       toastError(msg)
     } catch {
       const msg = 'เกิดข้อผิดพลาด กรุณาลองใหม่'
-      setFormError(msg)
+      setError('root', { message: msg })
       toastError(msg)
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-slate-800 text-xl font-bold">
-              {mode === 'add' ? 'สร้างสัญญาเช่าใหม่' : `แก้ไขสัญญา #${initialData?.contractNo}`}
-            </h1>
-            <p className="text-slate-500 text-sm">
-              {mode === 'add' ? 'กรอกข้อมูลสัญญาเช่าและอัปโหลดเอกสาร' : 'แก้ไขรายละเอียดและเอกสารสัญญา'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.back()}
+        title={mode === 'add' ? 'สร้างสัญญาเช่าใหม่' : `แก้ไขสัญญา #${initialData?.contractNo}`}
+        subtitle={mode === 'add' ? 'กรอกข้อมูลสัญญาเช่าและอัปโหลดเอกสาร' : 'แก้ไขรายละเอียดและเอกสารสัญญา'}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {formError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{formError}</div>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <ErrorAlert message={apiError} />
 
         {/* Section 1: คู่สัญญา */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <SectionCard className="p-6">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5 flex items-center gap-2">
             <User size={15} className="text-slate-400" />
             คู่สัญญา
             {mode === 'edit' && <span className="text-xs font-normal text-slate-400 normal-case ml-1">(ไม่สามารถเปลี่ยนแปลงได้)</span>}
           </h2>
+          {/* Hidden inputs to register IDs in RHF */}
+          <input type="hidden" {...register('customerId')} />
+          <input type="hidden" {...register('vehicleId')} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className={labelClass}>
                 ลูกค้า <span className="text-red-500">*</span>
               </label>
-              <CustomerPicker value={customer} onChange={setCustomer} disabled={mode === 'edit'} />
+              <CustomerPicker value={customer} onChange={handleCustomerChange} disabled={mode === 'edit'} />
+              {errors.customerId && <p className={fieldErrorClass}>{errors.customerId.message}</p>}
             </div>
             <div>
               <label className={labelClass}>
                 รถ <span className="text-red-500">*</span>
               </label>
-              <VehiclePicker value={vehicle} onChange={setVehicle} disabled={mode === 'edit'} />
+              <VehiclePicker value={vehicle} onChange={handleVehicleChange} disabled={mode === 'edit'} />
+              {errors.vehicleId && <p className={fieldErrorClass}>{errors.vehicleId.message}</p>}
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Section 2: ระยะเวลาสัญญา */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <SectionCard className="p-6">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5 flex items-center gap-2">
             <CalendarDays size={15} className="text-slate-400" />
             ระยะเวลาสัญญา
@@ -392,11 +410,10 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
               <input
                 id="startDate"
                 type="date"
-                required
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className={inputClass}
+                {...register('startDate')}
+                className={errors.startDate ? 'w-full bg-white border border-red-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors' : inputClass}
               />
+              {errors.startDate && <p className={fieldErrorClass}>{errors.startDate.message}</p>}
             </div>
             <div>
               <label htmlFor="dueDate" className={labelClass}>
@@ -405,17 +422,16 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
               <input
                 id="dueDate"
                 type="date"
-                required
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className={inputClass}
+                {...register('dueDate')}
+                className={errors.dueDate ? 'w-full bg-white border border-red-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors' : inputClass}
               />
+              {errors.dueDate && <p className={fieldErrorClass}>{errors.dueDate.message}</p>}
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Section 3: ราคาและเงื่อนไข */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <SectionCard className="p-6">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">
             ราคาและเงื่อนไข
           </h2>
@@ -429,9 +445,8 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
                   type="number"
                   min="0"
                   step="1"
-                  value={dailyRate}
-                  onChange={e => setDailyRate(e.target.value)}
                   placeholder="0"
+                  {...register('dailyRate')}
                   className={`${inputClass} pl-8`}
                 />
               </div>
@@ -445,9 +460,8 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
                   type="number"
                   min="0"
                   step="1"
-                  value={monthlyRate}
-                  onChange={e => setMonthlyRate(e.target.value)}
                   placeholder="0"
+                  {...register('monthlyRate')}
                   className={`${inputClass} pl-8`}
                 />
               </div>
@@ -461,9 +475,8 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
                   type="number"
                   min="0"
                   step="1"
-                  value={depositAmount}
-                  onChange={e => setDepositAmount(e.target.value)}
                   placeholder="0"
+                  {...register('depositAmount')}
                   className={`${inputClass} pl-8`}
                 />
               </div>
@@ -472,23 +485,29 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
             ค่าปรับแบตเตอรี่: ความจุลดลงเกิน 5% คิดเพิ่ม ฿200 ต่อครั้ง
           </div>
-        </div>
+        </SectionCard>
 
         {/* Section 4: เอกสารสัญญา */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <SectionCard className="p-6">
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5 flex items-center gap-2">
             <FileText size={15} className="text-slate-400" />
             เอกสารสัญญา
           </h2>
-          <FileUploader
-            value={documentUrl}
-            onChange={setDocumentUrl}
-            label="อัปโหลดสัญญา (PDF)"
-            folder="contracts"
-            accept="application/pdf"
-            hint="PDF ขนาดไม่เกิน 10 MB"
+          <Controller
+            name="documentUrl"
+            control={control}
+            render={({ field }) => (
+              <FileUploader
+                value={field.value}
+                onChange={field.onChange}
+                label="อัปโหลดสัญญา (PDF)"
+                folder="contracts"
+                accept="application/pdf"
+                hint="PDF ขนาดไม่เกิน 10 MB"
+              />
+            )}
           />
-        </div>
+        </SectionCard>
 
         {/* Submit */}
         <div className="flex justify-end gap-3">
@@ -501,11 +520,11 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           </button>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isSubmitting}
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-xl transition-colors"
           >
-            {submitting ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            {submitting ? 'กำลังบันทึก...' : mode === 'add' ? 'สร้างสัญญา' : 'บันทึกการแก้ไข'}
+            {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {isSubmitting ? 'กำลังบันทึก...' : mode === 'add' ? 'สร้างสัญญา' : 'บันทึกการแก้ไข'}
           </button>
         </div>
       </form>

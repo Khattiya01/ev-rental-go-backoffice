@@ -1,12 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import Link from 'next/link'
 import {
   Plus, Search, Receipt, CheckCircle2, Clock, AlertTriangle,
-  Banknote, Pencil, Trash2, X, ChevronLeft, ChevronRight,
+  Banknote, Pencil, Trash2, X,
   FileText, Eye, Car, Loader2,
 } from 'lucide-react'
+import PageHeader from '@/components/ui/page-header'
+import EmptyState from '@/components/ui/empty-state'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import SearchFilterBar from '@/components/ui/search-filter-bar'
+import ActionButton from '@/components/ui/action-button'
 import type { Invoice, BillingType, InvoiceStatus, Customer, Vehicle } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
@@ -283,32 +291,25 @@ function VehiclePicker({
   )
 }
 
-// ─── Form modal (Create / Edit) ───────────────────────────────
-interface InvoiceFormData {
-  customerId: string | null
-  customerName: string
-  vehicleId: string | null
-  vehiclePlate: string
-  vehicleMake: string
-  vehicleModel: string
-  description: string
-  billingType: BillingType
-  amount: string
-  dueDate: string
-}
+// ─── Form modal schema (Create / Edit) ───────────────────────
+const invoiceSchema = z.object({
+  customerId: z.string().nullable(),
+  customerName: z.string().min(1, 'กรุณาเลือกลูกค้า'),
+  customerPhone: z.string(),
+  vehicleId: z.string().nullable(),
+  vehiclePlate: z.string(),
+  vehicleMake: z.string(),
+  vehicleModel: z.string(),
+  description: z.string(),
+  billingType: z.enum(['daily', 'monthly', 'one_time']),
+  amount: z.string().refine(v => {
+    const n = parseFloat(v)
+    return !isNaN(n) && n > 0
+  }, { message: 'กรุณากรอกจำนวนเงินที่ถูกต้อง (> 0)' }),
+  dueDate: z.string().min(1, 'กรุณาระบุวันครบกำหนด'),
+})
 
-const EMPTY_FORM: InvoiceFormData = {
-  customerId: null,
-  customerName: '',
-  vehicleId: null,
-  vehiclePlate: '',
-  vehicleMake: '',
-  vehicleModel: '',
-  description: '',
-  billingType: 'monthly',
-  amount: '',
-  dueDate: '',
-}
+type InvoiceFormData = z.infer<typeof invoiceSchema>
 
 function InvoiceFormModal({
   invoice, onClose, onSaved,
@@ -318,11 +319,21 @@ function InvoiceFormModal({
   onSaved: (inv: Invoice) => void
 }) {
   const { success, error: toastError } = useToast()
-  const [form, setForm] = useState<InvoiceFormData>(
-    invoice
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<InvoiceFormData>({
+    resolver: zodResolver(invoiceSchema),
+    defaultValues: invoice
       ? {
           customerId: invoice.customerId ?? null,
           customerName: invoice.customerName,
+          customerPhone: '',
           vehicleId: null,
           vehiclePlate: invoice.vehiclePlate ?? '',
           vehicleMake: '',
@@ -332,54 +343,60 @@ function InvoiceFormModal({
           amount: String(invoice.amount),
           dueDate: invoice.dueDate,
         }
-      : EMPTY_FORM
-  )
-  const [saving, setSaving] = useState(false)
+      : {
+          customerId: null,
+          customerName: '',
+          customerPhone: '',
+          vehicleId: null,
+          vehiclePlate: '',
+          vehicleMake: '',
+          vehicleModel: '',
+          description: '',
+          billingType: 'monthly',
+          amount: '',
+          dueDate: '',
+        },
+  })
 
-  function set(key: keyof InvoiceFormData, value: string) {
-    setForm(prev => ({ ...prev, [key]: value }))
-  }
+  const watchedCustomerName = watch('customerName')
+  const watchedCustomerId = watch('customerId')
+  const watchedCustomerPhone = watch('customerPhone')
+  const watchedVehiclePlate = watch('vehiclePlate')
+  const watchedVehicleId = watch('vehicleId')
+  const watchedVehicleMake = watch('vehicleMake')
+  const watchedVehicleModel = watch('vehicleModel')
+
+  const selectedCustomer = watchedCustomerName
+    ? { id: watchedCustomerId ?? '', name: watchedCustomerName, phone: watchedCustomerPhone }
+    : null
+
+  const selectedVehicle = watchedVehiclePlate
+    ? { id: watchedVehicleId ?? '', plate: watchedVehiclePlate, make: watchedVehicleMake, model: watchedVehicleModel }
+    : null
 
   function handleCustomerSelect(c: { id: string; name: string; phone: string } | null) {
-    setForm(prev => ({ ...prev, customerId: c?.id ?? null, customerName: c?.name ?? '' }))
+    setValue('customerId', c?.id ?? null, { shouldValidate: true })
+    setValue('customerName', c?.name ?? '', { shouldValidate: true })
+    setValue('customerPhone', c?.phone ?? '')
   }
 
   function handleVehicleSelect(v: { id: string; plate: string; make: string; model: string } | null) {
-    setForm(prev => ({
-      ...prev,
-      vehicleId: v?.id ?? null,
-      vehiclePlate: v?.plate ?? '',
-      vehicleMake: v?.make ?? '',
-      vehicleModel: v?.model ?? '',
-    }))
+    setValue('vehicleId', v?.id ?? null)
+    setValue('vehiclePlate', v?.plate ?? '')
+    setValue('vehicleMake', v?.make ?? '')
+    setValue('vehicleModel', v?.model ?? '')
   }
 
-  const selectedCustomer = form.customerId && form.customerName
-    ? { id: form.customerId, name: form.customerName, phone: '' }
-    : null
-
-  const selectedVehicle = form.vehicleId && form.vehiclePlate
-    ? { id: form.vehicleId, plate: form.vehiclePlate, make: form.vehicleMake, model: form.vehicleModel }
-    : form.vehiclePlate && !form.vehicleId
-      ? { id: '', plate: form.vehiclePlate, make: form.vehicleMake, model: form.vehicleModel }
-      : null
-
-  async function handleSave() {
-    if (!form.customerName.trim()) { toastError('กรุณาเลือกลูกค้า'); return }
-    const amount = parseFloat(form.amount)
-    if (isNaN(amount) || amount <= 0) { toastError('กรุณากรอกจำนวนเงิน'); return }
-    if (!form.dueDate) { toastError('กรุณาระบุวันครบกำหนด'); return }
-
-    setSaving(true)
+  async function onSubmit(data: InvoiceFormData) {
     try {
       const body = {
-        customerId: form.customerId,
-        customerName: form.customerName.trim(),
-        vehiclePlate: form.vehiclePlate.trim() || null,
-        description: form.description.trim() || null,
-        billingType: form.billingType,
-        amount,
-        dueDate: form.dueDate,
+        customerId: data.customerId,
+        customerName: data.customerName.trim(),
+        vehiclePlate: data.vehiclePlate.trim() || null,
+        description: data.description.trim() || null,
+        billingType: data.billingType,
+        amount: parseFloat(data.amount),
+        dueDate: data.dueDate,
       }
       const res = invoice
         ? await fetch(`/api/invoices/${invoice.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -390,18 +407,22 @@ function InvoiceFormModal({
         success(invoice ? 'แก้ไข Invoice เรียบร้อย' : `สร้าง Invoice ${saved.invoiceNo} เรียบร้อย`)
         onSaved(saved)
       } else {
-        const data = await res.json() as { error?: string }
-        toastError(data.error ?? 'เกิดข้อผิดพลาด')
+        const errData = await res.json() as { error?: string }
+        const msg = errData.error ?? 'เกิดข้อผิดพลาด'
+        setError('root', { message: msg })
+        toastError(msg)
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
-    } finally {
-      setSaving(false)
+      const msg = 'เกิดข้อผิดพลาด กรุณาลองใหม่'
+      setError('root', { message: msg })
+      toastError(msg)
     }
   }
 
   const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors'
+  const inputErrCls = 'w-full bg-slate-50 border border-red-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors'
   const labelCls = 'block text-xs font-medium text-slate-600 mb-1.5'
+  const fieldErrCls = 'text-red-500 text-xs mt-1'
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
@@ -422,11 +443,27 @@ function InvoiceFormModal({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <form id="invoice-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
+          {errors.root && (
+            <p className="text-red-600 text-sm bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              {errors.root.message}
+            </p>
+          )}
+
+          {/* Hidden inputs for picker-driven fields */}
+          <input type="hidden" {...register('customerId')} />
+          <input type="hidden" {...register('customerName')} />
+          <input type="hidden" {...register('customerPhone')} />
+          <input type="hidden" {...register('vehicleId')} />
+          <input type="hidden" {...register('vehiclePlate')} />
+          <input type="hidden" {...register('vehicleMake')} />
+          <input type="hidden" {...register('vehicleModel')} />
+
           {/* Customer picker */}
           <div>
             <label className={labelCls}>ลูกค้า <span className="text-red-500">*</span></label>
             <CustomerPicker value={selectedCustomer} onChange={handleCustomerSelect} />
+            {errors.customerName && <p className={fieldErrCls}>{errors.customerName.message}</p>}
           </div>
 
           {/* Vehicle picker */}
@@ -438,7 +475,7 @@ function InvoiceFormModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>ประเภทการชำระ <span className="text-red-500">*</span></label>
-              <select value={form.billingType} onChange={e => set('billingType', e.target.value as BillingType)} className={inputCls}>
+              <select {...register('billingType')} className={inputCls}>
                 <option value="monthly">รายเดือน</option>
                 <option value="daily">รายวัน</option>
                 <option value="one_time">ครั้งเดียว</option>
@@ -446,30 +483,48 @@ function InvoiceFormModal({
             </div>
             <div className="col-span-2">
               <label className={labelCls}>รายละเอียด</label>
-              <input type="text" placeholder="เช่น ค่าเช่าเดือน พ.ค. 69" value={form.description}
-                onChange={e => set('description', e.target.value)} className={inputCls} />
+              <input
+                type="text"
+                placeholder="เช่น ค่าเช่าเดือน พ.ค. 69"
+                {...register('description')}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className={labelCls}>จำนวนเงิน (฿) <span className="text-red-500">*</span></label>
-              <input type="number" placeholder="8000" min="1" value={form.amount}
-                onChange={e => set('amount', e.target.value)} className={inputCls} />
+              <input
+                type="number"
+                placeholder="8000"
+                min="1"
+                {...register('amount')}
+                className={errors.amount ? inputErrCls : inputCls}
+              />
+              {errors.amount && <p className={fieldErrCls}>{errors.amount.message}</p>}
             </div>
             <div>
               <label className={labelCls}>วันครบกำหนด <span className="text-red-500">*</span></label>
-              <input type="date" value={form.dueDate}
-                onChange={e => set('dueDate', e.target.value)} className={inputCls} />
+              <input
+                type="date"
+                {...register('dueDate')}
+                className={errors.dueDate ? inputErrCls : inputCls}
+              />
+              {errors.dueDate && <p className={fieldErrCls}>{errors.dueDate.message}</p>}
             </div>
           </div>
-        </div>
+        </form>
 
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
           <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">
             ยกเลิก
           </button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-semibold transition-colors">
-            {saving ? 'กำลังบันทึก...' : invoice ? 'บันทึกการแก้ไข' : 'สร้าง Invoice'}
+          <button
+            form="invoice-form"
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-semibold transition-colors"
+          >
+            {isSubmitting ? 'กำลังบันทึก...' : invoice ? 'บันทึกการแก้ไข' : 'สร้าง Invoice'}
           </button>
         </div>
       </div>
@@ -598,12 +653,7 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-slate-800 text-xl font-bold">ใบแจ้งหนี้ &amp; การชำระเงิน</h1>
-          <p className="text-slate-500 text-sm mt-0.5">จัดการ Invoice และติดตามการชำระค่าเช่า</p>
-        </div>
+      <PageHeader title="ใบแจ้งหนี้ & การชำระเงิน" subtitle="จัดการ Invoice และติดตามการชำระค่าเช่า">
         {canWrite && (
           <button
             onClick={() => setCreateOpen(true)}
@@ -613,7 +663,7 @@ export default function InvoicesPage() {
             สร้าง Invoice
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4">
@@ -630,31 +680,14 @@ export default function InvoicesPage() {
           iconClass="bg-slate-100 text-slate-500" valueClass="text-slate-800" />
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 px-4 py-3 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-48">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="ค้นหาชื่อลูกค้า, เลข Invoice, ทะเบียน..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
-          />
-        </div>
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
-          {FILTER_TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => { setFilter(tab.key); setPage(1) }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filter === tab.key ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SearchFilterBar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(1) }}
+        placeholder="ค้นหาชื่อลูกค้า, เลข Invoice, ทะเบียน..."
+        filterOptions={FILTER_TABS.map(t => ({ value: t.key, label: t.label }))}
+        activeFilter={filter}
+        onFilterChange={v => { setFilter(v as FilterTab); setPage(1) }}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -681,14 +714,8 @@ export default function InvoicesPage() {
               ))
             ) : invoiceList.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-16">
-                  <div className="flex flex-col items-center gap-2 text-slate-400">
-                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-1">
-                      <Receipt size={22} className="text-slate-300" />
-                    </div>
-                    <p className="font-medium text-slate-500">ยังไม่มี Invoice</p>
-                    <p className="text-sm">กดปุ่ม &quot;สร้าง Invoice&quot; เพื่อเพิ่มรายการแรก</p>
-                  </div>
+                <td colSpan={8} className="text-center">
+                  <EmptyState icon={Receipt} title="ยังไม่มี Invoice" subtitle={'กดปุ่ม "สร้าง Invoice" เพื่อเพิ่มรายการแรก'} />
                 </td>
               </tr>
             ) : (
@@ -752,35 +779,12 @@ export default function InvoicesPage() {
                   {/* Actions */}
                   <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      {/* View detail */}
-                      <Link
-                        href={`/billing/invoices/${inv.id}`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="ดูใบแจ้งหนี้"
-                      >
-                        <Eye size={14} />
-                      </Link>
-
-                      {/* Edit */}
+                      <ActionButton variant="view" href={`/billing/invoices/${inv.id}`} icon={Eye} title="ดูใบแจ้งหนี้" />
                       {canWrite && (
-                        <button
-                          onClick={() => setEditTarget(inv)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="แก้ไข"
-                        >
-                          <Pencil size={14} />
-                        </button>
+                        <ActionButton variant="edit" onClick={() => setEditTarget(inv)} icon={Pencil} title="แก้ไข" />
                       )}
-
-                      {/* Delete */}
                       {canWrite && inv.status !== 'paid' && (
-                        <button
-                          onClick={() => setDeleteTarget(inv)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="ลบ"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <ActionButton variant="delete" onClick={() => setDeleteTarget(inv)} icon={Trash2} title="ลบ" />
                       )}
                     </div>
                   </td>
@@ -790,28 +794,13 @@ export default function InvoicesPage() {
           </tbody>
         </table>
 
-        {/* Pagination */}
         {!loading && total > 0 && (
-          <div className="px-4 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <span className="text-sm text-slate-500">
-              แสดง {invoiceList.length} จาก {total} รายการ
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage(p => p - 1)} disabled={page === 1}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <span className="text-sm text-slate-600 px-2 tabular-nums">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
+          <PaginationFooter
+            page={page}
+            totalPages={totalPages}
+            label={`แสดง ${invoiceList.length} จาก ${total} รายการ`}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

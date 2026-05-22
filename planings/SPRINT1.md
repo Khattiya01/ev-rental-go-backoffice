@@ -139,13 +139,13 @@
 - [x] `app/(backoffice)/error.tsx` — global error boundary (retry button)
 - [x] `app/(backoffice)/loading.tsx` — global loading skeleton (table + header)
 
-#### Day 10–11 — 22–23 พ.ค.
+#### Day 10–11 — 22–23 พ.ค. ✅ DONE
 **Focus: UI Polish + Edge Cases**
 
-- [ ] Empty states ทุก table
-- [ ] Error handling (API errors → toast/alert)
-- [ ] Loading skeletons
-- [ ] Pagination ทุก table ที่มีข้อมูลเยอะ
+- [x] Empty states ทุก table ทุก Page in sprint 1 ที่ทำ
+- [x] Error handling (API errors → toast/alert) ทุก Page in sprint 1 ที่ทำ
+- [x] Loading skeletons ทุก Page in sprint 1 ที่ทำ
+- [x] Pagination ทุก table ที่มีข้อมูลเยอะ ทุก Page in sprint 1 ที่ทำ
 
 #### Day 12 — 24 พ.ค. 🎯 DEMO DAY
 **Sprint 1 Demo Checklist:**

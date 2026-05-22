@@ -32,7 +32,7 @@ export default function EditVehiclePage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
       </div>
     )

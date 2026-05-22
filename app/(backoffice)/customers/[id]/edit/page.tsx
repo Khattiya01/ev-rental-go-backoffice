@@ -32,7 +32,11 @@ export default function EditCustomerPage() {
   }, [params.id])
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20 text-slate-400">{t('detail.loading')}</div>
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
+    )
   }
 
   if (error || !customer) {

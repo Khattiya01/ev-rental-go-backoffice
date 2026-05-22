@@ -27,7 +27,11 @@ export default function EditContractPage() {
   }, [params.id])
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">กำลังโหลด...</div>
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
+    )
   }
   if (error || !contract) {
     return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">ไม่พบสัญญา</div>

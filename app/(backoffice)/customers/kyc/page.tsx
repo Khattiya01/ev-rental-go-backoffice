@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, ImageOff, ArrowLeft } from 'lucide-react'
+import { CheckCircle, XCircle, ImageOff } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { Customer } from '@/lib/types'
 import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
 
 
 export default function KYCApprovalPage() {
@@ -92,29 +94,24 @@ export default function KYCApprovalPage() {
     : []
 
   if (loading || !customer) {
-    return <div className="text-center py-20 text-slate-400">{t('kyc.loading')}</div>
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <button
-          onClick={() => router.push('/customers')}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors"
-        >
-          <ArrowLeft size={16} /> {t('kyc.backToList')}
-        </button>
-        <h1 className="text-slate-800 text-xl font-bold">
-          {t('kyc.title', { name: customer.name })}
-        </h1>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/customers')}
+        title={t('kyc.title', { name: customer.name })}
+      />
 
       {/* Top row: Profile + Personal Info + Actions */}
       <div className="grid grid-cols-3 gap-5">
         {/* Profile photo */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.profilePhoto')}</h2>
+        <SectionCard title={t('kyc.profilePhoto')}>
           {customer.avatarUrl ? (
             <ClickableImage
               src={customer.avatarUrl}
@@ -137,11 +134,10 @@ export default function KYCApprovalPage() {
               {customer.driverType}
             </span>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Personal Info + Actions — spans 2 cols */}
-        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-5 flex flex-col">
-          <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.personalInfo')}</h2>
+        <SectionCard title={t('kyc.personalInfo')} className="col-span-2 flex flex-col">
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 flex-1">
             {extractedData.map(item => (
               <div key={item.label}>
@@ -174,12 +170,11 @@ export default function KYCApprovalPage() {
               </button>
             </div>
           )}
-        </div>
+        </SectionCard>
       </div>
 
       {/* KYC Rejection History */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-slate-800 font-semibold mb-3">{t('kyc.rejectionHistory')}</h2>
+      <SectionCard title={t('kyc.rejectionHistory')}>
         {customer.kycNotes ? (
           <div className="space-y-2">
             {customer.kycNotes.split('\n').map((entry, i) => (
@@ -192,11 +187,10 @@ export default function KYCApprovalPage() {
         ) : (
           <p className="text-slate-400 text-sm">{t('kyc.noRejectionHistory')}</p>
         )}
-      </div>
+      </SectionCard>
 
       {/* Bottom: KYC Documents — full width 2×2 grid */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-slate-800 font-semibold mb-4">{t('kyc.kycDocuments')}</h2>
+      <SectionCard title={t('kyc.kycDocuments')}>
         <div className="grid grid-cols-2 gap-4">
           {[
             { label: t('detail.kycIdFront'), url: customer.idCardFrontUrl },
@@ -222,7 +216,7 @@ export default function KYCApprovalPage() {
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
 
       {/* Image lightbox */}
       {preview && (

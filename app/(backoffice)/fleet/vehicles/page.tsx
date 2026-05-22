@@ -1,26 +1,23 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Plus, Search, Eye, Pencil, Trash2, Zap, Gauge, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Eye, Pencil, Trash2, Zap, Gauge } from 'lucide-react'
 import Badge from '@/components/ui/badge'
 import CircularProgress from '@/components/ui/circular-progress'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import EmptyState from '@/components/ui/empty-state'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import SearchFilterBar from '@/components/ui/search-filter-bar'
+import ActionButton from '@/components/ui/action-button'
 import type { Vehicle } from '@/lib/types'
 
 const PAGE_SIZE = 20
-
-const STATUS_DOT: Record<string, string> = {
-  available: 'bg-green-400',
-  rented: 'bg-blue-400',
-  charging: 'bg-cyan-400',
-  under_repair: 'bg-amber-400',
-  offline: 'bg-slate-400',
-}
 
 export default function VehiclesPage() {
   const t = useTranslations('vehicles')
@@ -28,13 +25,13 @@ export default function VehiclesPage() {
   const { success, error: toastError } = useToast()
   const canWrite = useCanWrite()
 
-  const statusOptions = [
-    { label: t('filterAll'), value: '' },
-    { label: t('filterAvailable'), value: 'available' },
-    { label: t('filterRented'), value: 'rented' },
-    { label: t('filterCharging'), value: 'charging' },
-    { label: t('filterRepair'), value: 'under_repair' },
-    { label: t('filterOffline'), value: 'offline' },
+  const filterOptions = [
+    { value: '', label: t('filterAll') },
+    { value: 'available', label: t('filterAvailable'), dotColor: 'bg-green-400' },
+    { value: 'rented', label: t('filterRented'), dotColor: 'bg-blue-400' },
+    { value: 'charging', label: t('filterCharging'), dotColor: 'bg-cyan-400' },
+    { value: 'under_repair', label: t('filterRepair'), dotColor: 'bg-amber-400' },
+    { value: 'offline', label: t('filterOffline'), dotColor: 'bg-slate-400' },
   ]
 
   const [search, setSearch] = useState('')
@@ -106,16 +103,22 @@ export default function VehiclesPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
+  function handleFilterChange(value: string) {
+    setStatusFilter(value)
+    setPage(1)
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value)
+    setPage(1)
+  }
+
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
-          </p>
-        </div>
+      <PageHeader
+        title={t('title')}
+        subtitle={total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
+      >
         {canWrite && (
           <Link
             href="/fleet/vehicles/new"
@@ -125,46 +128,21 @@ export default function VehiclesPage() {
             {t('addVehicle')}
           </Link>
         )}
-      </div>
+      </PageHeader>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 px-4 py-3">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-52">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              placeholder={t('searchPlaceholder')}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
-            />
-          </div>
-          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
-            {statusOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => { setStatusFilter(opt.value); setPage(1) }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  statusFilter === opt.value
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {opt.value && (
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${STATUS_DOT[opt.value] ?? 'bg-slate-400'}`} />
-                )}
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <SearchFilterBar
+        search={search}
+        onSearchChange={handleSearchChange}
+        placeholder={t('searchPlaceholder')}
+        filterOptions={filterOptions}
+        activeFilter={statusFilter}
+        onFilterChange={handleFilterChange}
+      />
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -193,14 +171,8 @@ export default function VehiclesPage() {
               ))
             ) : vehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-16">
-                  <div className="flex flex-col items-center gap-2 text-slate-400">
-                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-1">
-                      <Zap size={22} className="text-slate-300" />
-                    </div>
-                    <p className="font-medium text-slate-500">{t('empty')}</p>
-                    <p className="text-sm">{t('emptyHint')}</p>
-                  </div>
+                <td colSpan={7} className="text-center">
+                  <EmptyState icon={Zap} title={t('empty')} subtitle={t('emptyHint')} />
                 </td>
               </tr>
             ) : (
@@ -249,29 +221,16 @@ export default function VehiclesPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/fleet/vehicles/${v.id}`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title={t('viewDetails')}
-                      >
-                        <Eye size={15} />
-                      </Link>
+                      <ActionButton variant="view" href={`/fleet/vehicles/${v.id}`} icon={Eye} title={t('viewDetails')} />
                       {canWrite && (
                         <>
-                          <Link
-                            href={`/fleet/vehicles/${v.id}/edit`}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                            title={t('edit')}
-                          >
-                            <Pencil size={15} />
-                          </Link>
-                          <button
+                          <ActionButton variant="edit" href={`/fleet/vehicles/${v.id}/edit`} icon={Pencil} title={t('edit')} />
+                          <ActionButton
+                            variant="delete"
                             onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            icon={Trash2}
                             title={t('delete')}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          />
                         </>
                       )}
                     </div>
@@ -283,30 +242,12 @@ export default function VehiclesPage() {
         </table>
 
         {!loading && (
-          <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <span className="text-sm text-slate-500">
-              {t('showing', { count: vehicles.length, total })}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage(p => p - 1)}
-                disabled={page === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <span className="text-sm text-slate-600 px-2 tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={page * PAGE_SIZE >= total}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
+          <PaginationFooter
+            page={page}
+            totalPages={totalPages}
+            label={t('showing', { count: vehicles.length, total })}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

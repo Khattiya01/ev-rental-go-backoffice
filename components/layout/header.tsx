@@ -86,16 +86,6 @@ export default function Header({ user, onToggle, collapsed }: HeaderProps) {
 
       {/* Right */}
       <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder={t('searchPlaceholder')}
-            className="bg-slate-100 border border-slate-200 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400 w-48 transition-colors"
-          />
-        </div>
-
         {/* Language Switcher Dropdown */}
         <div className="relative" ref={langRef}>
           <button

@@ -1,12 +1,36 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Pencil, Trash2, AlertCircle, Loader2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserPlus, Pencil, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { useTranslations } from 'next-intl'
 import type { AdminUser, AdminRole } from '@/lib/types'
+import PageHeader from '@/components/ui/page-header'
+import EmptyState from '@/components/ui/empty-state'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import ActionButton from '@/components/ui/action-button'
 
+// ─── Schemas ──────────────────────────────────────────────────────
+const createSchema = z.object({
+  name: z.string().min(1, 'กรุณากรอกชื่อ'),
+  email: z.string().email('รูปแบบอีเมลไม่ถูกต้อง'),
+  password: z.string().min(8, 'รหัสผ่านอย่างน้อย 8 ตัวอักษร'),
+  role: z.enum(['super_admin', 'admin', 'viewer']),
+})
+
+const editSchema = z.object({
+  name: z.string().min(1, 'กรุณากรอกชื่อ'),
+  role: z.enum(['super_admin', 'admin', 'viewer']),
+})
+
+type CreateFormData = z.infer<typeof createSchema>
+type EditFormData = z.infer<typeof editSchema>
+
+// ─── Sub-components ───────────────────────────────────────────────
 const roleBadge: Record<AdminRole, string> = {
   super_admin: 'bg-blue-100 text-blue-700 border border-blue-200',
   admin: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
@@ -31,8 +55,6 @@ function UserAvatar({ name }: { name: string }) {
   )
 }
 
-const EMPTY_CREATE = { name: '', email: '', password: '', role: 'admin' as AdminRole }
-const EMPTY_EDIT = { name: '', role: 'admin' as AdminRole }
 const PAGE_SIZE = 10
 
 export default function UsersSettingsPage() {
@@ -40,40 +62,43 @@ export default function UsersSettingsPage() {
   const { success, error: toastError } = useToast()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [createForm, setCreateForm] = useState(EMPTY_CREATE)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [createLoading, setCreateLoading] = useState(false)
-
   const [editOpen, setEditOpen] = useState(false)
   const [editUser, setEditUser] = useState<AdminUser | null>(null)
-  const [editForm, setEditForm] = useState(EMPTY_EDIT)
-  const [editError, setEditError] = useState<string | null>(null)
-  const [editLoading, setEditLoading] = useState(false)
-
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-
   const [showPassword, setShowPassword] = useState(false)
   const [page, setPage] = useState(1)
 
+  // ─── Create form ──────────────────────────────────────────────
+  const createForm = useForm<CreateFormData>({
+    resolver: zodResolver(createSchema),
+    defaultValues: { name: '', email: '', password: '', role: 'admin' },
+  })
+
+  // ─── Edit form ────────────────────────────────────────────────
+  const editForm = useForm<EditFormData>({
+    resolver: zodResolver(editSchema),
+    defaultValues: { name: '', role: 'admin' },
+  })
+
   async function fetchUsers() {
     setLoading(true)
-    setError(null)
+    setFetchError(null)
     try {
       const res = await fetch('/api/users')
       if (!res.ok) {
-        const data = await res.json()
-        setError(data.error ?? t('toast.fetchError'))
+        const data = await res.json() as { error?: string }
+        setFetchError(data.error ?? t('toast.fetchError'))
         return
       }
       const data: AdminUser[] = await res.json()
       setUsers(data)
     } catch {
-      setError(t('toast.fetchError'))
+      setFetchError(t('toast.fetchError'))
     } finally {
       setLoading(false)
     }
@@ -84,46 +109,38 @@ export default function UsersSettingsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    setCreateLoading(true)
-    setCreateError(null)
+  async function handleCreate(data: CreateFormData) {
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm),
+        body: JSON.stringify(data),
       })
       if (!res.ok) {
-        const data = await res.json()
-        setCreateError(data.error ?? t('toast.createError'))
+        const errData = await res.json() as { error?: string }
+        createForm.setError('root', { message: errData.error ?? t('toast.createError') })
         return
       }
       setCreateOpen(false)
-      setCreateForm(EMPTY_CREATE)
+      createForm.reset()
       await fetchUsers()
       success(t('toast.created'))
     } catch {
-      setCreateError(t('toast.createError'))
-    } finally {
-      setCreateLoading(false)
+      createForm.setError('root', { message: t('toast.createError') })
     }
   }
 
-  async function handleEdit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleEdit(data: EditFormData) {
     if (!editUser) return
-    setEditLoading(true)
-    setEditError(null)
     try {
       const res = await fetch(`/api/users/${editUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(data),
       })
       if (!res.ok) {
-        const data = await res.json()
-        setEditError(data.error ?? t('toast.updateError'))
+        const errData = await res.json() as { error?: string }
+        editForm.setError('root', { message: errData.error ?? t('toast.updateError') })
         return
       }
       setEditOpen(false)
@@ -131,9 +148,7 @@ export default function UsersSettingsPage() {
       await fetchUsers()
       success(t('toast.updated'))
     } catch {
-      setEditError(t('toast.updateError'))
-    } finally {
-      setEditLoading(false)
+      editForm.setError('root', { message: t('toast.updateError') })
     }
   }
 
@@ -157,40 +172,39 @@ export default function UsersSettingsPage() {
     }
   }
 
+  function openEdit(user: AdminUser) {
+    setEditUser(user)
+    editForm.reset({ name: user.name, role: user.role })
+    setEditOpen(true)
+  }
+
   function openDelete(user: AdminUser) {
     setDeleteUser(user)
     setDeleteOpen(true)
   }
 
-  function openEdit(user: AdminUser) {
-    setEditUser(user)
-    setEditForm({ name: user.name, role: user.role })
-    setEditError(null)
-    setEditOpen(true)
-  }
+  const inputCls = 'w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400 transition-colors'
+  const inputErrCls = 'w-full bg-slate-100 border border-red-300 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-red-400 transition-colors'
+  const fieldErrCls = 'text-red-500 text-xs mt-1'
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {users.length > 0 ? `${users.length} admin users` : 'Manage admin access'}
-          </p>
-        </div>
+      <PageHeader
+        title={t('title')}
+        subtitle={users.length > 0 ? `${users.length} admin users` : 'Manage admin access'}
+      >
         <button
-          onClick={() => { setCreateForm(EMPTY_CREATE); setCreateError(null); setCreateOpen(true) }}
+          onClick={() => { createForm.reset(); setCreateOpen(true) }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
         >
           <UserPlus className="w-4 h-4" />
           {t('addNewAdmin')}
         </button>
-      </div>
+      </PageHeader>
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          {error}
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          {fetchError}
         </div>
       )}
 
@@ -219,13 +233,8 @@ export default function UsersSettingsPage() {
               ))
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-16">
-                  <div className="flex flex-col items-center gap-2 text-slate-400">
-                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-1">
-                      <UserPlus size={22} className="text-slate-300" />
-                    </div>
-                    <p className="font-medium text-slate-500">{t('empty')}</p>
-                  </div>
+                <td colSpan={5} className="text-center">
+                  <EmptyState icon={UserPlus} title={t('empty')} />
                 </td>
               </tr>
             ) : (
@@ -242,20 +251,8 @@ export default function UsersSettingsPage() {
                   <td className="px-5 py-3.5 text-slate-500 text-sm tabular-nums">{new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(user)}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title={t('edit')}
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={() => openDelete(user)}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title={t('delete')}
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      <ActionButton variant="edit" onClick={() => openEdit(user)} icon={Pencil} title={t('edit')} />
+                      <ActionButton variant="delete" onClick={() => openDelete(user)} icon={Trash2} title={t('delete')} />
                     </div>
                   </td>
                 </tr>
@@ -265,43 +262,25 @@ export default function UsersSettingsPage() {
         </table>
 
         {!loading && users.length > 0 && (
-          <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <span className="text-sm text-slate-500">
-              Showing {Math.min((page - 1) * PAGE_SIZE + 1, users.length)}–{Math.min(page * PAGE_SIZE, users.length)} of {users.length}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage(p => p - 1)}
-                disabled={page === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <span className="text-sm text-slate-600 px-2 tabular-nums">
-                {page} / {Math.max(1, Math.ceil(users.length / PAGE_SIZE))}
-              </span>
-              <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={page * PAGE_SIZE >= users.length}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
+          <PaginationFooter
+            page={page}
+            totalPages={Math.max(1, Math.ceil(users.length / PAGE_SIZE))}
+            label={`Showing ${Math.min((page - 1) * PAGE_SIZE + 1, users.length)}–${Math.min(page * PAGE_SIZE, users.length)} of ${users.length}`}
+            onPageChange={setPage}
+          />
         )}
       </div>
 
       {/* Create Modal */}
       <Modal
         isOpen={createOpen}
-        onClose={() => { setCreateOpen(false); setShowPassword(false) }}
+        onClose={() => { setCreateOpen(false); setShowPassword(false); createForm.reset() }}
         title={t('createModal.title')}
         footer={
           <>
             <button
               type="button"
-              onClick={() => setCreateOpen(false)}
+              onClick={() => { setCreateOpen(false); setShowPassword(false); createForm.reset() }}
               className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
             >
               {t('createModal.cancel')}
@@ -309,52 +288,51 @@ export default function UsersSettingsPage() {
             <button
               form="create-user-form"
               type="submit"
-              disabled={createLoading}
+              disabled={createForm.formState.isSubmitting}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              {createLoading ? (
+              {createForm.formState.isSubmitting ? (
                 <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('createModal.saving')}</span>
               ) : t('createModal.save')}
             </button>
           </>
         }
       >
-        <form id="create-user-form" onSubmit={handleCreate} className="space-y-4">
-          {createError && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {createError}
-            </div>
+        <form id="create-user-form" onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
+          {createForm.formState.errors.root && (
+            <p className="text-red-600 text-sm bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              {createForm.formState.errors.root.message}
+            </p>
           )}
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('createModal.nameLabel')}</label>
             <input
               type="text"
-              required
-              value={createForm.name}
-              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+              {...createForm.register('name')}
+              className={createForm.formState.errors.name ? inputErrCls : inputCls}
             />
+            {createForm.formState.errors.name && (
+              <p className={fieldErrCls}>{createForm.formState.errors.name.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('createModal.emailLabel')}</label>
             <input
               type="email"
-              required
-              value={createForm.email}
-              onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+              {...createForm.register('email')}
+              className={createForm.formState.errors.email ? inputErrCls : inputCls}
             />
+            {createForm.formState.errors.email && (
+              <p className={fieldErrCls}>{createForm.formState.errors.email.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('createModal.passwordLabel')}</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                required
-                value={createForm.password}
-                onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 pr-10 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+                {...createForm.register('password')}
+                className={`${createForm.formState.errors.password ? inputErrCls : inputCls} pr-10`}
               />
               <button
                 type="button"
@@ -364,14 +342,15 @@ export default function UsersSettingsPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {createForm.formState.errors.password && (
+              <p className={fieldErrCls}>{createForm.formState.errors.password.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('createModal.roleLabel')}</label>
             <select
-              required
-              value={createForm.role}
-              onChange={e => setCreateForm(f => ({ ...f, role: e.target.value as AdminRole }))}
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+              {...createForm.register('role')}
+              className={inputCls}
             >
               <option value="super_admin">{t('roles.super_admin')}</option>
               <option value="admin">{t('roles.admin')}</option>
@@ -384,13 +363,13 @@ export default function UsersSettingsPage() {
       {/* Edit Modal */}
       <Modal
         isOpen={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={() => { setEditOpen(false); setEditUser(null) }}
         title={t('editModal.title')}
         footer={
           <>
             <button
               type="button"
-              onClick={() => setEditOpen(false)}
+              onClick={() => { setEditOpen(false); setEditUser(null) }}
               className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
             >
               {t('editModal.cancel')}
@@ -398,40 +377,38 @@ export default function UsersSettingsPage() {
             <button
               form="edit-user-form"
               type="submit"
-              disabled={editLoading}
+              disabled={editForm.formState.isSubmitting}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              {editLoading ? (
+              {editForm.formState.isSubmitting ? (
                 <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('editModal.saving')}</span>
               ) : t('editModal.save')}
             </button>
           </>
         }
       >
-        <form id="edit-user-form" onSubmit={handleEdit} className="space-y-4">
-          {editError && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {editError}
-            </div>
+        <form id="edit-user-form" onSubmit={editForm.handleSubmit(handleEdit)} className="space-y-4">
+          {editForm.formState.errors.root && (
+            <p className="text-red-600 text-sm bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              {editForm.formState.errors.root.message}
+            </p>
           )}
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('editModal.nameLabel')}</label>
             <input
               type="text"
-              required
-              value={editForm.name}
-              onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+              {...editForm.register('name')}
+              className={editForm.formState.errors.name ? inputErrCls : inputCls}
             />
+            {editForm.formState.errors.name && (
+              <p className={fieldErrCls}>{editForm.formState.errors.name.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-slate-500 text-sm mb-1">{t('editModal.roleLabel')}</label>
             <select
-              required
-              value={editForm.role}
-              onChange={e => setEditForm(f => ({ ...f, role: e.target.value as AdminRole }))}
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400"
+              {...editForm.register('role')}
+              className={inputCls}
             >
               <option value="super_admin">{t('roles.super_admin')}</option>
               <option value="admin">{t('roles.admin')}</option>

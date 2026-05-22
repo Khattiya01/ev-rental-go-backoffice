@@ -6,9 +6,11 @@ import { useTranslations } from 'next-intl'
 import type { Vehicle } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
@@ -49,7 +51,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
       </div>
     )
@@ -81,26 +83,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-
-        <div className="flex items-center gap-4">
-
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-          >
-            <ArrowLeft size={16} />
-          </button>
-
-          <div className="flex items-center gap-3">
-            <h1 className="text-slate-800 text-xl font-bold">{vehicle.make} {vehicle.model}</h1>
-            <Badge variant={vehicle.status} />
-          </div>
-
-        </div>
-
+      <PageHeader
+        onBack={() => router.back()}
+        title={<>{vehicle.make} {vehicle.model} <Badge variant={vehicle.status} /></>}
+      >
         {canWrite && (
           <button
             onClick={() => router.push(`/fleet/vehicles/${vehicle.id}/edit`)}
@@ -110,7 +96,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             {t('edit')}
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200">
@@ -132,8 +118,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       {activeTab === 'general' && (
         <div className="grid grid-cols-2 gap-5">
           {/* Photo Gallery */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">{t('info.photos')}</h2>
+          <SectionCard title={t('info.photos')}>
             {allImages.length > 0 ? (
               <>
                 <img
@@ -165,12 +150,11 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-slate-400 text-sm">{t('info.noPhoto')}</p>
               </div>
             )}
-          </div>
+          </SectionCard>
 
           {/* Registration Details */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-slate-800 font-semibold mb-4">{t('info.registrationDetails')}</h2>
+            <SectionCard title={t('info.registrationDetails')}>
               <dl className="space-y-2.5">
                 {([
                   ['VIN', vehicle.vin ?? '-'],
@@ -185,9 +169,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
               </dl>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-slate-800 font-semibold mb-4">{t('info.currentStatus')}</h2>
+            </SectionCard>
+            <SectionCard title={t('info.currentStatus')}>
               <dl className="space-y-2.5">
                 {([
                   [t('info.odometer'), `${vehicle.odometer.toLocaleString()} km`],
@@ -205,7 +188,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                   <dd><Badge variant={vehicle.status} /></dd>
                 </div>
               </dl>
-            </div>
+            </SectionCard>
           </div>
         </div>
       )}
@@ -213,8 +196,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       {/* Tab: Telematics & Battery */}
       {activeTab === 'telematics' && (
         <div className="grid grid-cols-2 gap-5">
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">{t('telematics.socTitle')}</h2>
+          <SectionCard title={t('telematics.socTitle')}>
             <div className="flex items-center justify-center">
               <div className="text-center">
                 <div className="text-6xl font-bold text-blue-500">{vehicle.socPercent}%</div>
@@ -224,9 +206,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">{t('telematics.sohTitle')}</h2>
+          </SectionCard>
+          <SectionCard title={t('telematics.sohTitle')}>
             <div className="space-y-4">
               {[
                 { label: t('telematics.stateOfHealth'), value: '94%' },
@@ -242,13 +223,13 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
         </div>
       )}
 
       {/* Tab: Rental History */}
       {activeTab === 'history' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
         </div>
       )}

@@ -3,6 +3,7 @@ import AlertFeed from '@/components/dashboard/alert-feed'
 import RevenueChart from '@/components/charts/revenue-chart'
 import DashboardMapClient from '@/components/maps/DashboardMapClient'
 import { mockVehicles, mockAlerts, mockCustomers, revenueData } from '@/lib/mock-data'
+import PageHeader from '@/components/ui/page-header'
 
 const sparkBase = [40, 55, 35, 60, 45, 70, 65, 80]
 
@@ -15,7 +16,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-slate-800 text-xl font-bold">Dashboard Overview</h1>
+      <PageHeader title="Dashboard Overview" />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-5 gap-4">

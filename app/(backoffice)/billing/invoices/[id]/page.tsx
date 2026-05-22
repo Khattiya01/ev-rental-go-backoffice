@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, CheckCircle2, Clock, AlertTriangle, Check,
+  CheckCircle2, Clock, AlertTriangle, Check,
   Loader2, Pencil, Trash2, X, Banknote, FileText, Eye,
   Receipt,
 } from 'lucide-react'
@@ -15,6 +15,8 @@ import { useToast } from '@/components/ui/toast'
 import ImageUploader from '@/components/ui/image-uploader'
 import ImageLightbox from '@/components/ui/image-lightbox'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
 
 const PROMPTPAY_DEFAULTS = { promptpayId: '', promptpayName: '' }
 
@@ -300,7 +302,11 @@ export default function InvoiceDetailPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">กำลังโหลด...</div>
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
+    )
   }
   if (!invoice) return null
 
@@ -310,30 +316,17 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="flex items-center gap-2.5">
-            <div>
-              <h1 className="text-slate-800 text-xl font-bold font-mono">{invoice.invoiceNo}</h1>
-              <p className="text-slate-400 text-xs mt-0.5">{invoice.customerName}</p>
-            </div>
-          </div>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLE[invoice.status]}`}>
-            {STATUS_ICON[invoice.status]}
-            {STATUS_LABEL[invoice.status]}
-          </span>
-        </div>
-
+      <PageHeader
+        onBack={() => router.back()}
+        title={<span className="font-mono">{invoice.invoiceNo}</span>}
+        subtitle={invoice.customerName}
+      >
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLE[invoice.status]}`}>
+          {STATUS_ICON[invoice.status]}
+          {STATUS_LABEL[invoice.status]}
+        </span>
         {canWrite && (
-          <div className="flex gap-2">
+          <>
             <button
               onClick={() => setEditOpen(true)}
               className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -350,16 +343,15 @@ export default function InvoiceDetailPage() {
                 ลบ
               </button>
             )}
-          </div>
+          </>
         )}
-      </div>
+      </PageHeader>
 
       {/* Body */}
       <div className="grid grid-cols-5 gap-5">
         {/* ── Left: Invoice details ── */}
         <div className="col-span-2 space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">รายละเอียดใบแจ้งหนี้</h2>
+          <SectionCard title="รายละเอียดใบแจ้งหนี้">
             <dl className="space-y-3">
               <div>
                 <dt className="text-slate-400 text-xs">ยอดชำระ</dt>
@@ -394,7 +386,7 @@ export default function InvoiceDetailPage() {
                 )}
               </div>
             </dl>
-          </div>
+          </SectionCard>
 
           {/* Link back to contract */}
           {invoice.contractId && (
@@ -422,10 +414,7 @@ export default function InvoiceDetailPage() {
         {/* ── Right: Payment + Slip ── */}
         <div className="col-span-3 space-y-4">
           {/* QR + Mark Paid */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-slate-800 font-semibold">ช่องทางชำระเงิน</h2>
-            </div>
+          <SectionCard title="ช่องทางชำระเงิน">
 
             {invoice.status === 'paid' ? (
               <div className="flex items-center gap-3 py-4">
@@ -487,11 +476,10 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
             ) : null}
-          </div>
+          </SectionCard>
 
           {/* Slip */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-slate-800 font-semibold mb-4">สลิปการโอน</h2>
+          <SectionCard title="สลิปการโอน">
 
             {invoice.status === 'paid' && invoice.slipUrl ? (
               /* Paid + has slip → show preview */
@@ -542,7 +530,7 @@ export default function InvoiceDetailPage() {
                 <p className="text-slate-400 text-xs">อัปโหลดสลิปก่อน แล้วกด &quot;ยืนยันชำระแล้ว&quot; เพื่อปิดบิล</p>
               </div>
             ) : null}
-          </div>
+          </SectionCard>
         </div>
       </div>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, Pencil, ClipboardList, FileText } from 'lucide-react'
+import { Mail, Phone, MapPin, CreditCard, Calendar, Car, UserCircle, Pencil, ClipboardList, FileText } from 'lucide-react'
 import type { Customer } from '@/lib/types'
 import type { Contract } from '@/db/schema'
 import Badge from '@/components/ui/badge'
@@ -12,6 +12,8 @@ import ImageLightbox, { ClickableImage } from '@/components/ui/image-lightbox'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import SectionCard from '@/components/ui/section-card'
 
 export default function CustomerProfilePage() {
   const params = useParams()
@@ -135,7 +137,9 @@ export default function CustomerProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-slate-400">{t('detail.loading')}</div>
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+      </div>
     )
   }
 
@@ -165,23 +169,11 @@ export default function CustomerProfilePage() {
 
   return (
     <div className="space-y-5">
-      {/* Page title */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-slate-800 text-xl font-bold">{t('detail.title')}</h1>
-            <p className="text-slate-500 text-sm mt-0.5">{t('detail.subtitle')}</p>
-          </div>
-        </div>
-
+      <PageHeader
+        onBack={() => router.back()}
+        title={t('detail.title')}
+        subtitle={t('detail.subtitle')}
+      >
         {canWrite && (
           <button
             onClick={() => router.push(`/customers/${customer.id}/edit`)}
@@ -191,10 +183,10 @@ export default function CustomerProfilePage() {
             {t('detail.edit')}
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Profile header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+      <SectionCard>
         <div className="flex items-center gap-4">
           {customer.avatarUrl ? (
             <ClickableImage
@@ -225,13 +217,12 @@ export default function CustomerProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </SectionCard>
 
       {/* Info grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Col 1 — Personal Info */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.personalInfo')}</h3>
+        <SectionCard title={t('detail.personalInfo')}>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <Mail size={16} className="text-slate-400 mt-0.5 shrink-0" />
@@ -280,11 +271,10 @@ export default function CustomerProfilePage() {
               </div>
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Col 2 — Driver Credit Score */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.creditScore')}</h3>
+        <SectionCard title={t('detail.creditScore')}>
           {customer.creditScore > 0 ? (
             <div className="text-center">
               <div className="relative w-28 h-28 mx-auto mb-3">
@@ -316,13 +306,14 @@ export default function CustomerProfilePage() {
           ) : (
             <div className="text-center py-6 text-slate-400 text-sm">{t('detail.noCreditScore')}</div>
           )}
-        </div>
+        </SectionCard>
 
         {/* Col 3 — Rental History */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col">
-          <h3 className="text-slate-800 font-semibold mb-4">{t('detail.rentalHistory')}</h3>
+        <SectionCard title={t('detail.rentalHistory')} className="flex flex-col">
           {contractsLoading ? (
-            <p className="text-slate-400 text-sm">กำลังโหลด...</p>
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400" />
+            </div>
           ) : contracts.length === 0 ? (
             <p className="text-slate-400 text-sm">{t('detail.noRentalHistory')}</p>
           ) : (
@@ -359,12 +350,11 @@ export default function CustomerProfilePage() {
           {contracts.length > 0 && (
             <p className="text-slate-400 text-xs mt-3">{contracts.length} สัญญา</p>
           )}
-        </div>
+        </SectionCard>
       </div>
 
       {/* KYC Documents */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h3 className="text-slate-800 font-semibold mb-4">{t('detail.kycDocuments')}</h3>
+      <SectionCard title={t('detail.kycDocuments')}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kycDocs.map(({ label, url }) => (
             <div key={label}>
@@ -384,12 +374,12 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
 
       {/* Bottom row: Admin Notes + Account Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Admin Notes */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <SectionCard>
           <h3 className="text-slate-800 font-semibold mb-3 flex items-center gap-2">
             <ClipboardList size={16} className="text-slate-400" />
             {t('detail.adminNotes')}
@@ -397,10 +387,10 @@ export default function CustomerProfilePage() {
           <p className="text-slate-600 text-sm whitespace-pre-line">
             {customer.notes ? customer.notes : <span className="text-slate-400">{t('detail.noAdminNotes')}</span>}
           </p>
-        </div>
+        </SectionCard>
 
         {/* Account Status Actions */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <SectionCard>
           <h3 className="text-slate-800 font-semibold mb-1">{t('detail.accountStatus')}</h3>
           <p className="text-slate-400 text-xs mb-4">{t('detail.accountStatusHint')}</p>
 
@@ -507,7 +497,7 @@ export default function CustomerProfilePage() {
               </>
             ) : null}
           </div>
-        </div>
+        </SectionCard>
       </div>
 
       {/* Image lightbox */}

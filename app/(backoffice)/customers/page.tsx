@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
-  UserPlus, Search, Users, UserCircle,
-  ChevronLeft, ChevronRight, Eye, Pencil,
+  UserPlus, Users, UserCircle,
+  Eye, Pencil,
   Clock, CheckCircle2, Ban, ClipboardCheck, Link2, XCircle,
 } from 'lucide-react'
 import type { Customer, CustomerStatus } from '@/lib/types'
@@ -13,15 +13,13 @@ import RegistrationLinkModal from '@/components/ui/registration-link-modal'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
+import PageHeader from '@/components/ui/page-header'
+import EmptyState from '@/components/ui/empty-state'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import SearchFilterBar from '@/components/ui/search-filter-bar'
+import ActionButton from '@/components/ui/action-button'
 
 const PAGE_SIZE = 20
-
-const STATUS_DOT: Record<string, string> = {
-  pending_kyc: 'bg-amber-400',
-  rejected: 'bg-rose-400',
-  active: 'bg-green-400',
-  blacklisted: 'bg-red-400',
-}
 
 type FilterTab = 'all' | CustomerStatus
 
@@ -30,12 +28,12 @@ export default function CustomersPage() {
   const { error: toastError } = useToast()
   const canWrite = useCanWrite()
 
-  const FILTER_OPTIONS: { key: FilterTab; label: string }[] = [
-    { key: 'all', label: t('filterAll') },
-    { key: 'pending_kyc', label: t('filterPendingKyc') },
-    { key: 'rejected', label: t('filterRejected') },
-    { key: 'active', label: t('filterActive') },
-    { key: 'blacklisted', label: t('filterBlacklisted') },
+  const filterOptions = [
+    { value: 'all', label: t('filterAll') },
+    { value: 'pending_kyc', label: t('filterPendingKyc'), dotColor: 'bg-amber-400' },
+    { value: 'rejected', label: t('filterRejected'), dotColor: 'bg-rose-400' },
+    { value: 'active', label: t('filterActive'), dotColor: 'bg-green-400' },
+    { value: 'blacklisted', label: t('filterBlacklisted'), dotColor: 'bg-red-400' },
   ]
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
@@ -69,7 +67,6 @@ export default function CustomersPage() {
     }
   }
 
-  // Fetch status counts once on mount
   useEffect(() => {
     const fetchCounts = async () => {
       try {
@@ -107,6 +104,16 @@ export default function CustomersPage() {
   function handleCardClick(key: FilterTab) {
     setSearch('')
     setActiveFilter(key)
+    setPage(1)
+  }
+
+  function handleFilterChange(value: string) {
+    setActiveFilter(value as FilterTab)
+    setPage(1)
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value)
     setPage(1)
   }
 
@@ -155,16 +162,12 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-slate-800 text-xl font-bold">{t('title')}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
-          </p>
-        </div>
+      <PageHeader
+        title={t('title')}
+        subtitle={total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
+      >
         {canWrite && (
-          <div className="flex items-center gap-2">
+          <>
             <button
               onClick={() => setLinkModalOpen(true)}
               className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -179,9 +182,9 @@ export default function CustomersPage() {
               <UserPlus size={16} />
               {t('addCustomer')}
             </Link>
-          </div>
+          </>
         )}
-      </div>
+      </PageHeader>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
@@ -213,40 +216,15 @@ export default function CustomersPage() {
         })}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 px-4 py-3">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-52">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              placeholder={t('searchPlaceholder')}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
-            />
-          </div>
-          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
-            {FILTER_OPTIONS.map(f => (
-              <button
-                key={f.key}
-                onClick={() => { setActiveFilter(f.key); setPage(1) }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  activeFilter === f.key
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {f.key !== 'all' && (
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${STATUS_DOT[f.key] ?? 'bg-slate-400'}`} />
-                )}
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <SearchFilterBar
+        search={search}
+        onSearchChange={handleSearchChange}
+        placeholder={t('searchPlaceholder')}
+        filterOptions={filterOptions}
+        activeFilter={activeFilter}
+        onFilterChange={handleFilterChange}
+      />
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -276,14 +254,8 @@ export default function CustomersPage() {
               ))
             ) : customers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-16">
-                  <div className="flex flex-col items-center gap-2 text-slate-400">
-                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-1">
-                      <Users size={22} className="text-slate-300" />
-                    </div>
-                    <p className="font-medium text-slate-500">{t('empty')}</p>
-                    <p className="text-sm">{t('emptyHint')}</p>
-                  </div>
+                <td colSpan={5} className="text-center">
+                  <EmptyState icon={Users} title={t('empty')} subtitle={t('emptyHint')} />
                 </td>
               </tr>
             ) : (
@@ -335,21 +307,9 @@ export default function CustomersPage() {
                           {t('reviewKyc')}
                         </Link>
                       )}
-                      <Link
-                        href={`/customers/${customer.id}`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title={t('columns.actions')}
-                      >
-                        <Eye size={15} />
-                      </Link>
+                      <ActionButton variant="view" href={`/customers/${customer.id}`} icon={Eye} title={t('columns.actions')} />
                       {canWrite && (
-                        <Link
-                          href={`/customers/${customer.id}/edit`}
-                          className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          title={t('detail.edit')}
-                        >
-                          <Pencil size={15} />
-                        </Link>
+                        <ActionButton variant="edit" href={`/customers/${customer.id}/edit`} icon={Pencil} title={t('detail.edit')} />
                       )}
                     </div>
                   </td>
@@ -360,30 +320,15 @@ export default function CustomersPage() {
         </table>
 
         {!loading && (
-          <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <span className="text-sm text-slate-500">
-              {t('showing', { count: customers.length, total })}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage(p => p - 1)}
-                disabled={page === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <span className="text-sm text-slate-600 px-2 tabular-nums">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={page * PAGE_SIZE >= total}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
+          <PaginationFooter
+            page={page}
+            totalPages={totalPages}
+            label={t('showing', { count: customers.length, total })}
+            onPageChange={setPage}
+          />
         )}
       </div>
+
       {linkModalOpen && (
         <RegistrationLinkModal onClose={() => setLinkModalOpen(false)} />
       )}
