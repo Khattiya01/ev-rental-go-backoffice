@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   CheckCircle2, Clock, AlertTriangle, Check,
   Loader2, Pencil, Trash2, X, Banknote, FileText, Eye,
-  Receipt,
+  Receipt, Copy, CheckCheck,
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import generatePayload from 'promptpay-qr'
@@ -233,6 +233,28 @@ export default function InvoiceDetailPage() {
   // Payment form state
   const [slipUrl, setSlipUrl] = useState('')
   const [paying, setPaying] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function copyPromptpayId() {
+    if (!paySettings.promptpayId) return
+    void navigator.clipboard.writeText(paySettings.promptpayId).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function downloadQrCode() {
+    const svg = document.querySelector<SVGSVGElement>('#promptpay-qr svg')
+    if (!svg) return
+    const xml = new XMLSerializer().serializeToString(svg)
+    const blob = new Blob([xml], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `qr-${paySettings.promptpayId || 'promptpay'}.svg`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   useEffect(() => {
     fetch('/api/settings')
@@ -415,26 +437,23 @@ export default function InvoiceDetailPage() {
         <div className="col-span-3 space-y-4">
           {/* QR + Mark Paid */}
           <SectionCard title="ช่องทางชำระเงิน">
-
-            {invoice.status === 'paid' ? (
-              <div className="flex items-center gap-3 py-4">
-                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={20} className="text-green-600" />
-                </div>
-                <div>
-                  <p className="text-green-700 font-semibold">ชำระแล้ว</p>
-                  {invoice.paidAt && <p className="text-slate-400 text-sm">{invoice.paidAt}</p>}
-                </div>
-              </div>
-            ) : canWrite ? (
-              <div className="space-y-5">
-                {/* QR Code */}
-                <div className="flex gap-6 items-start">
+            <div className="space-y-5">
+              {/* QR + PromptPay info — always visible */}
+              <div className="flex gap-6 items-start">
+                {invoice.status !== 'paid' && (
                   <div className="shrink-0">
                     {qrPayload ? (
-                      <div className="inline-block p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-sm">
+                      <button
+                        onClick={copyPromptpayId}
+                        className="relative inline-block p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-sm group hover:border-blue-300 transition-colors cursor-pointer"
+                      >
                         <QRCode value={qrPayload} size={160} />
-                      </div>
+                        <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-700 shadow">
+                            {copied ? <><CheckCheck size={12} className="text-green-500" /> คัดลอกแล้ว</> : <><Copy size={12} /> คัดลอก ID</>}
+                          </span>
+                        </div>
+                      </button>
                     ) : (
                       <Link
                         href="/settings"
@@ -445,22 +464,50 @@ export default function InvoiceDetailPage() {
                       </Link>
                     )}
                   </div>
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <Banknote size={13} className="text-green-500" />
-                      PromptPay
-                    </div>
-                    <p className="text-slate-700 font-semibold text-sm">{paySettings.promptpayName || '—'}</p>
-                    <p className="text-slate-400 text-xs">{paySettings.promptpayId || 'ยังไม่ตั้งค่า'}</p>
-                    <div className="pt-2">
-                      <p className="text-slate-400 text-xs">ยอดชำระ</p>
-                      <p className="text-2xl font-bold text-slate-800 tabular-nums">฿{fmt(invoice.amount)}</p>
-                    </div>
+                )}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Banknote size={13} className="text-green-500" />
+                    PromptPay
+                  </div>
+                  <p className="text-slate-700 font-semibold text-sm">{paySettings.promptpayName || '—'}</p>
+                  <button
+                    onClick={copyPromptpayId}
+                    disabled={!paySettings.promptpayId}
+                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-500 disabled:pointer-events-none transition-colors group"
+                  >
+                    {paySettings.promptpayId || 'ยังไม่ตั้งค่า'}
+                    {paySettings.promptpayId && (
+                      copied
+                        ? <CheckCheck size={11} className="text-green-500" />
+                        : <Copy size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                  <div className="pt-2">
+                    <p className="text-slate-400 text-xs">ยอดชำระ</p>
+                    <p className="text-2xl font-bold text-slate-800 tabular-nums">฿{fmt(invoice.amount)}</p>
+                  </div>
+                  {invoice.status !== 'paid' && (
                     <p className="text-slate-400 text-xs">สแกนผ่านแอปธนาคารหรือ Wallet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Paid badge */}
+              {invoice.status === 'paid' && (
+                <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
+                  <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={16} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-green-700 font-semibold text-sm">ชำระแล้ว</p>
+                    {invoice.paidAt && <p className="text-slate-400 text-xs">{invoice.paidAt}</p>}
                   </div>
                 </div>
+              )}
 
-                {/* Mark paid button */}
+              {/* Mark paid button — only for unpaid + canWrite */}
+              {invoice.status !== 'paid' && canWrite && (
                 <div className="border-t border-slate-100 pt-4">
                   <button
                     onClick={handleMarkPaid}
@@ -474,8 +521,8 @@ export default function InvoiceDetailPage() {
                   </button>
                   <p className="text-slate-400 text-xs text-center mt-2">จะบันทึกเวลาชำระและสลิป (ถ้ามี) พร้อมกัน</p>
                 </div>
-              </div>
-            ) : null}
+              )}
+            </div>
           </SectionCard>
 
           {/* Slip */}

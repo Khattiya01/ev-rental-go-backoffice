@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { Vehicle } from '@/lib/types'
+import type { Vehicle, Contract } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
-import { Pencil } from 'lucide-react'
+import { FileText, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useCanWrite } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
@@ -22,6 +22,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('general')
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contractsLoading, setContractsLoading] = useState(false)
   const [cutoffModalOpen, setCutoffModalOpen] = useState(false)
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [password, setPassword] = useState('')
@@ -48,6 +50,16 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
+
+  useEffect(() => {
+    if (!vehicle?.id) return
+    setContractsLoading(true)
+    fetch(`/api/contracts?vehicleId=${vehicle.id}&limit=100`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then((json: { data: Contract[] }) => setContracts(json.data ?? []))
+      .catch(() => setContracts([]))
+      .finally(() => setContractsLoading(false))
+  }, [vehicle?.id])
 
   if (loading) {
     return (
@@ -230,7 +242,70 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       {/* Tab: Rental History */}
       {activeTab === 'history' && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-slate-700 font-semibold">{t('tabs.history')}</h3>
+            {contracts.length > 0 && (
+              <span className="text-slate-400 text-sm">{t('history.totalContracts', { count: contracts.length })}</span>
+            )}
+          </div>
+          {contractsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            </div>
+          ) : contracts.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left bg-slate-50">
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.contractNo')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.customer')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.startDate')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.dueDate')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.dailyRate')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.monthlyRate')}</th>
+                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.status')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {contracts.map(c => {
+                    const statusColor =
+                      c.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                      c.status === 'overdue' ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-500'
+                    const statusLabel =
+                      c.status === 'active' ? t('history.statusActive') :
+                      c.status === 'overdue' ? t('history.statusOverdue') :
+                      t('history.statusCompleted')
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/contracts/${c.id}`}
+                            className="flex items-center gap-1.5 text-blue-500 text-sm font-medium hover:underline"
+                          >
+                            <FileText size={13} />
+                            {c.contractNo}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 text-slate-700 text-sm">{c.customerName}</td>
+                        <td className="px-6 py-4 text-slate-500 text-sm">{c.startDate}</td>
+                        <td className="px-6 py-4 text-slate-500 text-sm">{c.dueDate}</td>
+                        <td className="px-6 py-4 text-slate-700 text-sm">฿{c.dailyRate.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-slate-700 text-sm">฿{c.monthlyRate.toLocaleString()}</td>
+                        <td className="px-6 py-4">
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor}`}>
+                            {statusLabel}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

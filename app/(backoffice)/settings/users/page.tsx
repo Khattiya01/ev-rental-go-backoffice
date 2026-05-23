@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { UserPlus, Pencil, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { UserPlus, Pencil, Trash2, Loader2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,21 +14,10 @@ import EmptyState from '@/components/ui/empty-state'
 import PaginationFooter from '@/components/ui/pagination-footer'
 import ActionButton from '@/components/ui/action-button'
 
-// ─── Schemas ──────────────────────────────────────────────────────
-const createSchema = z.object({
-  name: z.string().min(1, 'กรุณากรอกชื่อ'),
-  email: z.string().email('รูปแบบอีเมลไม่ถูกต้อง'),
-  password: z.string().min(8, 'รหัสผ่านอย่างน้อย 8 ตัวอักษร'),
-  role: z.enum(['super_admin', 'admin', 'viewer']),
-})
-
-const editSchema = z.object({
-  name: z.string().min(1, 'กรุณากรอกชื่อ'),
-  role: z.enum(['super_admin', 'admin', 'viewer']),
-})
-
-type CreateFormData = z.infer<typeof createSchema>
-type EditFormData = z.infer<typeof editSchema>
+// ─── Form types ───────────────────────────────────────────────────
+type CreateFormData = { name: string; email: string; password: string; role: AdminRole }
+type EditFormData = { name: string; role: AdminRole }
+type ChangePasswordFormData = { newPassword: string; confirmPassword: string }
 
 // ─── Sub-components ───────────────────────────────────────────────
 const roleBadge: Record<AdminRole, string> = {
@@ -60,6 +49,27 @@ const PAGE_SIZE = 10
 export default function UsersSettingsPage() {
   const t = useTranslations('users')
   const { success, error: toastError } = useToast()
+
+  const createSchema = useMemo(() => z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    email: z.string().email({ message: t('validation.emailInvalid') }),
+    password: z.string().min(8, t('validation.passwordMin')),
+    role: z.enum(['super_admin', 'admin', 'viewer']),
+  }), [t])
+
+  const editSchema = useMemo(() => z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    role: z.enum(['super_admin', 'admin', 'viewer']),
+  }), [t])
+
+  const changePasswordSchema = useMemo(() => z.object({
+    newPassword: z.string().min(8, t('validation.passwordMin')),
+    confirmPassword: z.string().min(1, t('validation.confirmPasswordRequired')),
+  }).refine(data => data.newPassword === data.confirmPassword, {
+    message: t('validation.passwordMismatch'),
+    path: ['confirmPassword'],
+  }), [t])
+
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -70,7 +80,11 @@ export default function UsersSettingsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [changePasswordUser, setChangePasswordUser] = useState<AdminUser | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [page, setPage] = useState(1)
 
   // ─── Create form ──────────────────────────────────────────────
@@ -83,6 +97,12 @@ export default function UsersSettingsPage() {
   const editForm = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
     defaultValues: { name: '', role: 'admin' },
+  })
+
+  // ─── Change password form ──────────────────────────────────────
+  const changePasswordForm = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { newPassword: '', confirmPassword: '' },
   })
 
   async function fetchUsers() {
@@ -172,6 +192,30 @@ export default function UsersSettingsPage() {
     }
   }
 
+  async function handleChangePassword(data: ChangePasswordFormData) {
+    if (!changePasswordUser) return
+    try {
+      const res = await fetch(`/api/users/${changePasswordUser.id}/password`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: data.newPassword }),
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { error?: string }
+        changePasswordForm.setError('root', { message: errData.error ?? t('toast.passwordChangeError') })
+        return
+      }
+      setChangePasswordOpen(false)
+      setChangePasswordUser(null)
+      changePasswordForm.reset()
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
+      success(t('toast.passwordChanged'))
+    } catch {
+      changePasswordForm.setError('root', { message: t('toast.passwordChangeError') })
+    }
+  }
+
   function openEdit(user: AdminUser) {
     setEditUser(user)
     editForm.reset({ name: user.name, role: user.role })
@@ -183,6 +227,14 @@ export default function UsersSettingsPage() {
     setDeleteOpen(true)
   }
 
+  function openChangePassword(user: AdminUser) {
+    setChangePasswordUser(user)
+    changePasswordForm.reset()
+    setShowNewPassword(false)
+    setShowConfirmPassword(false)
+    setChangePasswordOpen(true)
+  }
+
   const inputCls = 'w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-400 transition-colors'
   const inputErrCls = 'w-full bg-slate-100 border border-red-300 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-red-400 transition-colors'
   const fieldErrCls = 'text-red-500 text-xs mt-1'
@@ -191,7 +243,7 @@ export default function UsersSettingsPage() {
     <div className="space-y-5">
       <PageHeader
         title={t('title')}
-        subtitle={users.length > 0 ? `${users.length} admin users` : 'Manage admin access'}
+        subtitle={users.length > 0 ? t('subtitleCount', { count: users.length }) : t('subtitleDefault')}
       >
         <button
           onClick={() => { createForm.reset(); setCreateOpen(true) }}
@@ -251,6 +303,7 @@ export default function UsersSettingsPage() {
                   <td className="px-5 py-3.5 text-slate-500 text-sm tabular-nums">{new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1">
+                      <ActionButton variant="view" onClick={() => openChangePassword(user)} icon={KeyRound} title={t('changePassword')} />
                       <ActionButton variant="edit" onClick={() => openEdit(user)} icon={Pencil} title={t('edit')} />
                       <ActionButton variant="delete" onClick={() => openDelete(user)} icon={Trash2} title={t('delete')} />
                     </div>
@@ -265,7 +318,7 @@ export default function UsersSettingsPage() {
           <PaginationFooter
             page={page}
             totalPages={Math.max(1, Math.ceil(users.length / PAGE_SIZE))}
-            label={`Showing ${Math.min((page - 1) * PAGE_SIZE + 1, users.length)}–${Math.min(page * PAGE_SIZE, users.length)} of ${users.length}`}
+            label={t('pagination.showing', { from: Math.min((page - 1) * PAGE_SIZE + 1, users.length), to: Math.min(page * PAGE_SIZE, users.length), total: users.length })}
             onPageChange={setPage}
           />
         )}
@@ -414,6 +467,82 @@ export default function UsersSettingsPage() {
               <option value="admin">{t('roles.admin')}</option>
               <option value="viewer">{t('roles.viewer')}</option>
             </select>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal
+        isOpen={changePasswordOpen}
+        onClose={() => { setChangePasswordOpen(false); setChangePasswordUser(null); changePasswordForm.reset(); setShowNewPassword(false); setShowConfirmPassword(false) }}
+        title={`${t('changePasswordModal.title')}${changePasswordUser ? ` — ${changePasswordUser.name}` : ''}`}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => { setChangePasswordOpen(false); setChangePasswordUser(null); changePasswordForm.reset(); setShowNewPassword(false); setShowConfirmPassword(false) }}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('changePasswordModal.cancel')}
+            </button>
+            <button
+              form="change-password-form"
+              type="submit"
+              disabled={changePasswordForm.formState.isSubmitting}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              {changePasswordForm.formState.isSubmitting ? (
+                <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('changePasswordModal.saving')}</span>
+              ) : t('changePasswordModal.save')}
+            </button>
+          </>
+        }
+      >
+        <form id="change-password-form" onSubmit={changePasswordForm.handleSubmit(handleChangePassword)} className="space-y-4">
+          {changePasswordForm.formState.errors.root && (
+            <p className="text-red-600 text-sm bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              {changePasswordForm.formState.errors.root.message}
+            </p>
+          )}
+          <div>
+            <label className="block text-slate-500 text-sm mb-1">{t('changePasswordModal.newPasswordLabel')}</label>
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                {...changePasswordForm.register('newPassword')}
+                className={`${changePasswordForm.formState.errors.newPassword ? inputErrCls : inputCls} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {changePasswordForm.formState.errors.newPassword && (
+              <p className={fieldErrCls}>{changePasswordForm.formState.errors.newPassword.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-slate-500 text-sm mb-1">{t('changePasswordModal.confirmPasswordLabel')}</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                {...changePasswordForm.register('confirmPassword')}
+                className={`${changePasswordForm.formState.errors.confirmPassword ? inputErrCls : inputCls} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {changePasswordForm.formState.errors.confirmPassword && (
+              <p className={fieldErrCls}>{changePasswordForm.formState.errors.confirmPassword.message}</p>
+            )}
           </div>
         </form>
       </Modal>

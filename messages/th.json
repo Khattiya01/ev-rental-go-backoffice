@@ -59,6 +59,12 @@
   "users": {
     "title": "ผู้ใช้งานระบบ",
     "addNewAdmin": "เพิ่มผู้ดูแลระบบ",
+    "subtitleCount": "{count} ผู้ดูแลระบบ",
+    "subtitleDefault": "จัดการสิทธิ์การเข้าถึงระบบ",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "pagination": {
+      "showing": "แสดง {from}–{to} จาก {total} รายการ"
+    },
     "columns": {
       "name": "ชื่อ",
       "email": "อีเมล",
@@ -92,6 +98,21 @@
       "save": "บันทึก",
       "saving": "กำลังบันทึก..."
     },
+    "validation": {
+      "nameRequired": "กรุณากรอกชื่อ",
+      "emailInvalid": "รูปแบบอีเมลไม่ถูกต้อง",
+      "passwordMin": "รหัสผ่านอย่างน้อย 8 ตัวอักษร",
+      "confirmPasswordRequired": "กรุณายืนยันรหัสผ่าน",
+      "passwordMismatch": "รหัสผ่านไม่ตรงกัน"
+    },
+    "changePasswordModal": {
+      "title": "เปลี่ยนรหัสผ่าน",
+      "newPasswordLabel": "รหัสผ่านใหม่",
+      "confirmPasswordLabel": "ยืนยันรหัสผ่านใหม่",
+      "cancel": "ยกเลิก",
+      "save": "เปลี่ยนรหัสผ่าน",
+      "saving": "กำลังบันทึก..."
+    },
     "deleteModal": {
       "title": "ยืนยันการลบผู้ใช้",
       "message": "คุณต้องการลบผู้ใช้",
@@ -108,7 +129,9 @@
       "fetchError": "ไม่สามารถโหลดรายชื่อผู้ใช้ได้",
       "createError": "ไม่สามารถเพิ่มผู้ใช้ได้",
       "updateError": "ไม่สามารถแก้ไขผู้ใช้ได้",
-      "deleteError": "ไม่สามารถลบผู้ใช้ได้"
+      "deleteError": "ไม่สามารถลบผู้ใช้ได้",
+      "passwordChanged": "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
+      "passwordChangeError": "ไม่สามารถเปลี่ยนรหัสผ่านได้"
     }
   },
   "common": {
@@ -225,7 +248,18 @@
       "noData": "ไม่มีข้อมูลเทเลเมติกส์"
     },
     "history": {
-      "noHistory": "ยังไม่มีข้อมูลประวัติการเช่า"
+      "noHistory": "ยังไม่มีข้อมูลประวัติการเช่า",
+      "contractNo": "เลขสัญญา",
+      "customer": "ลูกค้า",
+      "startDate": "วันเริ่มสัญญา",
+      "dueDate": "วันสิ้นสุด",
+      "dailyRate": "ค่าเช่า/วัน",
+      "monthlyRate": "ค่าเช่า/เดือน",
+      "status": "สถานะ",
+      "totalContracts": "{count} สัญญา",
+      "statusActive": "กำลังเช่า",
+      "statusOverdue": "เกินกำหนด",
+      "statusCompleted": "เสร็จสิ้น"
     },
     "remote": {
       "motorCutoff": "ตัดการทำงานของมอเตอร์ฉุกเฉิน",

@@ -59,6 +59,12 @@
   "users": {
     "title": "Users & Roles",
     "addNewAdmin": "Add New Admin",
+    "subtitleCount": "{count} admin users",
+    "subtitleDefault": "Manage admin access",
+    "changePassword": "Change Password",
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total}"
+    },
     "columns": {
       "name": "Name",
       "email": "Email",
@@ -92,6 +98,21 @@
       "save": "Save",
       "saving": "Saving..."
     },
+    "validation": {
+      "nameRequired": "Please enter a name",
+      "emailInvalid": "Invalid email format",
+      "passwordMin": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "changePasswordModal": {
+      "title": "Change Password",
+      "newPasswordLabel": "New Password",
+      "confirmPasswordLabel": "Confirm New Password",
+      "cancel": "Cancel",
+      "save": "Change Password",
+      "saving": "Saving..."
+    },
     "deleteModal": {
       "title": "Confirm Delete",
       "message": "Are you sure you want to remove",
@@ -108,7 +129,9 @@
       "fetchError": "Failed to fetch users",
       "createError": "Failed to create user",
       "updateError": "Failed to update user",
-      "deleteError": "Failed to delete user"
+      "deleteError": "Failed to delete user",
+      "passwordChanged": "Password changed successfully",
+      "passwordChangeError": "Failed to change password"
     }
   },
   "common": {
@@ -225,7 +248,18 @@
       "noData": "No telematics data available"
     },
     "history": {
-      "noHistory": "No rental history yet"
+      "noHistory": "No rental history yet",
+      "contractNo": "Contract No.",
+      "customer": "Customer",
+      "startDate": "Start Date",
+      "dueDate": "Due Date",
+      "dailyRate": "Daily Rate",
+      "monthlyRate": "Monthly Rate",
+      "status": "Status",
+      "totalContracts": "{count} contracts",
+      "statusActive": "Active",
+      "statusOverdue": "Overdue",
+      "statusCompleted": "Completed"
     },
     "remote": {
       "motorCutoff": "Emergency Motor Cutoff",

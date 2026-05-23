@@ -28,6 +28,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const search = searchParams.get('search') ?? ''
   const statusParam = searchParams.get('status') ?? ''
   const customerIdParam = searchParams.get('customerId') ?? ''
+  const vehicleIdParam = searchParams.get('vehicleId') ?? ''
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
   const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '20', 10))
   const offset = (page - 1) * limit
@@ -50,6 +51,10 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   if (customerIdParam) {
     conditions.push(eq(contracts.customerId, customerIdParam))
+  }
+
+  if (vehicleIdParam) {
+    conditions.push(eq(contracts.vehicleId, vehicleIdParam))
   }
 
   const where = conditions.length > 0
