@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { vehicles } from '@/db/schema'
+import { contracts, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { isDuplicateKeyError } from '@/lib/db-errors'
 import type { VehicleStatus } from '@/lib/types'
@@ -66,6 +66,7 @@ export async function PATCH(
     status?: VehicleStatus
     imageUrl?: string | null
     images?: string[]
+    odometer?: number
     location?: string | null
     condition?: string | null
     nextServiceDate?: string | null
@@ -102,6 +103,18 @@ export async function PATCH(
       )
     }
     fields.year = yearInt
+  }
+
+  if (body.odometer !== undefined) {
+    const odometerInt =
+      typeof body.odometer === 'number' ? Math.trunc(body.odometer) : parseInt(String(body.odometer), 10)
+    if (!Number.isInteger(odometerInt) || odometerInt < 0) {
+      return NextResponse.json(
+        { error: 'odometer must be a non-negative integer' },
+        { status: 400 },
+      )
+    }
+    fields.odometer = odometerInt
   }
 
   if (body.status !== undefined) {
@@ -187,6 +200,26 @@ export async function DELETE(
   }
 
   const { id } = await params
+
+  let linkedContracts: { id: string; contractNo: string; status: string }[]
+  try {
+    linkedContracts = await db
+      .select({ id: contracts.id, contractNo: contracts.contractNo, status: contracts.status })
+      .from(contracts)
+      .where(eq(contracts.vehicleId, id))
+      .limit(1)
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+
+  if (linkedContracts.length > 0) {
+    const c = linkedContracts[0]
+    const isActive = c.status === 'active' || c.status === 'overdue'
+    const msg = isActive
+      ? `ไม่สามารถลบรถได้ เนื่องจากมีสัญญาเช่าที่ยังไม่สิ้นสุด (${c.contractNo}) กรุณาปิดสัญญาก่อน`
+      : `ไม่สามารถลบรถได้ เนื่องจากรถนี้มีประวัติสัญญาเช่า (${c.contractNo})`
+    return NextResponse.json({ error: msg }, { status: 409 })
+  }
 
   let rows: { id: string }[]
   try {

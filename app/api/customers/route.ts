@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq, ilike, or, and, count } from 'drizzle-orm'
+import { eq, ilike, or, and, count, desc } from 'drizzle-orm'
 import { db } from '@/db'
 import { customers } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -40,6 +40,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     .select()
     .from(customers)
     .where(where)
+    .orderBy(desc(customers.createdAt))
     .offset((page - 1) * limit)
     .limit(limit)
 

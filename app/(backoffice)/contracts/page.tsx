@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { FileText, AlertCircle, CheckCircle2, Clock, Eye, Plus } from 'lucide-react'
+import { FileText, AlertCircle, CheckCircle2, Clock, Eye, Pencil, Plus } from 'lucide-react'
 import Badge from '@/components/ui/badge'
 import type { Contract, ContractStatus } from '@/lib/types'
 import { useCanWrite } from '@/lib/user-context'
@@ -183,8 +183,11 @@ export default function ContractsPage() {
                     <Badge variant={badgeVariant(contract.status)} />
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-1">
                       <ActionButton variant="view" href={`/contracts/${contract.id}`} icon={Eye} title="ดูรายละเอียด" />
+                      {canWrite && (
+                        <ActionButton variant="edit" href={`/contracts/${contract.id}/edit`} icon={Pencil} title="แก้ไข" />
+                      )}
                     </div>
                   </td>
                 </tr>

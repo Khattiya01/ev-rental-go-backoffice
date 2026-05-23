@@ -180,8 +180,8 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/fleet',
       children: [
         { href: '/fleet/vehicles', label: t('vehicles'), icon: Car },
-        { href: '/fleet/map', label: t('liveMap'), icon: Map },
-        { href: '/fleet/geofencing', label: t('geofencing'), icon: Locate },
+        // { href: '/fleet/map', label: t('liveMap'), icon: Map },
+        // { href: '/fleet/geofencing', label: t('geofencing'), icon: Locate },
       ],
     },
     {
@@ -191,7 +191,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       children: [
         { href: '/customers', label: t('allCustomers'), icon: Users },
         // { href: '/customers/kyc', label: t('kycApproval'), icon: BadgeCheck },
-        { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
+        // { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
       ],
     },
     { href: '/contracts', label: t('rentals'), icon: FileText },
@@ -201,7 +201,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/billing',
       children: [
         { href: '/billing/invoices', label: t('invoices'), icon: Receipt },
-        { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
+        // { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
       ],
     },
     // { href: '/maintenance', label: t('maintenance'), icon: Wrench },
@@ -212,7 +212,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/settings',
       children: [
         ...(isSuperAdmin ? [{ href: '/settings/users', label: t('users'), icon: UserCog }] : []),
-        ...(!isViewer ? [{ href: '/settings/pricing', label: t('pricing'), icon: DollarSign }] : []),
+        // ...(!isViewer ? [{ href: '/settings/pricing', label: t('pricing'), icon: DollarSign }] : []),
         { href: '/settings/payment', label: t('payment'), icon: QrCode },
       ],
     },

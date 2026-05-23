@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
-import { desc, lt, count } from 'drizzle-orm'
+import { desc, count } from 'drizzle-orm'
 import { db } from '@/db'
 import { registrationLinks } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -8,17 +8,24 @@ import { getCurrentUser } from '@/lib/dal'
 const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.ev-rental.com'
 const DEFAULT_EXPIRY_DAYS = 7
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const { searchParams } = new URL(request.url)
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') ?? '5', 10)))
+
+  const [{ total }] = await db.select({ total: count() }).from(registrationLinks)
+
   const links = await db
     .select()
     .from(registrationLinks)
     .orderBy(desc(registrationLinks.createdAt))
-    .limit(20)
+    .offset((page - 1) * limit)
+    .limit(limit)
 
   const now = new Date()
   const result = links.map(link => ({
@@ -31,7 +38,7 @@ export async function GET(): Promise<NextResponse> {
         : 'active',
   }))
 
-  return NextResponse.json({ data: result })
+  return NextResponse.json({ data: result, total, page, limit })
 }
 
 export async function POST(request: Request): Promise<NextResponse> {

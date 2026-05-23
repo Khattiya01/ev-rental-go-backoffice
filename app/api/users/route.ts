@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { desc } from 'drizzle-orm'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -22,6 +23,7 @@ export async function GET(): Promise<NextResponse> {
       createdAt: users.createdAt,
     })
     .from(users)
+    .orderBy(desc(users.createdAt))
 
   return NextResponse.json(rows)
 }
