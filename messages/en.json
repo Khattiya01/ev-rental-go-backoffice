@@ -245,7 +245,8 @@
       "deepDischarge": "Deep Discharge Count",
       "tempTitle": "Temperature",
       "rangeTitle": "Estimated Range",
-      "noData": "No telematics data available"
+      "noData": "No telematics data available",
+      "lastUpdated": "Last updated"
     },
     "history": {
       "noHistory": "No rental history yet",

@@ -19,6 +19,7 @@ export default function WaveBackground() {
     const DOT_COLOR = 'rgba(34, 211, 238,' // cyan-400
 
     function resize() {
+      if (!canvas || !ctx) return
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
     }
@@ -26,6 +27,7 @@ export default function WaveBackground() {
     window.addEventListener('resize', resize)
 
     function draw() {
+      if (!canvas || !ctx) return
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       const cellW = canvas.width / (COLS - 1)

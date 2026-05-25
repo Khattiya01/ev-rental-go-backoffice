@@ -83,7 +83,7 @@ export default function VehicleFormModal({
 
     try {
       if (mode === 'edit' && !initialData) return
-      const url = mode === 'add' ? '/api/vehicles' : `/api/vehicles/${initialData.id}`
+      const url = mode === 'add' ? '/api/vehicles' : `/api/vehicles/${initialData!.id}`
       const method = mode === 'add' ? 'POST' : 'PATCH'
 
       const res = await fetch(url, {

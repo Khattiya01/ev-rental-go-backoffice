@@ -5,8 +5,11 @@
 **Demo วันที่:** 21 มิ.ย. 2569  
 **Prerequisites:** Sprint 1 + 2 ✅ (Auth, DB, CRUD, RBAC พร้อม)
 
-> ⚠️ **หมายเหตุ:** Sprint นี้ต้องมี **IoT Gateway** (separate service) ทำงานอยู่เพื่อ push GPS → Redis
-> ถ้า IoT Gateway ยังไม่พร้อม → ใช้ simulation script แทนก่อน (seed GPS positions ลง Redis ทุก 5 วินาที)
+> ✅ **Strategy:** Dev และ Demo ใช้ **GPS Simulator** เขียน Redis โดยตรง — ไม่ต้องมี IoT Gateway จริง
+> IoT Gateway จะติดตั้งบน Production Server ก่อนส่งมอบงานลูกค้า แค่เปลี่ยน `REDIS_URL` ใน `.env` เท่านั้น Next.js ไม่ต้องแก้ code เลย
+>
+> **Redis key format ต้องตรงกันทั้ง Simulator และ IoT Gateway:**
+> `vehicle:pos:{vehicle_id}` → `{ lat, lng, soc, speed, status, updated_at }`
 
 > 🚫 **Out of Scope ตามที่ลูกค้าแจ้ง:** Maintenance Kanban, Inspection Reports, Financial/Asset/Battery Reports
 
@@ -29,16 +32,20 @@
 ### WEEK 1 (8–14 มิ.ย.)
 
 #### Day 1 — 8 มิ.ย.
-**Focus: Redis Setup + GPS Data Layer**
+**Focus: Redis Setup + GPS Data Layer + Simulator**
 
 - [ ] Install `ioredis` → `pnpm add ioredis`
 - [ ] `lib/redis.ts` — Redis client singleton
-- [ ] กำหนด Redis key convention: `vehicle:pos:{vehicle_id}` → `{ lat, lng, soc, speed, updated_at }`
+- [ ] กำหนด Redis key convention (ต้องตรงกับที่ IoT Gateway จะใช้ใน Production):
+  - key: `vehicle:pos:{vehicle_id}`
+  - value: `{ lat, lng, soc, speed, status, updated_at }`
 - [ ] `app/api/vehicles/positions/route.ts` — GET all vehicle positions from Redis
   - [ ] fallback: ถ้า Redis miss → query last known position from PostgreSQL
 - [ ] GPS Simulator script: `scripts/gps-simulator.ts`
-  - [ ] loop ทุก 5 วินาที → random walk positions ของทุก vehicle → เขียนลง Redis
-  - [ ] ใช้แทน IoT Gateway ระหว่าง dev/demo
+  - [ ] loop ทุก 5 วินาที → random walk positions ของทุก vehicle
+  - [ ] เขียน Redis ด้วย key format เดียวกับ IoT Gateway จริง (สำคัญมาก)
+  - [ ] รัน `pnpm sim:gps` → start, Ctrl+C → stop
+  - [ ] ใช้ vehicle IDs จาก PostgreSQL จริง (ไม่ hardcode)
 
 #### Day 2 — 9 มิ.ย.
 **Focus: WebSocket Server**
@@ -165,8 +172,42 @@ pnpm add @types/ioredis -D
 ## ⚙️ Environment Variables เพิ่ม
 
 ```env
+# Dev / Demo (local)
 REDIS_URL=redis://localhost:6379
+
+# Production (Server 2 IP)
+# REDIS_URL=redis://192.168.x.x:6379
 ```
+
+> การ switch Dev → Production แค่เปลี่ยน `REDIS_URL` เท่านั้น
+> Next.js และ GPS Simulator ไม่ต้องแก้ code ใดๆ
+
+---
+
+## 🚀 Production Handoff Checklist (ทำก่อนส่งลูกค้า)
+
+> ทำหลัง Sprint 3 เสร็จ — ก่อนติดตั้งบน Server จริง
+
+### Server 1: App Server
+- [ ] Deploy Next.js (Web Backoffice)
+- [ ] ติดตั้ง Mosquitto (MQTT Broker)
+- [ ] ติดตั้ง IoT Gateway (Node.js + Express/TypeScript — separate repo)
+  - [ ] IoT Gateway ใช้ Redis key format เดิม `vehicle:pos:{vehicle_id}` ← ต้องตรงกับ Simulator
+- [ ] ปิด GPS Simulator (`pnpm sim:gps` ห้ามรันบน Production)
+- [ ] ตั้ง `REDIS_URL` ชี้ไป Server 2
+
+### Server 2: Data Server
+- [ ] ติดตั้ง PostgreSQL + TimescaleDB extension
+- [ ] ติดตั้ง Redis
+- [ ] รัน migration (`pnpm db:migrate`)
+- [ ] ตรวจสอบ firewall: เปิดเฉพาะ port 5432 (Postgres) และ 6379 (Redis) ให้ Server 1 เข้าถึงได้
+
+### Switch Checklist (Dev → Production)
+- [ ] เปลี่ยน `REDIS_URL` → ชี้ Server 2
+- [ ] เปลี่ยน `DATABASE_URL` → ชี้ Server 2
+- [ ] ปิด GPS Simulator
+- [ ] เปิด IoT Gateway
+- [ ] ทดสอบ: รถส่ง GPS จริง → แผนที่ขยับ ✅
 
 ---
 

@@ -11,10 +11,10 @@
 
 | Epic | Feature | BE | FE | Status |
 |---|---|---|---|---|
-| Dashboard | A1: Admin Dashboard (real data) | ⬜ | ⬜ | 🔴 Not Started |
-| Fleet | B3: Vehicle Status Update | ⬜ | ⬜ | 🔴 Not Started |
+| Dashboard | A1: Admin Dashboard (real data) | ✅ | ✅ | 🟢 Done |
+| Fleet | B3: Vehicle Status Update | ✅ | ✅ | 🟢 Done |
 | Fleet | B4: Remote Actions (Motor Cutoff) | ⬜ | ✅ | 🔴 BE Pending |
-| Fleet | B5: Vehicle Telematics Tab (real data) | ⬜ | ✅ | 🔴 BE Pending |
+| Fleet | B5: Vehicle Telematics Tab (real data) | ✅ | ✅ | 🟢 Done |
 | Customer | C3: Blacklist System | ⬜ | ✅ | 🔴 BE Pending |
 | Contract | D2: Contract Detail (full) | ⬜ | ✅ | 🔴 BE Pending |
 | Billing | E2: Overdue / Debt Collection | ⬜ | ✅ | 🔴 BE Pending |
@@ -27,28 +27,28 @@
 
 ### WEEK 1 (25–31 พ.ค.)
 
-#### Day 1 — 25 พ.ค.
+#### Day 1 — 25 พ.ค. ✅
 **Focus: Dashboard Aggregation APIs**
 
-- [ ] `app/api/dashboard/summary/route.ts`
-  - [ ] total vehicles, rented, available, under_repair count
-  - [ ] pending KYC count
-  - [ ] today's revenue
-- [ ] `app/api/dashboard/revenue/route.ts`
-  - [ ] daily revenue aggregation (last 7 days / 30 days)
-  - [ ] query from invoices WHERE status = 'paid'
-- [ ] `app/api/alerts/route.ts`
-  - [ ] GET recent alerts (low battery, geofence breach, overdue)
-- [ ] เชื่อม `dashboard/page.tsx` กับ API จริง (ลบ mock data)
+- [x] `app/api/dashboard/summary/route.ts`
+  - [x] total vehicles, rented, available, under_repair count
+  - [x] pending KYC count
+  - [x] today's revenue
+- [x] `app/api/dashboard/revenue/route.ts`
+  - [x] daily revenue aggregation (last 7 days)
+  - [x] query from invoices WHERE status = 'paid', fill zeros for missing days
+- [x] `app/api/alerts/route.ts`
+  - [x] GET alerts derived from live data (low battery vehicles + overdue invoices)
+- [x] เชื่อม `dashboard/page.tsx` กับ DB จริง (ลบ mock data ทั้งหมด)
 
-#### Day 2 — 26 พ.ค.
+#### Day 2 — 26 พ.ค. ✅
 **Focus: Vehicle Status Update + Telematics API**
 
-- [ ] `app/api/vehicles/[id]/status/route.ts` — PATCH update vehicle status
-- [ ] `app/api/vehicles/[id]/telematics/route.ts` — GET SoC, temp, charge cycles
-  - [ ] query from TimescaleDB (latest telemetry record per vehicle)
-- [ ] เชื่อม Telematics Tab ใน vehicle detail กับ API จริง
-- [ ] Vehicle list แสดง status badge จาก real DB
+- [x] `app/api/vehicles/[id]/status/route.ts` — PATCH update vehicle status
+- [x] `app/api/vehicles/[id]/telematics/route.ts` — GET SoC, temp, charge cycles
+  - [x] query from TimescaleDB (latest telemetry record per vehicle)
+- [x] เชื่อม Telematics Tab ใน vehicle detail กับ API จริง
+- [x] Vehicle list แสดง status badge จาก real DB
 
 #### Day 3 — 27 พ.ค.
 **Focus: Remote Actions BE + Audit Log foundation**

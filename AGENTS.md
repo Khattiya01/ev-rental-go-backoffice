@@ -38,7 +38,8 @@ Admins use this system to:
 | Package manager | pnpm |
 | Database | PostgreSQL + TimescaleDB extension + Drizzle ORM |
 | Real-time / Cache | Redis (live GPS positions) + WebSockets |
-| IoT Gateway | Separate Node.js (Express) or Go microservice — NOT in this repo |
+| IoT Gateway | Separate Node.js + Express (TypeScript) microservice — NOT in this repo |
+| MQTT Broker | Mosquitto — runs on App Server alongside IoT Gateway |
 | Auth | NextAuth v5 |
 | Maps | Leaflet.js + OpenStreetMap (via `react-leaflet`) — free, no API key required |
 | Charts | Recharts |
@@ -56,24 +57,45 @@ This repo is the **Next.js full-stack app** only. It handles:
 - Real-time display — reads latest GPS from **Redis**, does NOT receive raw IoT data directly
 
 ### IoT Gateway (Separate Service — out of scope for this repo)
-A dedicated microservice (Node.js/Go) handles high-frequency GPS telemetry:
+A dedicated **Node.js + Express (TypeScript)** microservice handles high-frequency GPS telemetry:
 - Receives GPS data from vehicles via **MQTT** every 1–5 seconds
+- Validates and parses incoming payloads
 - Writes latest position to **Redis** (fast cache)
 - Writes GPS history to **PostgreSQL** (TimescaleDB for time-series efficiency)
+- Triggers Alerts (low battery < 15%, geofence breach) by writing to the alerts table
 - Reason for separation: raw IoT traffic would block Next.js Event Loop if handled here
+
+### Deployment Architecture (On-Premise — 2 Servers)
+
+```
+Server 1: App Server
+├── Next.js (Web Backoffice)   — this repo
+├── IoT Gateway (Node.js + Express/TS)  — separate repo
+└── MQTT Broker (Mosquitto)    — handles vehicle connections
+
+Server 2: Data Server
+├── PostgreSQL + TimescaleDB   — all business + GPS history data
+└── Redis                      — latest GPS position per vehicle
+```
+
+Target scale: **up to 100 vehicles** on this 2-server setup.
 
 ### Data Flow
 ```
 Vehicle (IoT device)
   │  MQTT
   ▼
-IoT Gateway (separate service)
+MQTT Broker (Mosquitto)
+  │
+  ▼
+IoT Gateway (Node.js/TS)
   ├─ latest position ──► Redis
-  └─ GPS history ──────► PostgreSQL (TimescaleDB)
+  ├─ GPS history ──────► PostgreSQL (TimescaleDB)
+  └─ alerts ───────────► PostgreSQL (alerts table)
 
 Next.js App (this repo)
   ├─ reads Redis ──► real-time map / dashboard via WebSockets or Server Actions
-  └─ reads PostgreSQL ──► business data (contracts, customers, invoices, etc.)
+  └─ reads PostgreSQL ──► business data (contracts, customers, invoices, alerts, etc.)
 ```
 
 ### Agent Scope Reminder

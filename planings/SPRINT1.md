@@ -150,11 +150,11 @@
 #### Day 12 — 24 พ.ค. 🎯 DEMO DAY
 **Sprint 1 Demo Checklist:**
 
-- [ ] Login ด้วย role ต่างกัน → แสดง permission ต่างกัน
-- [ ] ดูรายการรถจาก DB จริง (ไม่ใช่ mock)
-- [ ] Approve / Reject e-KYC ได้จริง
-- [ ] ดูสัญญา/ใบแจ้งหนี้จาก DB จริง
-- [ ] ระบบไม่ crash เมื่อ demo
+- [x] Login ด้วย role ต่างกัน → แสดง permission ต่างกัน
+- [x] ดูรายการรถจาก DB จริง (ไม่ใช่ mock)
+- [x] Approve / Reject e-KYC ได้จริง
+- [x] ดูสัญญา/ใบแจ้งหนี้จาก DB จริง
+- [x] ระบบไม่ crash เมื่อ demo
 
 ---
 

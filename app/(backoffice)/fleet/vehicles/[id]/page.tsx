@@ -14,6 +14,15 @@ import SectionCard from '@/components/ui/section-card'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
+interface TelematicsData {
+  vehicleId: string
+  socPercent: number
+  temperature: number | null
+  chargeCycles: number | null
+  deepDischargeCount: number | null
+  recordedAt: string | null
+}
+
 export default function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const t = useTranslations('vehicleDetail')
@@ -24,6 +33,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<Tab>('general')
   const [contracts, setContracts] = useState<Contract[]>([])
   const [contractsLoading, setContractsLoading] = useState(false)
+  const [telematics, setTelematics] = useState<TelematicsData | null>(null)
+  const [telematicsLoading, setTelematicsLoading] = useState(false)
   const [cutoffModalOpen, setCutoffModalOpen] = useState(false)
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [password, setPassword] = useState('')
@@ -60,6 +71,16 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       .catch(() => setContracts([]))
       .finally(() => setContractsLoading(false))
   }, [vehicle?.id])
+
+  useEffect(() => {
+    if (!vehicle?.id || activeTab !== 'telematics') return
+    setTelematicsLoading(true)
+    fetch(`/api/vehicles/${vehicle.id}/telematics`)
+      .then(r => r.ok ? r.json() : null)
+      .then((json: TelematicsData | null) => setTelematics(json))
+      .catch(() => setTelematics(null))
+      .finally(() => setTelematicsLoading(false))
+  }, [vehicle?.id, activeTab])
 
   if (loading) {
     return (
@@ -207,36 +228,52 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Tab: Telematics & Battery */}
       {activeTab === 'telematics' && (
-        <div className="grid grid-cols-2 gap-5">
-          <SectionCard title={t('telematics.socTitle')}>
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl font-bold text-blue-500">{vehicle.socPercent}%</div>
-                <div className="text-slate-500 text-sm mt-2">{t('telematics.currentChargeLevel')}</div>
-                <div className="mt-4 w-full bg-slate-200 rounded-full h-3 max-w-xs">
-                  <div className="bg-blue-500 h-3 rounded-full transition-all" style={{ width: `${vehicle.socPercent}%` }} />
+        telematicsLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-5">
+            <SectionCard title={t('telematics.socTitle')}>
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl font-bold text-blue-500">{telematics?.socPercent ?? vehicle.socPercent}%</div>
+                  <div className="text-slate-500 text-sm mt-2">{t('telematics.currentChargeLevel')}</div>
+                  <div className="mt-4 w-full bg-slate-200 rounded-full h-3 max-w-xs">
+                    <div
+                      className="bg-blue-500 h-3 rounded-full transition-all"
+                      style={{ width: `${telematics?.socPercent ?? vehicle.socPercent}%` }}
+                    />
+                  </div>
+                  {telematics?.recordedAt && (
+                    <div className="text-slate-400 text-xs mt-3">
+                      {t('telematics.lastUpdated')}: {new Date(telematics.recordedAt).toLocaleString()}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          </SectionCard>
-          <SectionCard title={t('telematics.sohTitle')}>
-            <div className="space-y-4">
-              {[
-                { label: t('telematics.stateOfHealth'), value: '94%' },
-                { label: t('telematics.temperature'), value: '28\u00b0C' },
-                { label: t('telematics.chargeCycles'), value: '142' },
-                { label: t('telematics.deepDischarge'), value: '3' },
-              ].map(item => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-500">{item.label}</span>
-                    <span className="text-slate-700 font-medium">{item.value}</span>
+            </SectionCard>
+            <SectionCard title={t('telematics.sohTitle')}>
+              <div className="space-y-4">
+                {[
+                  { label: t('telematics.temperature'), value: telematics?.temperature != null ? `${telematics.temperature}\u00b0C` : 'N/A' },
+                  { label: t('telematics.chargeCycles'), value: telematics?.chargeCycles != null ? String(telematics.chargeCycles) : 'N/A' },
+                  { label: t('telematics.deepDischarge'), value: telematics?.deepDischargeCount != null ? String(telematics.deepDischargeCount) : 'N/A' },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-slate-500">{item.label}</span>
+                      <span className={`font-medium ${item.value === 'N/A' ? 'text-slate-400' : 'text-slate-700'}`}>{item.value}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
+                ))}
+                {!telematics?.recordedAt && (
+                  <p className="text-slate-400 text-xs mt-2">{t('telematics.noData')}</p>
+                )}
+              </div>
+            </SectionCard>
+          </div>
+        )
       )}
 
       {/* Tab: Rental History */}
