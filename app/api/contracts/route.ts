@@ -136,6 +136,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       vehiclePlate: vehicle.plate,
       startDate,
       dueDate,
+      billingType: (raw.billingType === 'daily' ? 'daily' : 'monthly') as string,
       dailyRate,
       monthlyRate,
       depositAmount,

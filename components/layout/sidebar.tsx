@@ -201,7 +201,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/billing',
       children: [
         { href: '/billing/invoices', label: t('invoices'), icon: Receipt },
-        // { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
+        { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
       ],
     },
     // { href: '/maintenance', label: t('maintenance'), icon: Wrench },

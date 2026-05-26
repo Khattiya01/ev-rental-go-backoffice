@@ -82,6 +82,10 @@ export async function PATCH(
     fields.slipUrl = raw.slipUrl
   }
 
+  if (typeof raw.lastContacted === 'string' && raw.lastContacted.trim()) {
+    fields.lastContacted = raw.lastContacted.trim()
+  }
+
   if (Object.keys(fields).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
   }

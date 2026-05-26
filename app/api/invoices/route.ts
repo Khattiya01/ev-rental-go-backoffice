@@ -102,8 +102,24 @@ export async function GET(request: Request): Promise<NextResponse> {
   // suppress unused variable warning — firstOfMonth used conceptually
   void firstOfMonth
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const enriched = rows.map(row => {
+    if (row.status !== 'overdue') return row
+    try {
+      const due = new Date(row.dueDate)
+      if (isNaN(due.getTime())) return row
+      due.setHours(0, 0, 0, 0)
+      const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000))
+      return { ...row, daysOverdue: days }
+    } catch {
+      return row
+    }
+  })
+
   return NextResponse.json({
-    data: rows,
+    data: enriched,
     total,
     summary: { paidThisMonth, pendingCount, overdueCount, totalOutstanding },
   })

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   CheckCircle2, Clock, AlertTriangle, Check,
   Loader2, Pencil, Trash2, X, Banknote, FileText, Eye,
-  Receipt, Copy, CheckCheck,
+  Receipt, Copy, CheckCheck, Download,
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import generatePayload from 'promptpay-qr'
@@ -444,13 +444,14 @@ export default function InvoiceDetailPage() {
                   <div className="shrink-0">
                     {qrPayload ? (
                       <button
-                        onClick={copyPromptpayId}
+                        id="promptpay-qr"
+                        onClick={downloadQrCode}
                         className="relative inline-block p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-sm group hover:border-blue-300 transition-colors cursor-pointer"
                       >
                         <QRCode value={qrPayload} size={160} />
                         <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-700 shadow">
-                            {copied ? <><CheckCheck size={12} className="text-green-500" /> คัดลอกแล้ว</> : <><Copy size={12} /> คัดลอก ID</>}
+                            <Download size={12} /> ดาวน์โหลด QR
                           </span>
                         </div>
                       </button>

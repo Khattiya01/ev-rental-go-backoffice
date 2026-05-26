@@ -268,20 +268,42 @@
       "passwordLabel": "ยืนยันด้วยรหัสผ่านผู้ดูแลระบบ",
       "passwordPlaceholder": "ใส่รหัสผ่านเพื่อยืนยัน",
       "cutoffButton": "ตัดพลังงานมอเตอร์",
+      "restoreButton": "คืนพลังงานมอเตอร์",
+      "motorRestore": "คืนพลังงานมอเตอร์",
+      "motorRestoreDesc": "เปิดใช้งานมอเตอร์รถอีกครั้งหลังจากการตัดฉุกเฉิน",
       "iotReset": "รีเซ็ตอุปกรณ์ IoT",
       "iotResetDesc": "รีสตาร์ทอุปกรณ์ IoT บนรถเพื่อคืนการเชื่อมต่อ",
       "resetButton": "รีเซ็ตอุปกรณ์ IoT",
+      "cutoffActiveBanner": "พลังงานมอเตอร์ถูกตัดออกอยู่ในขณะนี้",
+      "cutoffActiveSince": "ตัดออกเมื่อ {time}",
+      "currentStatus": "สถานะรถปัจจุบัน",
       "cutoffModal": {
         "title": "ยืนยันการตัดพลังงานมอเตอร์",
         "warning": "การกระทำนี้จะปิดมอเตอร์รถทันที ใช้เฉพาะในกรณีฉุกเฉินเท่านั้น",
         "cancel": "ยกเลิก",
         "confirm": "ยืนยันและตัดพลังงาน"
       },
+      "restoreModal": {
+        "title": "คืนพลังงานมอเตอร์",
+        "warning": "การกระทำนี้จะเปิดใช้งานมอเตอร์รถอีกครั้ง ยืนยันว่าสถานการณ์ปลอดภัยก่อนดำเนินการ",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยันและคืนพลังงาน"
+      },
       "resetModal": {
         "title": "รีเซ็ตอุปกรณ์ IoT",
         "message": "คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตอุปกรณ์ IoT ของรถ {plate}? อุปกรณ์จะออฟไลน์ 1\u20132 นาทีระหว่างรีสตาร์ท",
         "cancel": "ยกเลิก",
         "confirm": "ยืนยันรีเซ็ต"
+      },
+      "toast": {
+        "loading": "กำลังดำเนินการ...",
+        "cutoffSuccess": "ตัดพลังงานมอเตอร์สำเร็จ",
+        "cutoffError": "ไม่สามารถตัดพลังงานมอเตอร์ได้ กรุณาลองใหม่",
+        "restoreSuccess": "คืนพลังงานมอเตอร์สำเร็จ",
+        "restoreError": "ไม่สามารถคืนพลังงานมอเตอร์ได้ กรุณาลองใหม่",
+        "wrongPassword": "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่",
+        "resetSuccess": "ส่งคำสั่งรีเซ็ตอุปกรณ์ IoT แล้ว",
+        "resetError": "ไม่สามารถรีเซ็ตอุปกรณ์ IoT ได้ กรุณาลองใหม่"
       }
     }
   },
@@ -326,6 +348,72 @@
       "updated": "อัปเดตข้อมูลรถเรียบร้อยแล้ว",
       "createError": "ไม่สามารถเพิ่มรถได้",
       "updateError": "ไม่สามารถอัปเดตข้อมูลรถได้"
+    }
+  },
+  "overdue": {
+    "title": "ติดตามหนี้ค้างชำระ",
+    "fetchError": "โหลดข้อมูลไม่สำเร็จ",
+    "fetchErrorRetry": "เกิดข้อผิดพลาด กรุณาลองใหม่",
+    "cards": {
+      "totalDebt": "ยอดหนี้รวม",
+      "overdueAccounts": "รายการค้างชำระ",
+      "thirtyPlusDays": "เกิน 30 วัน",
+      "avgDays": "เฉลี่ย (วัน)",
+      "daysUnit": "วัน"
+    },
+    "aging": {
+      "sectionTitle": "อายุหนี้",
+      "bucket1_7": "1–7 วัน",
+      "bucket8_14": "8–14 วัน",
+      "bucket15_30": "15–30 วัน",
+      "bucket30plus": "30+ วัน",
+      "accounts": "{count} รายการ"
+    },
+    "searchPlaceholder": "ค้นหาลูกค้า, เลขที่ Invoice, ทะเบียนรถ...",
+    "columns": {
+      "customer": "ลูกค้า",
+      "invoiceNo": "เลขที่ Invoice",
+      "vehicle": "ทะเบียนรถ",
+      "amount": "ยอดค้างชำระ",
+      "dueDate": "วันครบกำหนด",
+      "overdue": "เกินกำหนด",
+      "lastContacted": "ติดต่อล่าสุด",
+      "actions": "จัดการ"
+    },
+    "daysBadge": "{days} วัน",
+    "neverContacted": "ไม่เคย",
+    "contactButton": "บันทึกการติดต่อ",
+    "contacting": "กำลังบันทึก...",
+    "lockButton": "ล็อครถ",
+    "noVehicle": "ไม่มีรถ",
+    "empty": {
+      "noOverdue": "ไม่มีรายการค้างชำระ",
+      "noOverdueHint": "ลูกค้าที่ค้างชำระเกินกำหนดจะปรากฎที่นี่",
+      "noResults": "ไม่พบรายการที่ค้นหา",
+      "noResultsHint": "ลองเปลี่ยนคำค้นหา"
+    },
+    "lockModal": {
+      "title": "ยืนยันการล็อครถ",
+      "customerLabel": "ลูกค้า",
+      "outstandingLabel": "ค้างชำระ",
+      "daysOverdue": "เกินกำหนด {days} วัน",
+      "warningText": "การดำเนินการนี้จะตัดกระแสไฟฟ้าของมอเตอร์ทันที ยานพาหนะจะไม่สามารถขับได้จนกว่าจะปลดล็อค",
+      "passwordLabel": "รหัสผ่านยืนยัน",
+      "passwordPlaceholder": "กรอกรหัสผ่านเพื่อยืนยัน",
+      "cancel": "ยกเลิก",
+      "confirm": "ยืนยันล็อครถ",
+      "confirming": "กำลังดำเนินการ..."
+    },
+    "toast": {
+      "vehicleSearchError": "ค้นหารถไม่สำเร็จ",
+      "vehicleNotFound": "ไม่พบรถทะเบียน {plate} ในระบบ",
+      "wrongPassword": "รหัสผ่านไม่ถูกต้อง",
+      "lockError": "ล็อครถไม่สำเร็จ",
+      "lockErrorRetry": "ล็อครถไม่สำเร็จ กรุณาลองใหม่",
+      "lockSuccess": "ล็อครถ {plate} สำเร็จ",
+      "contactSuccess": "บันทึกการติดต่อ {invoiceNo} สำเร็จ",
+      "contactError": "บันทึกการติดต่อไม่สำเร็จ กรุณาลองใหม่",
+      "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
     }
   },
   "customers": {

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, doublePrecision, timestamp, pgEnum, json } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, integer, doublePrecision, timestamp, pgEnum, json, boolean } from 'drizzle-orm/pg-core'
 
 export const vehicleStatusEnum = pgEnum('vehicle_status', ['available', 'rented', 'charging', 'under_repair', 'offline'])
 
@@ -21,6 +21,7 @@ export const vehicles = pgTable('vehicles', {
   condition: varchar('condition', { length: 50 }).default('Good'),
   location: varchar('location', { length: 255 }),
   nextServiceDate: varchar('next_service_date', { length: 50 }),
+  motorCutoffActive: boolean('motor_cutoff_active').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

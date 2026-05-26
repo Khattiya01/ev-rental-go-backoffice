@@ -265,23 +265,45 @@
     "remote": {
       "motorCutoff": "Emergency Motor Cutoff",
       "motorCutoffDesc": "Immediately disable the vehicle motor remotely. Use only in emergency situations.",
+      "motorRestore": "Restore Motor Power",
+      "motorRestoreDesc": "Re-enable the vehicle motor after an emergency cutoff.",
       "passwordLabel": "Confirm with your admin password",
       "passwordPlaceholder": "Enter password to confirm",
       "cutoffButton": "Cut Motor Power",
+      "restoreButton": "Restore Motor Power",
       "iotReset": "IoT Device Reset",
       "iotResetDesc": "Restart the onboard IoT device to restore connectivity.",
       "resetButton": "Reset IoT Device",
+      "cutoffActiveBanner": "Motor power is currently CUT OFF",
+      "cutoffActiveSince": "Cut off at {time}",
+      "currentStatus": "Current Vehicle Status",
       "cutoffModal": {
         "title": "Confirm Motor Power Cut-off",
         "warning": "This action will immediately disable the vehicle motor. Only use in emergencies.",
         "cancel": "Cancel",
         "confirm": "Confirm & Cut Power"
       },
+      "restoreModal": {
+        "title": "Restore Motor Power",
+        "warning": "This will re-enable the vehicle motor. Confirm the situation is safe before proceeding.",
+        "cancel": "Cancel",
+        "confirm": "Confirm & Restore Power"
+      },
       "resetModal": {
         "title": "Reset IoT Device",
         "message": "Are you sure you want to reset the IoT device for vehicle {plate}? The device will be offline for 1\u20132 minutes during restart.",
         "cancel": "Cancel",
         "confirm": "Confirm Reset"
+      },
+      "toast": {
+        "loading": "Processing...",
+        "cutoffSuccess": "Motor power cut off successfully",
+        "cutoffError": "Failed to cut motor power. Please try again.",
+        "restoreSuccess": "Motor power restored successfully",
+        "restoreError": "Failed to restore motor power. Please try again.",
+        "wrongPassword": "Incorrect password. Please try again.",
+        "resetSuccess": "IoT device reset command sent",
+        "resetError": "Failed to reset IoT device. Please try again."
       }
     }
   },
@@ -326,6 +348,72 @@
       "updated": "Vehicle updated successfully",
       "createError": "Failed to add vehicle",
       "updateError": "Failed to update vehicle"
+    }
+  },
+  "overdue": {
+    "title": "Overdue & Debt Collection Tracker",
+    "fetchError": "Failed to load data",
+    "fetchErrorRetry": "An error occurred. Please try again.",
+    "cards": {
+      "totalDebt": "Total Debt",
+      "overdueAccounts": "Overdue Accounts",
+      "thirtyPlusDays": "30+ Days",
+      "avgDays": "Avg Days Overdue",
+      "daysUnit": "days"
+    },
+    "aging": {
+      "sectionTitle": "Debt Aging Breakdown",
+      "bucket1_7": "1–7 days",
+      "bucket8_14": "8–14 days",
+      "bucket15_30": "15–30 days",
+      "bucket30plus": "30+ days",
+      "accounts": "{count} accounts"
+    },
+    "searchPlaceholder": "Search by customer, invoice no., plate...",
+    "columns": {
+      "customer": "Customer",
+      "invoiceNo": "Invoice No.",
+      "vehicle": "Vehicle",
+      "amount": "Amount",
+      "dueDate": "Due Date",
+      "overdue": "Overdue",
+      "lastContacted": "Last Contacted",
+      "actions": "Actions"
+    },
+    "daysBadge": "{days} days",
+    "neverContacted": "Never",
+    "contactButton": "Record Contact",
+    "contacting": "Recording...",
+    "lockButton": "Lock Vehicle",
+    "noVehicle": "No vehicle",
+    "empty": {
+      "noOverdue": "No Overdue Invoices",
+      "noOverdueHint": "Customers with overdue payments will appear here",
+      "noResults": "No results found",
+      "noResultsHint": "Try a different search term"
+    },
+    "lockModal": {
+      "title": "Confirm Vehicle Lock",
+      "customerLabel": "Customer",
+      "outstandingLabel": "Outstanding",
+      "daysOverdue": "{days} days overdue",
+      "warningText": "This action will immediately cut the motor power. The vehicle will be immobilized until unlocked.",
+      "passwordLabel": "Confirm Password",
+      "passwordPlaceholder": "Enter password to confirm",
+      "cancel": "Cancel",
+      "confirm": "Confirm Lock",
+      "confirming": "Processing..."
+    },
+    "toast": {
+      "vehicleSearchError": "Failed to find vehicle",
+      "vehicleNotFound": "Vehicle {plate} not found in the system",
+      "wrongPassword": "Incorrect password",
+      "lockError": "Failed to lock vehicle",
+      "lockErrorRetry": "Failed to lock vehicle. Please try again.",
+      "lockSuccess": "Vehicle {plate} locked successfully",
+      "contactSuccess": "Contact recorded for {invoiceNo}",
+      "contactError": "Failed to record contact. Please try again.",
+      "genericError": "An error occurred. Please try again."
     }
   },
   "customers": {

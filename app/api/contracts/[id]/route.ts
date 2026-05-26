@@ -65,6 +65,9 @@ export async function PATCH(
   if (typeof raw.documentUrl === 'string') {
     fields.documentUrl = raw.documentUrl || null
   }
+  if (raw.billingType === 'monthly' || raw.billingType === 'daily') {
+    fields.billingType = raw.billingType
+  }
 
   if (typeof raw.status === 'string' && (VALID_STATUSES as string[]).includes(raw.status)) {
     const newStatus = raw.status as ContractStatus

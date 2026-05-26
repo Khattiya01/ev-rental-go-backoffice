@@ -14,6 +14,7 @@ export const contracts = pgTable('contracts', {
   startDate: varchar('start_date', { length: 50 }).notNull(),
   dueDate: varchar('due_date', { length: 50 }).notNull(),
   status: contractStatusEnum('status').notNull().default('active'),
+  billingType: varchar('billing_type', { length: 20 }).notNull().default('monthly'),
   dailyRate: real('daily_rate').notNull(),
   monthlyRate: real('monthly_rate').notNull(),
   depositAmount: real('deposit_amount').notNull(),

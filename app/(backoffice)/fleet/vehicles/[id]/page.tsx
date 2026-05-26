@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useCanWrite } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
 import SectionCard from '@/components/ui/section-card'
+import { useToast } from '@/components/ui/toast'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
@@ -36,9 +37,12 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   const [telematics, setTelematics] = useState<TelematicsData | null>(null)
   const [telematicsLoading, setTelematicsLoading] = useState(false)
   const [cutoffModalOpen, setCutoffModalOpen] = useState(false)
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false)
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [password, setPassword] = useState('')
+  const [remoteLoading, setRemoteLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState(0)
+  const toast = useToast()
 
   useEffect(() => {
     async function load() {
@@ -348,28 +352,66 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Tab: Remote Control */}
       {activeTab === 'remote' && (
-        <div className="grid grid-cols-2 gap-5 max-w-2xl">
-          <div className="bg-white rounded-xl border border-red-500/30 p-6 text-center">
-            <div className="text-5xl mb-4">🔴</div>
-            <h3 className="text-slate-800 font-bold text-lg mb-2">{t('remote.motorCutoff')}</h3>
-            <p className="text-slate-400 text-sm mb-5">{t('remote.motorCutoffDesc')}</p>
-            <button
-              onClick={() => setCutoffModalOpen(true)}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-colors"
-            >
-              🔒 {t('remote.cutoffButton')}
-            </button>
+        <div className="max-w-2xl space-y-4">
+          {/* Context bar: current vehicle status */}
+          <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-5 py-3.5">
+            <span className="text-slate-500 text-sm">{t('remote.currentStatus')}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400 text-sm">SoC: <span className="font-semibold text-slate-700">{vehicle.socPercent}%</span></span>
+              <Badge variant={vehicle.status} />
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-            <div className="text-5xl mb-4">🔄</div>
-            <h3 className="text-slate-800 font-bold text-lg mb-2">{t('remote.iotReset')}</h3>
-            <p className="text-slate-500 text-sm mb-5">{t('remote.iotResetDesc')}</p>
-            <button
-              onClick={() => setResetModalOpen(true)}
-              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 rounded-xl transition-colors"
-            >
-              🔁 {t('remote.resetButton')}
-            </button>
+
+          {/* Motor cutoff active warning banner */}
+          {vehicle.motorCutoffActive && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <p className="text-red-700 font-semibold text-sm">{t('remote.cutoffActiveBanner')}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-5">
+            {/* Motor Cutoff / Restore card — toggles based on state */}
+            {vehicle.motorCutoffActive ? (
+              <div className="bg-white rounded-xl border border-green-500/30 p-6 text-center">
+                <div className="text-5xl mb-4">🟢</div>
+                <h3 className="text-slate-800 font-bold text-lg mb-2">{t('remote.motorRestore')}</h3>
+                <p className="text-slate-500 text-sm mb-5">{t('remote.motorRestoreDesc')}</p>
+                <button
+                  onClick={() => setRestoreModalOpen(true)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  🔓 {t('remote.restoreButton')}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-red-500/30 p-6 text-center">
+                <div className="text-5xl mb-4">🔴</div>
+                <h3 className="text-slate-800 font-bold text-lg mb-2">{t('remote.motorCutoff')}</h3>
+                <p className="text-slate-400 text-sm mb-5">{t('remote.motorCutoffDesc')}</p>
+                <button
+                  onClick={() => setCutoffModalOpen(true)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  🔒 {t('remote.cutoffButton')}
+                </button>
+              </div>
+            )}
+
+            {/* IoT Reset card */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
+              <div className="text-5xl mb-4">🔄</div>
+              <h3 className="text-slate-800 font-bold text-lg mb-2">{t('remote.iotReset')}</h3>
+              <p className="text-slate-500 text-sm mb-5">{t('remote.iotResetDesc')}</p>
+              <button
+                onClick={() => setResetModalOpen(true)}
+                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 rounded-xl transition-colors"
+              >
+                🔁 {t('remote.resetButton')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -382,7 +424,40 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         footer={
           <>
             <button onClick={() => { setCutoffModalOpen(false); setPassword('') }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">{t('remote.cutoffModal.cancel')}</button>
-            <button onClick={() => { console.log('Motor cutoff executed'); setCutoffModalOpen(false); setPassword('') }} disabled={!password.trim()} className={`flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${password.trim() ? 'hover:bg-red-700' : 'opacity-50 cursor-not-allowed'}`}>{t('remote.cutoffModal.confirm')}</button>
+            <button
+              onClick={async () => {
+                if (!vehicle) return
+                setRemoteLoading(true)
+                try {
+                  const res = await fetch(`/api/vehicles/${vehicle.id}/remote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cutoff', password }),
+                  })
+                  if (res.status === 401) {
+                    const data = await res.json() as { error: string }
+                    toast.error(data.error === 'Incorrect password' ? t('remote.toast.wrongPassword') : t('remote.toast.cutoffError'))
+                    return
+                  }
+                  if (!res.ok) {
+                    toast.error(t('remote.toast.cutoffError'))
+                    return
+                  }
+                  setCutoffModalOpen(false)
+                  setPassword('')
+                  setVehicle(prev => prev ? { ...prev, motorCutoffActive: true } : prev)
+                  toast.success(t('remote.toast.cutoffSuccess'))
+                } catch {
+                  toast.error(t('remote.toast.cutoffError'))
+                } finally {
+                  setRemoteLoading(false)
+                }
+              }}
+              disabled={!password.trim() || remoteLoading}
+              className={`flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${password.trim() && !remoteLoading ? 'hover:bg-red-700' : 'opacity-50 cursor-not-allowed'}`}
+            >
+              {remoteLoading ? t('remote.toast.loading') : t('remote.cutoffModal.confirm')}
+            </button>
           </>
         }
       >
@@ -400,6 +475,65 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         />
       </Modal>
 
+      {/* Restore Motor Modal */}
+      <Modal
+        isOpen={restoreModalOpen}
+        onClose={() => { setRestoreModalOpen(false); setPassword('') }}
+        title={t('remote.restoreModal.title')}
+        footer={
+          <>
+            <button onClick={() => { setRestoreModalOpen(false); setPassword('') }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">{t('remote.restoreModal.cancel')}</button>
+            <button
+              onClick={async () => {
+                if (!vehicle) return
+                setRemoteLoading(true)
+                try {
+                  const res = await fetch(`/api/vehicles/${vehicle.id}/remote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'restore', password }),
+                  })
+                  if (res.status === 401) {
+                    const data = await res.json() as { error: string }
+                    toast.error(data.error === 'Incorrect password' ? t('remote.toast.wrongPassword') : t('remote.toast.restoreError'))
+                    return
+                  }
+                  if (!res.ok) {
+                    toast.error(t('remote.toast.restoreError'))
+                    return
+                  }
+                  setRestoreModalOpen(false)
+                  setPassword('')
+                  setVehicle(prev => prev ? { ...prev, motorCutoffActive: false } : prev)
+                  toast.success(t('remote.toast.restoreSuccess'))
+                } catch {
+                  toast.error(t('remote.toast.restoreError'))
+                } finally {
+                  setRemoteLoading(false)
+                }
+              }}
+              disabled={!password.trim() || remoteLoading}
+              className={`flex-1 bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${password.trim() && !remoteLoading ? 'hover:bg-green-700' : 'opacity-50 cursor-not-allowed'}`}
+            >
+              {remoteLoading ? t('remote.toast.loading') : t('remote.restoreModal.confirm')}
+            </button>
+          </>
+        }
+      >
+        <div className="text-center mb-5">
+          <div className="text-5xl mb-3">🔓</div>
+          <p className="text-slate-500 text-sm">{t('remote.restoreModal.warning')}</p>
+        </div>
+        <label className="block text-slate-500 text-sm mb-2">{t('remote.passwordLabel')}</label>
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          placeholder={t('remote.passwordPlaceholder')}
+          className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-green-500"
+        />
+      </Modal>
+
       {/* IoT Reset Modal */}
       <Modal
         isOpen={resetModalOpen}
@@ -408,7 +542,33 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         footer={
           <>
             <button onClick={() => setResetModalOpen(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors">{t('remote.resetModal.cancel')}</button>
-            <button onClick={() => { console.log('IoT reset executed'); setResetModalOpen(false) }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">{t('remote.resetModal.confirm')}</button>
+            <button
+              onClick={async () => {
+                if (!vehicle) return
+                setRemoteLoading(true)
+                try {
+                  const res = await fetch(`/api/vehicles/${vehicle.id}/remote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reset' }),
+                  })
+                  if (!res.ok) {
+                    toast.error(t('remote.toast.resetError'))
+                    return
+                  }
+                  setResetModalOpen(false)
+                  toast.success(t('remote.toast.resetSuccess'))
+                } catch {
+                  toast.error(t('remote.toast.resetError'))
+                } finally {
+                  setRemoteLoading(false)
+                }
+              }}
+              disabled={remoteLoading}
+              className={`flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors ${!remoteLoading ? 'hover:bg-blue-700' : 'opacity-50 cursor-not-allowed'}`}
+            >
+              {remoteLoading ? t('remote.toast.loading') : t('remote.resetModal.confirm')}
+            </button>
           </>
         }
       >

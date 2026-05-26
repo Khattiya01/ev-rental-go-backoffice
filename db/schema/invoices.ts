@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, real, integer, timestamp, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, real, integer, timestamp, pgEnum, uniqueIndex } from 'drizzle-orm/pg-core'
 import { customers } from './customers'
 import { contracts } from './contracts'
 
@@ -21,8 +21,17 @@ export const invoices = pgTable('invoices', {
   daysOverdue: integer('days_overdue').default(0),
   lastContacted: varchar('last_contacted', { length: 50 }),
   slipUrl: varchar('slip_url', { length: 500 }),
+  periodYear: integer('period_year'),
+  periodMonth: integer('period_month'),
+  periodDay: integer('period_day'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-})
+}, (t) => [
+  // Monthly dedup: one invoice per (contract, year, month) when periodDay is NULL.
+  // Daily dedup:   one invoice per (contract, year, month, day) when periodDay is set.
+  // PostgreSQL does not enforce uniqueness across NULL values, so both cases are
+  // independently protected. Manual / one-time invoices (all NULLs) are unaffected.
+  uniqueIndex('uq_invoice_contract_period').on(t.contractId, t.periodYear, t.periodMonth, t.periodDay),
+])
 
 export type Invoice = typeof invoices.$inferSelect
 export type NewInvoice = typeof invoices.$inferInsert

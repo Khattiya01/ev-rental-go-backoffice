@@ -49,8 +49,10 @@ function QuickInvoiceModal({
 }) {
   const { success, error: toastError } = useToast()
   const [saving, setSaving] = useState(false)
-  const [billingType, setBillingType] = useState<BillingType>('monthly')
-  const [amount, setAmount] = useState(String(contract.monthlyRate))
+  const [billingType, setBillingType] = useState<BillingType>(contract.billingType as BillingType)
+  const [amount, setAmount] = useState(
+    contract.billingType === 'daily' ? String(contract.dailyRate) : String(contract.monthlyRate)
+  )
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
 
@@ -365,18 +367,42 @@ export default function ContractDetailPage() {
           {/* Contract details */}
           <SectionCard title="รายละเอียดสัญญา">
             <dl className="space-y-3">
-              <div>
-                <dt className="text-slate-400 text-xs">เงินมัดจำ</dt>
-                <dd className="text-slate-800 text-2xl font-bold">฿{fmt(contract.depositAmount)}</dd>
+              <div className="flex items-start justify-between">
+                <div>
+                  <dt className="text-slate-400 text-xs">เงินมัดจำ</dt>
+                  <dd className="text-slate-800 text-2xl font-bold">฿{fmt(contract.depositAmount)}</dd>
+                </div>
+                <div className="text-right">
+                  <dt className="text-slate-400 text-xs mb-1">รูปแบบการชำระ</dt>
+                  <dd>
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[contract.billingType as BillingType]}`}>
+                      {BILLING_TYPE_LABEL[contract.billingType as BillingType]}
+                    </span>
+                  </dd>
+                </div>
               </div>
               <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-slate-400 text-xs">ค่าเช่า/วัน</dt>
-                  <dd className="text-slate-800 text-lg font-bold mt-0.5">฿{fmt(contract.dailyRate)}</dd>
+                <div className={`rounded-xl p-2 -m-2 transition-colors ${contract.billingType === 'daily' ? 'bg-sky-50' : ''}`}>
+                  <dt className="text-slate-400 text-xs flex items-center gap-1">
+                    ค่าเช่า/วัน
+                    {contract.billingType === 'daily' && (
+                      <span className="px-1 py-px bg-sky-100 text-sky-600 text-[10px] font-semibold rounded">ใช้อยู่</span>
+                    )}
+                  </dt>
+                  <dd className={`text-lg font-bold mt-0.5 ${contract.billingType === 'daily' ? 'text-sky-700' : 'text-slate-800'}`}>
+                    ฿{fmt(contract.dailyRate)}
+                  </dd>
                 </div>
-                <div>
-                  <dt className="text-slate-400 text-xs">ค่าเช่า/เดือน</dt>
-                  <dd className="text-slate-800 text-lg font-bold mt-0.5">฿{fmt(contract.monthlyRate)}</dd>
+                <div className={`rounded-xl p-2 -m-2 transition-colors ${contract.billingType === 'monthly' ? 'bg-violet-50' : ''}`}>
+                  <dt className="text-slate-400 text-xs flex items-center gap-1">
+                    ค่าเช่า/เดือน
+                    {contract.billingType === 'monthly' && (
+                      <span className="px-1 py-px bg-violet-100 text-violet-600 text-[10px] font-semibold rounded">ใช้อยู่</span>
+                    )}
+                  </dt>
+                  <dd className={`text-lg font-bold mt-0.5 ${contract.billingType === 'monthly' ? 'text-violet-700' : 'text-slate-800'}`}>
+                    ฿{fmt(contract.monthlyRate)}
+                  </dd>
                 </div>
               </div>
               <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-3">
@@ -452,7 +478,10 @@ export default function ContractDetailPage() {
                     ['ผู้เช่า', contract.customerName],
                     ['ทะเบียนรถ', contract.vehiclePlate],
                     ['ระยะเวลา', `${contract.startDate} – ${contract.dueDate}`],
-                    ['ค่าเช่ารายวัน', `฿${fmt(contract.dailyRate)}`],
+                    ['รูปแบบการชำระ', BILLING_TYPE_LABEL[contract.billingType as BillingType]],
+                    contract.billingType === 'daily'
+                      ? ['ค่าเช่ารายวัน', `฿${fmt(contract.dailyRate)}`]
+                      : ['ค่าเช่ารายเดือน', `฿${fmt(contract.monthlyRate)}`],
                     ['เงินมัดจำ', `฿${fmt(contract.depositAmount)}`],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between">

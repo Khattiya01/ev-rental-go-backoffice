@@ -26,6 +26,7 @@ export interface Vehicle {
   location: string | null
   nextServiceDate: string | null
   mileage: number
+  motorCutoffActive: boolean
 }
 
 export interface Customer {
@@ -62,6 +63,7 @@ export interface Contract {
   startDate: string
   dueDate: string
   depositAmount: number
+  billingType: 'monthly' | 'daily'
   dailyRate: number
   monthlyRate: number
   status: ContractStatus

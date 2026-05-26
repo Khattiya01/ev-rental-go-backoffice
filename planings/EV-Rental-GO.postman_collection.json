@@ -1701,6 +1701,410 @@
         }
 
       ]
+    },
+
+    {
+      "name": "⏰ Cron Jobs (Billing)",
+      "description": "ทดสอบ cron endpoint สำหรับ billing automation\n\n⚙️ Setup: เพิ่ม variable ใน Postman Environment\n  cronSecret = <ค่า CRON_SECRET จาก .env.local>\n  (dev default: HnLwinzU/+VOl/TAPL6qxgb5j8JXH/p+xbKToMfcCaY=)\n\nEndpoint นี้ใช้ Authorization: Bearer — ไม่ใช่ session cookie\n\n⚠️ SMOKE TEST: รันเฉพาะ [1] และ [3] ทุกวัน\n   อย่ารัน 'Run folder' ทั้งหมดเพราะ tests [4], [4b], [5] สร้าง invoice จริงลง DB",
+      "item": [
+        {
+          "name": "[1] POST Mark Overdue — Dev Trigger (valid CRON_SECRET)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has required fields', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j).to.have.property('updated');",
+                  "  pm.expect(j).to.have.property('alertsCreated');",
+                  "  pm.expect(j).to.have.property('durationMs');",
+                  "  pm.expect(j.updated).to.be.a('number');",
+                  "  pm.expect(j.alertsCreated).to.be.a('number');",
+                  "});",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('overdueCount', j.updated);",
+                  "console.log('');",
+                  "console.log('===== Mark Overdue Result =====');",
+                  "console.log('Updated  : ' + j.updated + ' invoices → overdue');",
+                  "console.log('Alerts   : ' + j.alertsCreated + ' new alerts created');",
+                  "console.log('Duration : ' + j.durationMs + 'ms');",
+                  "if (j.invoices && j.invoices.length > 0) {",
+                  "  console.log('');",
+                  "  console.log('--- รายการที่เพิ่งถูก mark overdue ---');",
+                  "  j.invoices.forEach(function(inv, i) {",
+                  "    console.log((i + 1) + '. [' + inv.invoiceNo + '] ' + inv.customerName + ' — เกิน ' + inv.daysOverdue + ' วัน');",
+                  "  });",
+                  "} else {",
+                  "  console.log('');",
+                  "  console.log('✅ ไม่มี invoice ที่ต้อง mark overdue วันนี้');",
+                  "  console.log('   (อาจ mark ไปแล้ว หรือยังไม่มีที่เลยกำหนด)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/mark-overdue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "mark-overdue"]
+            }
+          }
+        },
+
+        {
+          "name": "[2] GET Overdue Invoices — ดูหนี้ค้างชำระทั้งหมด",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(j.data).to.be.an('array'));",
+                  "pm.test('All results are overdue', () => {",
+                  "  j.data.forEach(inv => pm.expect(inv.status).to.eql('overdue'));",
+                  "});",
+                  "console.log('');",
+                  "console.log('===== รายการหนี้ค้างชำระ (overdue) ทั้งหมด =====');",
+                  "console.log('จำนวน: ' + j.data.length + ' รายการ | total: ' + j.total);",
+                  "if (j.data.length === 0) {",
+                  "  console.log('✅ ไม่มีหนี้ค้างชำระในระบบ');",
+                  "} else {",
+                  "  console.log('');",
+                  "  console.log('#  | Invoice No   | ลูกค้า               | ยอด (฿)   | Due Date   | เกิน (วัน)');",
+                  "  console.log('---|-------------|----------------------|-----------|------------|----------');",
+                  "  j.data.forEach(function(inv, i) {",
+                  "    const no    = String(i + 1).padStart(2);",
+                  "    const invNo = (inv.invoiceNo || '-').padEnd(12);",
+                  "    const name  = (inv.customerName || '-').padEnd(20).slice(0, 20);",
+                  "    const amt   = String(inv.amount || 0).padStart(9);",
+                  "    const due   = (inv.dueDate || '-').padEnd(10);",
+                  "    const days  = String(inv.daysOverdue || 0).padStart(10);",
+                  "    console.log(no + ' | ' + invNo + ' | ' + name + ' | ' + amt + ' | ' + due + ' | ' + days);",
+                  "  });",
+                  "  const total = j.data.reduce(function(s, inv) { return s + (inv.amount || 0); }, 0);",
+                  "  console.log('');",
+                  "  console.log('รวมหนี้ทั้งหมด: ฿' + total.toLocaleString());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices?status=overdue&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices"],
+              "query": [
+                { "key": "status", "value": "overdue" },
+                { "key": "limit", "value": "100" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "[3] POST Generate Invoices — Next Month (default)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Has required fields', () => {",
+                  "  pm.expect(j).to.have.property('date');",
+                  "  pm.expect(j).to.have.property('monthlyPeriod');",
+                  "  pm.expect(j).to.have.property('generated');",
+                  "  pm.expect(j).to.have.property('skipped');",
+                  "  pm.expect(j.generated).to.be.a('number');",
+                  "  pm.expect(j.skipped).to.be.a('number');",
+                  "});",
+                  "pm.environment.set('lastGeneratedCount', j.generated);",
+                  "console.log('');",
+                  "console.log('===== Generate Invoices Result =====');",
+                  "console.log('Date     : ' + j.date);",
+                  "console.log('Monthly  : ' + (j.monthlyPeriod || 'ไม่ออก (ไม่ใช่วันที่ 25)'));",
+                  "console.log('Generated: ' + j.generated + ' invoices');",
+                  "console.log('Skipped  : ' + j.skipped + ' (already had invoice this period)');",
+                  "console.log('Duration : ' + j.durationMs + 'ms');",
+                  "if (j.invoices && j.invoices.length > 0) {",
+                  "  console.log('');",
+                  "  console.log('--- รายการที่สร้าง ---');",
+                  "  j.invoices.forEach(function(inv, i) {",
+                  "    console.log((i+1) + '. [' + inv.invoiceNo + '] ' + inv.contractNo + ' | ' + inv.customerName + ' | ฿' + inv.amount + ' | due: ' + inv.dueDate + ' [' + inv.billingType + ']');",
+                  "  });",
+                  "} else if (j.generated === 0 && j.skipped > 0) {",
+                  "  console.log('');",
+                  "  console.log('ℹ️  ทุก contract มี invoice period นี้อยู่แล้ว (skipped all)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"]
+            }
+          }
+        },
+
+        {
+          "name": "🧪 Dev / Manual Tests (อย่ารันพร้อม Smoke Tests)",
+          "description": "⚠️ Tests ชุดนี้สร้าง invoice จริงลง DB ด้วย params ที่กำหนดไว้\nรันเฉพาะเมื่อต้องการทดสอบ scenario เฉพาะ — ไม่ใช่ routine smoke test\n\n[4]  ทดสอบ monthly invoice สำหรับ period ที่กำหนด (?year=&month=)\n[4b] ทดสอบ idempotency — รันซ้ำ period เดิม ต้องได้ generated=0\n[5]  ทดสอบ daily billing ด้วย ?date= override",
+          "item": [
+        {
+          "name": "[4] POST Generate Invoices — Specific Period (dev test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('monthlyPeriod matches query params', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.monthlyPeriod).to.eql('7/2025');",
+                  "});",
+                  "const j = pm.response.json();",
+                  "console.log('');",
+                  "console.log('===== Generate Invoices — Specific Period =====');",
+                  "console.log('Period   : ' + j.monthlyPeriod);",
+                  "console.log('Generated: ' + j.generated);",
+                  "console.log('Skipped  : ' + j.skipped);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices?year=2025&month=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"],
+              "query": [
+                { "key": "year", "value": "2025" },
+                { "key": "month", "value": "7" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "[4b] POST Generate Invoices — Same Period Again (expect skipped=all)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('generated = 0 (idempotent — all skipped)', () => {",
+                  "  pm.expect(pm.response.json().generated).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices?year=2025&month=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"],
+              "query": [
+                { "key": "year", "value": "2025" },
+                { "key": "month", "value": "7" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "[5] POST Generate Invoices — Daily Billing (?date override)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('date field is DD/MM/YYYY and matches override', () => {",
+                  "  pm.expect(j.date).to.match(/^\\d{2}\\/\\d{2}\\/\\d{4}$/);",
+                  "  pm.expect(j.date).to.eql('15/06/2025');",
+                  "});",
+                  "pm.test('generated and skipped are numbers', () => {",
+                  "  pm.expect(j.generated).to.be.a('number');",
+                  "  pm.expect(j.skipped).to.be.a('number');",
+                  "});",
+                  "pm.test('monthlyPeriod is null (15th is not the 25th)', () => {",
+                  "  pm.expect(j.monthlyPeriod).to.be.null;",
+                  "});",
+                  "console.log('');",
+                  "console.log('===== Generate Invoices — Daily Billing Test =====');",
+                  "console.log('Date (override): ' + j.date);",
+                  "console.log('Monthly period : ' + (j.monthlyPeriod || 'null — ไม่ใช่วันที่ 25'));",
+                  "console.log('Generated      : ' + j.generated + ' (daily contracts เท่านั้น)');",
+                  "console.log('Skipped        : ' + j.skipped);",
+                  "console.log('Duration       : ' + j.durationMs + 'ms');",
+                  "if (j.invoices && j.invoices.length > 0) {",
+                  "  console.log('');",
+                  "  console.log('--- Daily invoices ที่สร้าง ---');",
+                  "  j.invoices.forEach(function(inv, i) {",
+                  "    console.log((i+1) + '. [' + inv.invoiceNo + '] ' + inv.billingType + ' | ' + inv.customerName + ' | ฿' + inv.amount + ' | due: ' + inv.dueDate);",
+                  "  });",
+                  "} else {",
+                  "  console.log('ℹ️  ไม่มี daily contract ที่ active (generated = 0)');",
+                  "  console.log('   สร้าง contract ที่มี billingType=daily ก่อนทดสอบ');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices?date=2025-06-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"],
+              "query": [
+                { "key": "date", "value": "2025-06-15" }
+              ]
+            }
+          }
+        }
+
+          ]
+        },
+
+        {
+          "name": "[ERROR] POST Generate Invoices — Invalid Params (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error field', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices?year=2025&month=99",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"],
+              "query": [
+                { "key": "year", "value": "2025" },
+                { "key": "month", "value": "99" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "[ERROR] POST Generate Invoices — No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/generate-invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "generate-invoices"]
+            }
+          }
+        },
+
+        {
+          "name": "[ERROR] POST Mark Overdue — No Auth Header (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('Has error field', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/mark-overdue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "mark-overdue"]
+            }
+          }
+        },
+
+        {
+          "name": "[ERROR] POST Mark Overdue — Wrong Secret (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('Has error field', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer wrong-secret-should-fail" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/mark-overdue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "mark-overdue"]
+            }
+          }
+        }
+
+      ]
     }
 
   ]

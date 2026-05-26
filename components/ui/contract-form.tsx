@@ -22,6 +22,7 @@ const contractSchema = z.object({
   vehicleId: z.string().min(1, 'กรุณาเลือกรถ'),
   startDate: z.string().min(1, 'กรุณาระบุวันเริ่มสัญญา'),
   dueDate: z.string().min(1, 'กรุณาระบุวันสิ้นสุดสัญญา'),
+  billingType: z.enum(['monthly', 'daily']),
   dailyRate: z.string(),
   monthlyRate: z.string(),
   depositAmount: z.string(),
@@ -267,6 +268,7 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
     control,
     handleSubmit,
     setValue,
+    watch,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<ContractFormData>({
@@ -276,12 +278,15 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
       vehicleId: initialData?.vehicleId ?? '',
       startDate: initialData?.startDate ?? '',
       dueDate: initialData?.dueDate ?? '',
+      billingType: initialData?.billingType ?? 'monthly',
       dailyRate: initialData ? String(initialData.dailyRate) : '',
       monthlyRate: initialData ? String(initialData.monthlyRate) : '',
       depositAmount: initialData ? String(initialData.depositAmount) : '',
       documentUrl: initialData?.documentUrl ?? '',
     },
   })
+
+  const billingType = watch('billingType')
 
   function handleCustomerChange(c: { id: string; name: string; phone: string } | null) {
     setCustomer(c)
@@ -312,6 +317,7 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
             vehicleId: data.vehicleId,
             startDate: data.startDate,
             dueDate: data.dueDate,
+            billingType: data.billingType,
             dailyRate: parseFloat(data.dailyRate) || 0,
             monthlyRate: parseFloat(data.monthlyRate) || 0,
             depositAmount: parseFloat(data.depositAmount) || 0,
@@ -332,6 +338,7 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           body: JSON.stringify({
             startDate: data.startDate,
             dueDate: data.dueDate,
+            billingType: data.billingType,
             dailyRate: parseFloat(data.dailyRate) || 0,
             monthlyRate: parseFloat(data.monthlyRate) || 0,
             depositAmount: parseFloat(data.depositAmount) || 0,
@@ -435,6 +442,37 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
           <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide mb-5">
             ราคาและเงื่อนไข
           </h2>
+
+          {/* Billing type selector */}
+          <div className="mb-5">
+            <label className={labelClass}>
+              รูปแบบการเรียกเก็บเงิน <span className="text-red-500">*</span>
+            </label>
+            <input type="hidden" {...register('billingType')} />
+            <div className="flex gap-2">
+              {([
+                { value: 'monthly', label: 'รายเดือน', sub: 'ออกใบแจ้งหนี้ทุกเดือน' },
+                { value: 'daily',   label: 'รายวัน',   sub: 'ออกใบแจ้งหนี้ทุกวัน' },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setValue('billingType', opt.value)}
+                  className={`flex-1 py-2.5 px-4 rounded-xl border text-sm font-medium transition-colors text-left ${
+                    billingType === opt.value
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                  }`}
+                >
+                  <span className="block font-semibold">{opt.label}</span>
+                  <span className={`block text-xs mt-0.5 ${billingType === opt.value ? 'text-blue-100' : 'text-slate-400'}`}>
+                    {opt.sub}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
               <label htmlFor="dailyRate" className={labelClass}>ค่าเช่ารายวัน (฿)</label>

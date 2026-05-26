@@ -13,13 +13,13 @@
 |---|---|---|---|---|
 | Dashboard | A1: Admin Dashboard (real data) | ✅ | ✅ | 🟢 Done |
 | Fleet | B3: Vehicle Status Update | ✅ | ✅ | 🟢 Done |
-| Fleet | B4: Remote Actions (Motor Cutoff) | ⬜ | ✅ | 🔴 BE Pending |
+| Fleet | B4: Remote Actions (Motor Cutoff) | ✅ | ✅ | 🟢 Done |
 | Fleet | B5: Vehicle Telematics Tab (real data) | ✅ | ✅ | 🟢 Done |
 | Customer | C3: Blacklist System | ⬜ | ✅ | 🔴 BE Pending |
 | Contract | D2: Contract Detail (full) | ⬜ | ✅ | 🔴 BE Pending |
 | Billing | E2: Overdue / Debt Collection | ⬜ | ✅ | 🔴 BE Pending |
 | Settings | F2: Role Permissions Matrix | ⬜ | ⬜ | 🔴 Not Started |
-| Core | G3: Audit Log System | ⬜ | ⬜ | 🔴 Not Started |
+| Core | G3: Audit Log System | 🔵 | ⬜ | 🟡 DB+API foundation done, View pending |
 
 ---
 
@@ -50,15 +50,16 @@
 - [x] เชื่อม Telematics Tab ใน vehicle detail กับ API จริง
 - [x] Vehicle list แสดง status badge จาก real DB
 
-#### Day 3 — 27 พ.ค.
+#### Day 3 — 27 พ.ค. ✅
 **Focus: Remote Actions BE + Audit Log foundation**
 
-- [ ] `app/api/vehicles/[id]/remote/route.ts` — POST { action: 'cutoff' | 'reset' }
-  - [ ] require password re-verification (ตรวจ admin password ก่อน execute)
-  - [ ] validate action enum — reject unknown actions
-  - [ ] log to audit_log table ทุกครั้งที่ execute
-- [ ] `db/schema/audit_logs.ts` — (id, admin_id, action, entity_type, entity_id, metadata, created_at)
-- [ ] `db/schema/alerts.ts` — (id, type, severity, message, entity_id, created_at, resolved)
+- [x] `app/api/vehicles/[id]/remote/route.ts` — POST { action: 'cutoff' | 'reset' }
+  - [x] require password re-verification (ตรวจ admin password ก่อน execute)
+  - [x] validate action enum — reject unknown actions
+  - [x] log to audit_log table ทุกครั้งที่ execute
+- [x] `db/schema/audit_logs.ts` — (id, admin_id, action, entity_type, entity_id, metadata, created_at)
+- [x] `db/schema/alerts.ts` — (id, type, severity, message, entity_id, created_at, resolved)
+- [x] เชื่อม Remote Control modals ใน vehicle detail กับ API จริง (loading state + toast feedback)
 
 #### Day 4 — 28 พ.ค.
 **Focus: Blacklist + Customer status API**
