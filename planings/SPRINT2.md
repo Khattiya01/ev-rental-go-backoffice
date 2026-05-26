@@ -51,7 +51,7 @@
 - [x] Vehicle list แสดง status badge จาก real DB
 
 #### Day 3 — 27 พ.ค. ✅
-**Focus: Remote Actions BE + Audit Log foundation**
+**Focus: Remote Actions BE + Audit Log foundation** + Billing overdue + cron generate billing + overdue
 
 - [x] `app/api/vehicles/[id]/remote/route.ts` — POST { action: 'cutoff' | 'reset' }
   - [x] require password re-verification (ตรวจ admin password ก่อน execute)
@@ -60,6 +60,7 @@
 - [x] `db/schema/audit_logs.ts` — (id, admin_id, action, entity_type, entity_id, metadata, created_at)
 - [x] `db/schema/alerts.ts` — (id, type, severity, message, entity_id, created_at, resolved)
 - [x] เชื่อม Remote Control modals ใน vehicle detail กับ API จริง (loading state + toast feedback)
+- [x] Billing overdue + cron generate billing + overdue
 
 #### Day 4 — 28 พ.ค.
 **Focus: Blacklist + Customer status API**
