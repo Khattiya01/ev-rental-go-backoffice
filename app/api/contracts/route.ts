@@ -117,7 +117,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     .select({ id: customers.id, name: customers.name, status: customers.status })
     .from(customers).where(eq(customers.id, customerId)).limit(1)
   if (!customer) return NextResponse.json({ error: 'ไม่พบลูกค้า' }, { status: 404 })
-  if (customer.status !== 'active') return NextResponse.json({ error: 'ลูกค้าต้องผ่าน KYC ก่อนทำสัญญา' }, { status: 409 })
+  if (customer.status === 'blacklisted') return NextResponse.json({ error: 'ไม่สามารถสร้างสัญญาได้ บัญชีลูกค้าถูก Blacklist' }, { status: 409 })
+  if (customer.status === 'suspended') return NextResponse.json({ error: 'ไม่สามารถสร้างสัญญาได้ บัญชีลูกค้าถูกระงับชั่วคราว' }, { status: 409 })
+  if (customer.status !== 'active') return NextResponse.json({ error: 'ลูกค้าต้องผ่าน KYC และได้รับการอนุมัติก่อนทำสัญญา' }, { status: 409 })
 
   const [vehicle] = await db
     .select({ id: vehicles.id, plate: vehicles.plate, status: vehicles.status })

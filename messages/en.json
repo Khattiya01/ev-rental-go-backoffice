@@ -352,6 +352,7 @@
   },
   "overdue": {
     "title": "Overdue & Debt Collection Tracker",
+    "subtitle": "Track and manage overdue accounts for debt collection",
     "fetchError": "Failed to load data",
     "fetchErrorRetry": "An error occurred. Please try again.",
     "cards": {
@@ -426,6 +427,7 @@
     "filterPendingKyc": "Pending KYC",
     "filterRejected": "KYC Rejected",
     "filterActive": "Active",
+    "filterSuspended": "Suspended",
     "filterBlacklisted": "Blacklisted",
     "columns": {
       "customer": "Customer",
@@ -559,6 +561,37 @@
         "reactivated": "Account reactivated successfully",
         "actionError": "Action failed. Please try again.",
         "fetchError": "Failed to load customer"
+      }
+    },
+    "blacklist": {
+      "title": "Blacklist Management",
+      "subtitleCount": "{count} blacklisted customers",
+      "subtitleDefault": "Manage banned customer accounts",
+      "searchPlaceholder": "Search by name, phone, or reason...",
+      "columns": {
+        "customer": "Customer",
+        "phone": "Phone",
+        "bannedDate": "Ban Date",
+        "reason": "Reason",
+        "bannedBy": "Banned By"
+      },
+      "emptySearch": "No results found",
+      "emptySearchHint": "Try a different search term",
+      "empty": "No customers in Blacklist",
+      "emptyHint": "Banned customers will appear here",
+      "showing": "Showing {count} of {total}",
+      "unban": "Unban",
+      "unbanModal": {
+        "title": "Confirm Unban",
+        "message": "Are you sure you want to unban {name}?",
+        "note": "The customer's status will be changed to Active and they will be able to use the system again.",
+        "cancel": "Cancel",
+        "confirm": "Confirm Unban",
+        "confirming": "Processing..."
+      },
+      "toast": {
+        "unbanSuccess": "Unban {name} successfully",
+        "unbanError": "An error occurred. Please try again."
       }
     },
     "form": {

@@ -158,7 +158,7 @@
   },
   "vehicles": {
     "title": "รายการรถยนต์ EV",
-    "subtitleCount": "{count} คันในฝูง",
+    "subtitleCount": "{count} คันในรายการ",
     "subtitleDefault": "จัดการฝูง EV ของคุณ",
     "addVehicle": "เพิ่มรถ",
     "searchPlaceholder": "ค้นหาทะเบียน, รุ่น...",
@@ -352,6 +352,7 @@
   },
   "overdue": {
     "title": "ติดตามหนี้ค้างชำระ",
+    "subtitle": "ติดตามและจัดการลูกค้าที่ค้างชำระเพื่อดำเนินการเรียกเก็บ",
     "fetchError": "โหลดข้อมูลไม่สำเร็จ",
     "fetchErrorRetry": "เกิดข้อผิดพลาด กรุณาลองใหม่",
     "cards": {
@@ -426,6 +427,7 @@
     "filterPendingKyc": "รอยืนยัน KYC",
     "filterRejected": "เอกสารไม่ผ่าน",
     "filterActive": "ปกติ",
+    "filterSuspended": "ระงับบัญชี",
     "filterBlacklisted": "บัญชีดำ",
     "columns": {
       "customer": "ลูกค้า",
@@ -559,6 +561,37 @@
         "reactivated": "กู้คืนบัญชีเรียบร้อยแล้ว",
         "actionError": "เกิดข้อผิดพลาด กรุณาลองใหม่",
         "fetchError": "ไม่สามารถโหลดข้อมูลลูกค้าได้"
+      }
+    },
+    "blacklist": {
+      "title": "จัดการบัญชีดำ",
+      "subtitleCount": "{count} ลูกค้าที่ถูก Blacklist",
+      "subtitleDefault": "จัดการรายชื่อลูกค้าที่ถูกแบน",
+      "searchPlaceholder": "ค้นหาชื่อ เบอร์โทร หรือเหตุผล...",
+      "columns": {
+        "customer": "ชื่อลูกค้า",
+        "phone": "เบอร์โทร",
+        "bannedDate": "วันที่แบน",
+        "reason": "เหตุผล",
+        "bannedBy": "แบนโดย"
+      },
+      "emptySearch": "ไม่พบผลการค้นหา",
+      "emptySearchHint": "ลองค้นหาด้วยคำอื่น",
+      "empty": "ไม่มีลูกค้าใน Blacklist",
+      "emptyHint": "ลูกค้าที่ถูกแบนจะปรากฎที่นี่",
+      "showing": "แสดง {count} จาก {total} รายการ",
+      "unban": "Unban",
+      "unbanModal": {
+        "title": "ยืนยันการยกเลิก Blacklist",
+        "message": "คุณต้องการยกเลิก Blacklist ลูกค้า {name} ใช่หรือไม่?",
+        "note": "ลูกค้าจะถูกเปลี่ยนสถานะเป็น Active และสามารถใช้งานระบบได้อีกครั้ง",
+        "cancel": "ยกเลิก",
+        "confirm": "ยืนยัน Unban",
+        "confirming": "กำลังดำเนินการ..."
+      },
+      "toast": {
+        "unbanSuccess": "ยกเลิก Blacklist {name} เรียบร้อย",
+        "unbanError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
       }
     },
     "form": {

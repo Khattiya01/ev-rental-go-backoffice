@@ -65,13 +65,13 @@
 #### Day 4 — 28 พ.ค.
 **Focus: Blacklist + Customer status API**
 
-- [ ] `app/api/customers/[id]/blacklist/route.ts`
-  - [ ] POST — blacklist with reason, banned_by, banned_date
-  - [ ] DELETE — unban customer
-  - [ ] log to audit_log
-- [ ] `app/api/customers/blacklist/route.ts` — GET blacklisted list
-- [ ] เชื่อม `customers/blacklist/page.tsx` + `customers/[id]/page.tsx` กับ API จริง
-- [ ] enforce: ถ้า customer blacklisted → ห้าม create contract (validation ใน contract API)
+- [x] `app/api/customers/[id]/blacklist/route.ts`
+  - [x] POST — blacklist with reason, banned_by, banned_date
+  - [x] DELETE — unban customer
+  - [x] log to audit_log
+- [x] `app/api/customers/blacklist/route.ts` — GET blacklisted list
+- [x] เชื่อม `customers/blacklist/page.tsx` + `customers/[id]/page.tsx` กับ API จริง
+- [x] enforce: ถ้า customer blacklisted → ห้าม create contract (validation ใน contract API)
 
 #### Day 5 — 29 พ.ค.
 **Focus: Overdue / Debt Collection BE**

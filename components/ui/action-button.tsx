@@ -31,7 +31,7 @@ export default function ActionButton({
   ...rest
 }: ActionButtonProps) {
   const colorClass = VARIANT_CLASSES[variant]
-  const cls = `${BASE} ${colorClass} ${disabled ? 'opacity-40 pointer-events-none' : ''} ${className}`
+  const cls = `${BASE} ${colorClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`
 
   if ('href' in rest && rest.href) {
     return (

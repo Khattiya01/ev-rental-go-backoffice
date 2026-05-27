@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { customers } from '@/db/schema'
+import { customers, auditLogs } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import type { CustomerStatus, DriverType } from '@/lib/types'
 
@@ -179,6 +179,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }
 
+  let updatedCustomer: typeof customers.$inferSelect | undefined
   try {
     const rows = await db
       .update(customers)
@@ -190,8 +191,24 @@ export async function PATCH(
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    return NextResponse.json(rows[0])
+    updatedCustomer = rows[0]
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+
+  // Audit log for blacklist / unban actions
+  if (fields.status === 'blacklisted' || (fields.status === 'active' && fields.bannedDate === null)) {
+    const isBlacklist = fields.status === 'blacklisted'
+    await db.insert(auditLogs).values({
+      adminId: currentUser.id,
+      action: isBlacklist ? 'customer.blacklist' : 'customer.unban',
+      entityType: 'customer',
+      entityId: id,
+      metadata: isBlacklist
+        ? { reason: fields.bannedReason, bannedBy: currentUser.name }
+        : { unbannedBy: currentUser.name },
+    }).catch(() => { /* non-blocking — audit failure should not break the response */ })
+  }
+
+  return NextResponse.json(updatedCustomer)
 }

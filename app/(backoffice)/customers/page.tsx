@@ -5,11 +5,12 @@ import Link from 'next/link'
 import {
   UserPlus, Users, UserCircle,
   Eye, Pencil,
-  Clock, CheckCircle2, Ban, ClipboardCheck, Link2, XCircle,
+  Clock, CheckCircle2, Ban, ClipboardCheck, Link2, XCircle, PauseCircle,
 } from 'lucide-react'
 import type { Customer, CustomerStatus } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import RegistrationLinkModal from '@/components/ui/registration-link-modal'
+import Modal from '@/components/ui/modal'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
@@ -33,6 +34,7 @@ export default function CustomersPage() {
     { value: 'pending_kyc', label: t('filterPendingKyc'), dotColor: 'bg-amber-400' },
     { value: 'rejected', label: t('filterRejected'), dotColor: 'bg-rose-400' },
     { value: 'active', label: t('filterActive'), dotColor: 'bg-green-400' },
+    { value: 'suspended', label: t('filterSuspended'), dotColor: 'bg-orange-400' },
     { value: 'blacklisted', label: t('filterBlacklisted'), dotColor: 'bg-red-400' },
   ]
 
@@ -43,8 +45,13 @@ export default function CustomersPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
-  const [counts, setCounts] = useState({ pending_kyc: 0, rejected: 0, active: 0, blacklisted: 0 })
+  const [counts, setCounts] = useState({ pending_kyc: 0, rejected: 0, active: 0, suspended: 0, blacklisted: 0 })
   const [linkModalOpen, setLinkModalOpen] = useState(false)
+
+  const [blacklistTarget, setBlacklistTarget] = useState<Customer | null>(null)
+  const [blacklistReason, setBlacklistReason] = useState('')
+  const [blacklistError, setBlacklistError] = useState('')
+  const [blacklistLoading, setBlacklistLoading] = useState(false)
 
   const firstRender = useRef(true)
 
@@ -70,18 +77,20 @@ export default function CustomersPage() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [r1, r2, r3, r4] = await Promise.all([
+        const [r1, r2, r3, r4, r5] = await Promise.all([
           fetch('/api/customers?status=pending_kyc&limit=1'),
           fetch('/api/customers?status=rejected&limit=1'),
           fetch('/api/customers?status=active&limit=1'),
+          fetch('/api/customers?status=suspended&limit=1'),
           fetch('/api/customers?status=blacklisted&limit=1'),
         ])
-        const [j1, j2, j3, j4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()])
+        const [j1, j2, j3, j4, j5] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json(), r5.json()])
         setCounts({
           pending_kyc: j1.total ?? 0,
           rejected: j2.total ?? 0,
           active: j3.total ?? 0,
-          blacklisted: j4.total ?? 0,
+          suspended: j4.total ?? 0,
+          blacklisted: j5.total ?? 0,
         })
       } catch { /* silent */ }
     }
@@ -117,6 +126,42 @@ export default function CustomersPage() {
     setPage(1)
   }
 
+  const closeBlacklistModal = () => {
+    setBlacklistTarget(null)
+    setBlacklistReason('')
+    setBlacklistError('')
+  }
+
+  async function handleBlacklist() {
+    if (!blacklistTarget) return
+    if (!blacklistReason.trim()) {
+      setBlacklistError('กรุณาระบุเหตุผล')
+      return
+    }
+    setBlacklistLoading(true)
+    try {
+      const res = await fetch(`/api/customers/${blacklistTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'blacklisted', bannedReason: blacklistReason.trim() }),
+      })
+      if (res.ok) {
+        setCustomers(prev => prev.map(c =>
+          c.id === blacklistTarget.id ? { ...c, status: 'blacklisted' as const } : c
+        ))
+        setCounts(prev => ({ ...prev, blacklisted: prev.blacklisted + 1 }))
+        closeBlacklistModal()
+      } else {
+        const data = await res.json().catch(() => ({})) as { error?: string }
+        setBlacklistError(data.error ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+      }
+    } catch {
+      setBlacklistError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+    } finally {
+      setBlacklistLoading(false)
+    }
+  }
+
   const statusCards = [
     {
       key: 'pending_kyc' as FilterTab,
@@ -147,6 +192,16 @@ export default function CustomersPage() {
       idleClass: 'bg-white border-slate-200 hover:border-green-300',
       iconClass: 'text-green-500 bg-green-500/10',
       countClass: 'text-green-700',
+    },
+    {
+      key: 'suspended' as FilterTab,
+      label: t('filterSuspended'),
+      count: counts.suspended,
+      Icon: PauseCircle,
+      activeClass: 'bg-orange-50 border-orange-400',
+      idleClass: 'bg-white border-slate-200 hover:border-orange-300',
+      iconClass: 'text-orange-500 bg-orange-500/10',
+      countClass: 'text-orange-700',
     },
     {
       key: 'blacklisted' as FilterTab,
@@ -191,7 +246,7 @@ export default function CustomersPage() {
       )}
 
       {/* Status Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {statusCards.map(({ key, label, count, Icon, activeClass, idleClass, iconClass, countClass }) => {
           const isActive = activeFilter === key
           return (
@@ -311,6 +366,15 @@ export default function CustomersPage() {
                       {canWrite && (
                         <ActionButton variant="edit" href={`/customers/${customer.id}/edit`} icon={Pencil} title={t('detail.edit')} />
                       )}
+                      {canWrite && customer.status !== 'pending_kyc' && (
+                        <ActionButton
+                          variant="delete"
+                          onClick={() => { setBlacklistTarget(customer); setBlacklistReason(''); setBlacklistError('') }}
+                          icon={Ban}
+                          title={customer.status === 'blacklisted' ? 'ถูก Blacklist แล้ว' : 'Blacklist'}
+                          disabled={customer.status === 'blacklisted' || customer.status === 'rejected'}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -332,6 +396,51 @@ export default function CustomersPage() {
       {linkModalOpen && (
         <RegistrationLinkModal onClose={() => setLinkModalOpen(false)} />
       )}
+
+      {/* Quick Blacklist Modal */}
+      <Modal
+        isOpen={!!blacklistTarget}
+        onClose={closeBlacklistModal}
+        title="Blacklist ลูกค้า"
+        footer={
+          <>
+            <button
+              onClick={closeBlacklistModal}
+              disabled={blacklistLoading}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={() => void handleBlacklist()}
+              disabled={blacklistLoading}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              {blacklistLoading ? 'กำลังดำเนินการ...' : 'ยืนยัน Blacklist'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-slate-500 text-sm">
+            คุณต้องการ Blacklist ลูกค้า{' '}
+            <span className="font-semibold text-slate-800">{blacklistTarget?.name}</span> ใช่หรือไม่?
+          </p>
+          <div>
+            <p className="text-slate-600 text-xs font-medium mb-1.5">เหตุผล <span className="text-red-500">*</span></p>
+            <textarea
+              value={blacklistReason}
+              onChange={e => { setBlacklistReason(e.target.value); if (blacklistError) setBlacklistError('') }}
+              placeholder="ระบุเหตุผลที่แบนลูกค้าคนนี้..."
+              rows={3}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
+            />
+          </div>
+          {blacklistError && (
+            <p className="text-red-500 text-sm">{blacklistError}</p>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

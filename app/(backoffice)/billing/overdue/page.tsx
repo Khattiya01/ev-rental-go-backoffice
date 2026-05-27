@@ -7,10 +7,13 @@ import PageHeader from '@/components/ui/page-header'
 import EmptyState from '@/components/ui/empty-state'
 import ErrorAlert from '@/components/ui/error-alert'
 import Modal from '@/components/ui/modal'
-import { AlertTriangle, Lock, Phone } from 'lucide-react'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import { AlertTriangle, Lock, Phone, Banknote, Clock, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
 import SearchFilterBar from '@/components/ui/search-filter-bar'
+
+const PAGE_SIZE = 20
 
 export default function OverduePage() {
   const t = useTranslations('overdue')
@@ -19,6 +22,7 @@ export default function OverduePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [lockTarget, setLockTarget] = useState<Invoice | null>(null)
   const [password, setPassword] = useState('')
   const [lockLoading, setLockLoading] = useState(false)
@@ -44,6 +48,7 @@ export default function OverduePage() {
   }, [])
 
   const filtered = useMemo(() => {
+    setPage(1)
     if (!search.trim()) return invoices
     const q = search.toLowerCase()
     return invoices.filter(inv =>
@@ -51,7 +56,11 @@ export default function OverduePage() {
       inv.invoiceNo.toLowerCase().includes(q) ||
       (inv.vehiclePlate ?? '').toLowerCase().includes(q)
     )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoices, search])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const totalDebt = invoices.reduce((sum, inv) => sum + inv.amount, 0)
   const aging30Plus = invoices.filter(inv => (inv.daysOverdue ?? 0) > 30).length
@@ -132,39 +141,64 @@ export default function OverduePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={t('title')} />
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       <ErrorAlert message={error} />
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5">
-          <p className="text-slate-500 text-sm mb-1.5">{t('cards.totalDebt')}</p>
-          {loading
-            ? <div className="h-8 bg-red-500/10 rounded animate-pulse w-28" />
-            : <p className="text-slate-800 text-2xl font-bold">฿{totalDebt.toLocaleString()}</p>
-          }
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+            <Banknote size={20} className="text-red-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-slate-500 text-xs">{t('cards.totalDebt')}</p>
+            {loading
+              ? <div className="h-7 bg-slate-100 rounded animate-pulse w-28 mt-1" />
+              : <p className="text-red-700 text-xl font-bold tabular-nums">฿{totalDebt.toLocaleString()}</p>
+            }
+          </div>
         </div>
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5">
-          <p className="text-slate-500 text-sm mb-1.5">{t('cards.overdueAccounts')}</p>
-          {loading
-            ? <div className="h-8 bg-amber-500/10 rounded animate-pulse w-12" />
-            : <p className="text-slate-800 text-2xl font-bold">{invoices.length}</p>
-          }
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <AlertTriangle size={20} className="text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-slate-500 text-xs">{t('cards.overdueAccounts')}</p>
+            {loading
+              ? <div className="h-7 bg-slate-100 rounded animate-pulse w-12 mt-1" />
+              : <p className="text-amber-700 text-xl font-bold tabular-nums">{invoices.length}</p>
+            }
+          </div>
         </div>
-        <div className="bg-red-900/10 border border-red-800/30 rounded-xl p-5">
-          <p className="text-slate-500 text-sm mb-1.5">{t('cards.thirtyPlusDays')}</p>
-          {loading
-            ? <div className="h-8 bg-slate-100 rounded animate-pulse w-12" />
-            : <p className="text-red-700 text-2xl font-bold">{aging30Plus}</p>
-          }
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+            <Clock size={20} className="text-rose-700" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-slate-500 text-xs">{t('cards.thirtyPlusDays')}</p>
+            {loading
+              ? <div className="h-7 bg-slate-100 rounded animate-pulse w-12 mt-1" />
+              : <p className="text-rose-700 text-xl font-bold tabular-nums">{aging30Plus}</p>
+            }
+          </div>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-          <p className="text-slate-500 text-sm mb-1.5">{t('cards.avgDays')}</p>
-          {loading
-            ? <div className="h-8 bg-slate-100 rounded animate-pulse w-16" />
-            : <p className="text-slate-800 text-2xl font-bold">{avgDays} <span className="text-sm font-normal text-slate-400">{t('cards.daysUnit')}</span></p>
-          }
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <Timer size={20} className="text-slate-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-slate-500 text-xs">{t('cards.avgDays')}</p>
+            {loading
+              ? <div className="h-7 bg-slate-100 rounded animate-pulse w-16 mt-1" />
+              : <p className="text-slate-800 text-xl font-bold tabular-nums">
+                  {avgDays} <span className="text-sm font-normal text-slate-400">{t('cards.daysUnit')}</span>
+                </p>
+            }
+          </div>
         </div>
       </div>
 
@@ -202,17 +236,20 @@ export default function OverduePage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-200">
-              {[t('columns.customer'), t('columns.invoiceNo'), t('columns.vehicle'), t('columns.amount'), t('columns.dueDate'), t('columns.overdue'), t('columns.lastContacted'), t('columns.actions')].map(h => (
-                <th key={h} className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider first:pl-5">
-                  {h}
-                </th>
-              ))}
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.customer')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.invoiceNo')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.vehicle')}</th>
+              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.amount')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.dueDate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.overdue')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.lastContacted')}</th>
+              <th className="px-5 py-3.5" />
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <tr key={i} className="border-b border-slate-100">
+                <tr key={i}>
                   {[32, 20, 18, 16, 20, 12, 22, 18].map((w, j) => (
                     <td key={j} className="px-5 py-3.5">
                       <div className="h-4 bg-slate-100 rounded animate-pulse" style={{ width: `${w * 4}px` }} />
@@ -222,7 +259,7 @@ export default function OverduePage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={8} className="text-center">
                   <EmptyState
                     icon={AlertTriangle}
                     title={search ? t('empty.noResults') : t('empty.noOverdue')}
@@ -231,7 +268,7 @@ export default function OverduePage() {
                 </td>
               </tr>
             ) : (
-              filtered.map(invoice => {
+              paginated.map(invoice => {
                 const days = invoice.daysOverdue ?? 0
                 const badgeClass =
                   days > 30 ? 'bg-red-100 text-red-700' :
@@ -239,7 +276,7 @@ export default function OverduePage() {
                   'bg-amber-100 text-amber-700'
 
                 return (
-                  <tr key={invoice.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={invoice.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-5 py-3.5">
                       {invoice.customerId ? (
                         <Link href={`/customers/${invoice.customerId}`} className="text-blue-500 hover:underline text-sm font-medium">
@@ -264,7 +301,7 @@ export default function OverduePage() {
                     </td>
                     <td className="px-5 py-3.5 text-slate-500 text-sm">{invoice.lastContacted ?? t('neverContacted')}</td>
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => void handleMarkContacted(invoice)}
                           disabled={contactingId === invoice.id}
@@ -290,6 +327,15 @@ export default function OverduePage() {
             )}
           </tbody>
         </table>
+
+        {!loading && filtered.length > 0 && (
+          <PaginationFooter
+            page={page}
+            totalPages={totalPages}
+            label={`แสดง ${paginated.length} จาก ${filtered.length} รายการ`}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {/* Lock Vehicle Confirmation Modal */}

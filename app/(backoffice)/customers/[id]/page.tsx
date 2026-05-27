@@ -481,19 +481,6 @@ export default function CustomerProfilePage() {
                   </button>
                 )}
 
-                {/* Blacklist reason textarea (shown when blacklist action is available) */}
-                {(customer.status === 'active' || customer.status === 'suspended') && (
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1.5">{t('detail.blacklistReasonLabel')}</p>
-                    <textarea
-                      value={blacklistReason}
-                      onChange={e => setBlacklistReason(e.target.value)}
-                      placeholder={t('detail.blacklistReasonPlaceholder')}
-                      rows={3}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
-                    />
-                  </div>
-                )}
               </>
             ) : null}
           </div>
@@ -572,12 +559,12 @@ export default function CustomerProfilePage() {
       {/* Blacklist Confirmation Modal */}
       <Modal
         isOpen={blacklistModalOpen}
-        onClose={() => setBlacklistModalOpen(false)}
+        onClose={() => { setBlacklistModalOpen(false); setBlacklistReason(''); setBlacklistError('') }}
         title={t('detail.blacklistModal.title')}
         footer={
           <>
             <button
-              onClick={() => setBlacklistModalOpen(false)}
+              onClick={() => { setBlacklistModalOpen(false); setBlacklistReason(''); setBlacklistError('') }}
               className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition-colors"
             >
               {t('detail.blacklistModal.cancel')}
@@ -594,14 +581,17 @@ export default function CustomerProfilePage() {
         <div className="space-y-3">
           <p className="text-slate-500 text-sm">
             {t('detail.blacklistModal.message', { name: customer.name })}
-            {blacklistReason && (
-              <>
-                <br />
-                <br />
-                {t('detail.blacklistModal.reason', { reason: blacklistReason })}
-              </>
-            )}
           </p>
+          <div>
+            <p className="text-slate-600 text-xs font-medium mb-1.5">{t('detail.blacklistReasonLabel')}</p>
+            <textarea
+              value={blacklistReason}
+              onChange={e => { setBlacklistReason(e.target.value); if (blacklistError) setBlacklistError('') }}
+              placeholder={t('detail.blacklistReasonPlaceholder')}
+              rows={3}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-400 resize-none"
+            />
+          </div>
           {blacklistError && (
             <p className="text-red-500 text-sm">{blacklistError}</p>
           )}

@@ -98,7 +98,8 @@ function NavGroupItem({
                 {group.label}
               </p>
               {group.children.map(child => {
-                const isActive = pathname === child.href || pathname.startsWith(child.href + '/')
+                const isIndexRoute = child.href === group.basePath
+                const isActive = pathname === child.href || (!isIndexRoute && pathname.startsWith(child.href + '/'))
                 return (
                   <Link
                     key={child.href}
@@ -143,7 +144,8 @@ function NavGroupItem({
       {open && (
         <div className="ml-3 pl-3 border-l border-blue-900/60 mb-0.5">
           {group.children.map(child => {
-            const isActive = pathname === child.href || pathname.startsWith(child.href + '/')
+            const isIndexRoute = child.href === group.basePath
+            const isActive = pathname === child.href || (!isIndexRoute && pathname.startsWith(child.href + '/'))
             return (
               <Link
                 key={child.href}
@@ -191,7 +193,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       children: [
         { href: '/customers', label: t('allCustomers'), icon: Users },
         // { href: '/customers/kyc', label: t('kycApproval'), icon: BadgeCheck },
-        // { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
+        { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
       ],
     },
     { href: '/contracts', label: t('rentals'), icon: FileText },
