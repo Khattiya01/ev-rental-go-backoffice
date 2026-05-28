@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { appSettings } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 
 const DEFAULTS: Record<string, string> = {
   'payment.promptpay_id': '0000000000',
@@ -12,6 +13,8 @@ const DEFAULTS: Record<string, string> = {
 export async function GET(): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'settings', 'canRead')
+  if (denied) return denied
 
   try {
     const rows = await db.select().from(appSettings)
@@ -34,9 +37,8 @@ export async function GET(): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const denied = await requirePermission(currentUser, 'settings', 'canWrite')
+  if (denied) return denied
 
   let body: unknown
   try { body = await request.json() } catch {

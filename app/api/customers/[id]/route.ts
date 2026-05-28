@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { customers, auditLogs } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { CustomerStatus, DriverType } from '@/lib/types'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -19,9 +20,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'customers', 'canRead')
+  if (denied) return denied
 
   const { id } = await params
 
@@ -49,13 +50,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'customers', 'canWrite')
+  if (denied) return denied
 
   const { id } = await params
 

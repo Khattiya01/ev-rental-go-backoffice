@@ -28,6 +28,7 @@
     "reports": "Reports",
     "settings": "Settings",
     "users": "Users",
+    "permissions": "Permissions",
     "pricing": "Pricing",
     "payment": "Payment Account",
     "roles": {
@@ -258,6 +259,7 @@
       "monthlyRate": "Monthly Rate",
       "status": "Status",
       "totalContracts": "{count} contracts",
+      "showing": "Showing {count} of {total} contracts",
       "statusActive": "Active",
       "statusOverdue": "Overdue",
       "statusCompleted": "Completed"
@@ -415,6 +417,109 @@
       "contactSuccess": "Contact recorded for {invoiceNo}",
       "contactError": "Failed to record contact. Please try again.",
       "genericError": "An error occurred. Please try again."
+    }
+  },
+  "contractDetail": {
+    "loading": "Loading contract...",
+    "closeContract": "Close Contract",
+    "edit": "Edit",
+    "downloadPdf": "Download PDF",
+    "sections": {
+      "details": "Contract Details",
+      "renterVehicle": "Renter & Vehicle"
+    },
+    "fields": {
+      "deposit": "Deposit",
+      "billingType": "Billing Type",
+      "dailyRate": "Daily Rate",
+      "monthlyRate": "Monthly Rate",
+      "activeLabel": "Active",
+      "startDate": "Start Date",
+      "dueDate": "Due Date",
+      "batteryPenalty": "Battery Penalty",
+      "batteryPenaltyDesc": "Capacity drops >5% incurs ฿200 extra",
+      "autoReminder": "Auto Reminder",
+      "autoReminderDesc": "Send reminder before payment due date",
+      "renter": "Renter",
+      "plate": "Plate Number"
+    },
+    "billingType": {
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "one_time": "One-time"
+    },
+    "invoiceStatus": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue"
+    },
+    "mockContract": {
+      "title": "Rental Agreement",
+      "company": "EV RENTAL GO",
+      "preamble": "This agreement is made between EV Rental GO and the renter specified below, under the following terms and conditions.",
+      "fieldContractNo": "Contract No.",
+      "fieldRenter": "Renter",
+      "fieldPlate": "Plate Number",
+      "fieldPeriod": "Period",
+      "fieldDailyRate": "Daily Rate",
+      "fieldMonthlyRate": "Monthly Rate",
+      "fieldDeposit": "Deposit",
+      "terms": "Terms & Conditions",
+      "termsContent": "1. Return vehicle in original condition. 2. Battery capacity drop >5% incurs ฿200 extra. 3. Late return incurs daily penalty.",
+      "signatureLabel": "Digital Signature",
+      "signatureLessor": "Lessor",
+      "signatureLessee": "Renter",
+      "uploadPdf": "Upload Contract PDF"
+    },
+    "invoices": {
+      "title": "Invoices in this Contract",
+      "countLabel": "{count} items",
+      "received": "Received",
+      "outstanding": "Outstanding",
+      "issueInvoice": "Issue Invoice",
+      "issueFirst": "Issue First Invoice",
+      "empty": "No invoices yet",
+      "columns": {
+        "invoiceNo": "Invoice #",
+        "type": "Type",
+        "amount": "Amount",
+        "dueDate": "Due Date",
+        "paidAt": "Paid At",
+        "status": "Status"
+      },
+      "pagination": {
+        "showing": "Showing {from}–{to} of {total}"
+      }
+    },
+    "quickInvoice": {
+      "title": "Issue Invoice",
+      "paymentTypeLabel": "Payment Type",
+      "amountLabel": "Amount",
+      "dueDateLabel": "Payment Due Date",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "e.g. Rent for June 2026",
+      "cancel": "Cancel",
+      "submit": "Issue Invoice",
+      "submitting": "Issuing...",
+      "amountRequired": "Please specify an amount",
+      "dueDateRequired": "Please specify a due date",
+      "toastSuccess": "Invoice {invoiceNo} issued successfully",
+      "toastError": "Failed to issue invoice"
+    },
+    "closeModal": {
+      "title": "Close Contract {contractNo}?",
+      "description": "Vehicle {plate} will immediately return to available status and the contract status cannot be changed again.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Close",
+      "confirming": "Closing...",
+      "toastError": "Failed to close contract",
+      "toastSuccess": "Contract closed. Vehicle is now available."
+    },
+    "toast": {
+      "loadError": "Failed to load contract",
+      "reminderError": "Failed to save setting",
+      "reminderEnabled": "Auto reminder enabled",
+      "reminderDisabled": "Auto reminder disabled"
     }
   },
   "customers": {
@@ -637,6 +742,85 @@
         "createError": "Failed to register customer",
         "updateError": "Failed to update customer"
       }
+    }
+  },
+  "pricingSettings": {
+    "title": "Rental Pricing Configuration",
+    "subtitle": "Set rates per vehicle model. Models are pulled automatically from your fleet.",
+    "saving": "Saving...",
+    "save": "Save Changes",
+    "fields": {
+      "dailyRate": "Daily Rate (฿/day)",
+      "monthlyRate": "Monthly Rate (฿/month)",
+      "deposit": "Security Deposit (฿)"
+    },
+    "unsetBadge": "Not yet priced",
+    "enableLabel": "Enable",
+    "emptyFleet": "No vehicles in the system — add a vehicle first before setting prices.",
+    "toast": {
+      "loadError": "Failed to load pricing",
+      "saveSuccess": "Pricing saved successfully",
+      "saveError": "Save failed",
+      "genericError": "An error occurred, please try again"
+    }
+  },
+  "contractForm": {
+    "addTitle": "Create New Rental Contract",
+    "editTitle": "Edit Contract #{contractNo}",
+    "addSubtitle": "Fill in contract details and upload the document",
+    "editSubtitle": "Edit contract details and document",
+    "notFound": "Contract not found",
+    "parties": {
+      "title": "Contracting Parties",
+      "editNote": "(cannot be changed)",
+      "customerLabel": "Customer",
+      "vehicleLabel": "Vehicle",
+      "customerPlaceholder": "Search customer name (KYC approved only)",
+      "noCustomers": "No customers found, or not yet KYC approved",
+      "vehiclePlaceholder": "Search plate / model (available only)",
+      "noVehicles": "No available vehicles"
+    },
+    "period": {
+      "title": "Contract Period",
+      "startDate": "Start Date",
+      "dueDate": "End Date"
+    },
+    "pricing": {
+      "title": "Pricing & Terms",
+      "billingTypeLabel": "Billing Type",
+      "monthly": "Monthly",
+      "monthlyHint": "Invoice issued monthly",
+      "daily": "Daily",
+      "dailyHint": "Invoice issued daily",
+      "dailyRateLabel": "Daily Rate (฿)",
+      "monthlyRateLabel": "Monthly Rate (฿)",
+      "depositLabel": "Security Deposit (฿)",
+      "pricingFrom": "Default from Pricing: {model}",
+      "autoHint": "Rates are auto-filled from Pricing settings when a vehicle is selected — editable."
+    },
+    "document": {
+      "title": "Contract Document",
+      "uploadLabel": "Upload Contract (PDF)",
+      "uploadHint": "PDF up to 10 MB"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "create": "Create Contract",
+      "update": "Save Changes"
+    },
+    "validation": {
+      "customerRequired": "Please select a customer",
+      "vehicleRequired": "Please select a vehicle",
+      "startDateRequired": "Please enter a start date",
+      "dueDateRequired": "Please enter an end date"
+    },
+    "toast": {
+      "created": "Contract {contractNo} created successfully",
+      "createError": "Failed to create contract",
+      "updated": "Contract updated successfully",
+      "updateError": "Failed to update contract",
+      "genericError": "An error occurred, please try again"
     }
   }
 }

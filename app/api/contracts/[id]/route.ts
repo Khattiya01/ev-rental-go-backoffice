@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { ContractStatus } from '@/lib/types'
 
 const VALID_STATUSES: ContractStatus[] = ['active', 'completed', 'overdue']
@@ -13,6 +14,8 @@ export async function GET(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'contracts', 'canRead')
+  if (denied) return denied
 
   const { id } = await params
 
@@ -28,9 +31,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const denied = await requirePermission(currentUser, 'contracts', 'canWrite')
+  if (denied) return denied
 
   const { id } = await params
 
@@ -67,6 +69,9 @@ export async function PATCH(
   }
   if (raw.billingType === 'monthly' || raw.billingType === 'daily') {
     fields.billingType = raw.billingType
+  }
+  if (typeof raw.autoReminder === 'boolean') {
+    fields.autoReminder = raw.autoReminder
   }
 
   if (typeof raw.status === 'string' && (VALID_STATUSES as string[]).includes(raw.status)) {

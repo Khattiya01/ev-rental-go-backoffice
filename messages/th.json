@@ -28,6 +28,7 @@
     "reports": "รายงาน",
     "settings": "ตั้งค่า",
     "users": "ผู้ใช้งาน",
+    "permissions": "สิทธิ์การใช้งาน",
     "pricing": "ราคา",
     "payment": "บัญชีรับโอนเงิน",
     "roles": {
@@ -258,6 +259,7 @@
       "monthlyRate": "ค่าเช่า/เดือน",
       "status": "สถานะ",
       "totalContracts": "{count} สัญญา",
+      "showing": "แสดง {count} จาก {total} สัญญา",
       "statusActive": "กำลังเช่า",
       "statusOverdue": "เกินกำหนด",
       "statusCompleted": "เสร็จสิ้น"
@@ -415,6 +417,109 @@
       "contactSuccess": "บันทึกการติดต่อ {invoiceNo} สำเร็จ",
       "contactError": "บันทึกการติดต่อไม่สำเร็จ กรุณาลองใหม่",
       "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    }
+  },
+  "contractDetail": {
+    "loading": "กำลังโหลดข้อมูลสัญญา...",
+    "closeContract": "ปิดสัญญา",
+    "edit": "แก้ไข",
+    "downloadPdf": "ดาวน์โหลด PDF",
+    "sections": {
+      "details": "รายละเอียดสัญญา",
+      "renterVehicle": "ผู้เช่า & รถ"
+    },
+    "fields": {
+      "deposit": "เงินมัดจำ",
+      "billingType": "รูปแบบการชำระ",
+      "dailyRate": "ค่าเช่า/วัน",
+      "monthlyRate": "ค่าเช่า/เดือน",
+      "activeLabel": "ใช้อยู่",
+      "startDate": "วันเริ่มสัญญา",
+      "dueDate": "วันครบกำหนด",
+      "batteryPenalty": "ค่าปรับแบตเตอรี่",
+      "batteryPenaltyDesc": "ความจุลดเกิน 5% คิดเพิ่ม ฿200",
+      "autoReminder": "แจ้งเตือนอัตโนมัติ",
+      "autoReminderDesc": "ส่งแจ้งเตือนก่อนครบกำหนดชำระ",
+      "renter": "ผู้เช่า",
+      "plate": "ทะเบียนรถ"
+    },
+    "billingType": {
+      "daily": "รายวัน",
+      "monthly": "รายเดือน",
+      "one_time": "ครั้งเดียว"
+    },
+    "invoiceStatus": {
+      "paid": "ชำระแล้ว",
+      "pending": "รอชำระ",
+      "overdue": "เกินกำหนด"
+    },
+    "mockContract": {
+      "title": "สัญญาเช่ารถ",
+      "company": "EV RENTAL GO",
+      "preamble": "สัญญาฉบับนี้ทำขึ้นระหว่าง EV Rental GO และผู้เช่าที่ระบุไว้ด้านล่าง ภายใต้ข้อกำหนดและเงื่อนไขต่อไปนี้",
+      "fieldContractNo": "เลขสัญญา",
+      "fieldRenter": "ผู้เช่า",
+      "fieldPlate": "ทะเบียนรถ",
+      "fieldPeriod": "ระยะเวลา",
+      "fieldDailyRate": "ค่าเช่ารายวัน",
+      "fieldMonthlyRate": "ค่าเช่ารายเดือน",
+      "fieldDeposit": "เงินมัดจำ",
+      "terms": "ข้อกำหนดและเงื่อนไข",
+      "termsContent": "1. คืนรถในสภาพเดิม 2. ค่าปรับแบตเตอรี่กรณีความจุลดเกิน 5% คิดเพิ่ม ฿200 3. คืนรถช้ากว่ากำหนดมีค่าปรับรายวัน",
+      "signatureLabel": "ลายเซ็นดิจิตอล",
+      "signatureLessor": "ผู้ให้เช่า",
+      "signatureLessee": "ผู้เช่า",
+      "uploadPdf": "อัปโหลดเอกสารสัญญา PDF"
+    },
+    "invoices": {
+      "title": "ใบแจ้งหนี้ในสัญญานี้",
+      "countLabel": "{count} รายการ",
+      "received": "รับชำระแล้ว",
+      "outstanding": "ค้างชำระ",
+      "issueInvoice": "ออกใบแจ้งหนี้",
+      "issueFirst": "ออกใบแจ้งหนี้แรก",
+      "empty": "ยังไม่มีใบแจ้งหนี้",
+      "columns": {
+        "invoiceNo": "Invoice #",
+        "type": "ประเภท",
+        "amount": "จำนวนเงิน",
+        "dueDate": "ครบกำหนด",
+        "paidAt": "ชำระเมื่อ",
+        "status": "สถานะ"
+      },
+      "pagination": {
+        "showing": "แสดง {from}–{to} จาก {total} รายการ"
+      }
+    },
+    "quickInvoice": {
+      "title": "ออกใบแจ้งหนี้",
+      "paymentTypeLabel": "ประเภทการชำระ",
+      "amountLabel": "จำนวนเงิน",
+      "dueDateLabel": "วันครบกำหนดชำระ",
+      "notesLabel": "หมายเหตุ (ไม่บังคับ)",
+      "notesPlaceholder": "เช่น ค่าเช่าเดือน มิ.ย. 2569",
+      "cancel": "ยกเลิก",
+      "submit": "ออกใบแจ้งหนี้",
+      "submitting": "กำลังออก...",
+      "amountRequired": "กรุณาระบุจำนวนเงิน",
+      "dueDateRequired": "กรุณาระบุวันครบกำหนด",
+      "toastSuccess": "ออกใบแจ้งหนี้ {invoiceNo} เรียบร้อย",
+      "toastError": "ออกใบแจ้งหนี้ไม่สำเร็จ"
+    },
+    "closeModal": {
+      "title": "ปิดสัญญา {contractNo}?",
+      "description": "รถ {plate} จะกลับมาเป็นสถานะ available ทันที และไม่สามารถแก้ไขสถานะสัญญาได้อีก",
+      "cancel": "ยกเลิก",
+      "confirm": "ยืนยันปิดสัญญา",
+      "confirming": "กำลังปิด...",
+      "toastError": "ปิดสัญญาไม่สำเร็จ",
+      "toastSuccess": "ปิดสัญญาเรียบร้อย รถพร้อมให้เช่าต่อ"
+    },
+    "toast": {
+      "loadError": "โหลดข้อมูลสัญญาไม่สำเร็จ",
+      "reminderError": "บันทึกการตั้งค่าไม่สำเร็จ",
+      "reminderEnabled": "เปิดการแจ้งเตือนอัตโนมัติแล้ว",
+      "reminderDisabled": "ปิดการแจ้งเตือนอัตโนมัติแล้ว"
     }
   },
   "customers": {
@@ -637,6 +742,85 @@
         "createError": "ไม่สามารถเพิ่มลูกค้าได้",
         "updateError": "ไม่สามารถอัปเดตข้อมูลลูกค้าได้"
       }
+    }
+  },
+  "pricingSettings": {
+    "title": "Rental Pricing Configuration",
+    "subtitle": "ตั้งราคาเช่าแยกตามรุ่นรถ ระบบจะดึงรุ่นรถจาก Fleet อัตโนมัติ",
+    "saving": "กำลังบันทึก...",
+    "save": "บันทึกการเปลี่ยนแปลง",
+    "fields": {
+      "dailyRate": "ค่าเช่ารายวัน (฿/วัน)",
+      "monthlyRate": "ค่าเช่ารายเดือน (฿/เดือน)",
+      "deposit": "เงินมัดจำ (฿)"
+    },
+    "unsetBadge": "ยังไม่ได้ตั้งราคา",
+    "enableLabel": "เปิดใช้งาน",
+    "emptyFleet": "ยังไม่มีรถในระบบ — กรุณาเพิ่มรถก่อนตั้งราคา",
+    "toast": {
+      "loadError": "โหลด Pricing ไม่สำเร็จ",
+      "saveSuccess": "บันทึก Pricing เรียบร้อย",
+      "saveError": "บันทึกไม่สำเร็จ",
+      "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    }
+  },
+  "contractForm": {
+    "addTitle": "สร้างสัญญาเช่าใหม่",
+    "editTitle": "แก้ไขสัญญา #{contractNo}",
+    "addSubtitle": "กรอกข้อมูลสัญญาเช่าและอัปโหลดเอกสาร",
+    "editSubtitle": "แก้ไขรายละเอียดและเอกสารสัญญา",
+    "notFound": "ไม่พบสัญญา",
+    "parties": {
+      "title": "คู่สัญญา",
+      "editNote": "(ไม่สามารถเปลี่ยนแปลงได้)",
+      "customerLabel": "ลูกค้า",
+      "vehicleLabel": "รถ",
+      "customerPlaceholder": "ค้นหาชื่อลูกค้า (เฉพาะผ่าน KYC แล้ว)",
+      "noCustomers": "ไม่พบลูกค้า หรือยังไม่ผ่าน KYC",
+      "vehiclePlaceholder": "ค้นหาทะเบียน / รุ่นรถ (เฉพาะว่างอยู่)",
+      "noVehicles": "ไม่พบรถว่าง"
+    },
+    "period": {
+      "title": "ระยะเวลาสัญญา",
+      "startDate": "วันเริ่มสัญญา",
+      "dueDate": "วันสิ้นสุดสัญญา"
+    },
+    "pricing": {
+      "title": "ราคาและเงื่อนไข",
+      "billingTypeLabel": "รูปแบบการเรียกเก็บเงิน",
+      "monthly": "รายเดือน",
+      "monthlyHint": "ออกใบแจ้งหนี้ทุกเดือน",
+      "daily": "รายวัน",
+      "dailyHint": "ออกใบแจ้งหนี้ทุกวัน",
+      "dailyRateLabel": "ค่าเช่ารายวัน (฿)",
+      "monthlyRateLabel": "ค่าเช่ารายเดือน (฿)",
+      "depositLabel": "เงินมัดจำ (฿)",
+      "pricingFrom": "ราคาเริ่มต้นจาก Pricing: {model}",
+      "autoHint": "ราคาดึงค่าเริ่มต้นจากการตั้งค่า Pricing อัตโนมัติเมื่อเลือกรถ — แก้ไขได้"
+    },
+    "document": {
+      "title": "เอกสารสัญญา",
+      "uploadLabel": "อัปโหลดสัญญา (PDF)",
+      "uploadHint": "PDF ขนาดไม่เกิน 10 MB"
+    },
+    "buttons": {
+      "cancel": "ยกเลิก",
+      "saving": "กำลังบันทึก...",
+      "create": "สร้างสัญญา",
+      "update": "บันทึกการแก้ไข"
+    },
+    "validation": {
+      "customerRequired": "กรุณาเลือกลูกค้า",
+      "vehicleRequired": "กรุณาเลือกรถ",
+      "startDateRequired": "กรุณาระบุวันเริ่มสัญญา",
+      "dueDateRequired": "กรุณาระบุวันสิ้นสุดสัญญา"
+    },
+    "toast": {
+      "created": "สร้างสัญญา {contractNo} เรียบร้อย",
+      "createError": "สร้างสัญญาไม่สำเร็จ",
+      "updated": "อัปเดตสัญญาเรียบร้อย",
+      "updateError": "อัปเดตสัญญาไม่สำเร็จ",
+      "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
     }
   }
 }

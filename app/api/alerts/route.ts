@@ -3,13 +3,14 @@ import { lt, eq, desc } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles, invoices } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { Alert } from '@/lib/types'
 
 export async function GET(): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'reports', 'canRead')
+  if (denied) return denied
 
   const [lowBatteryVehicles, overdueInvoices] = await Promise.all([
     db

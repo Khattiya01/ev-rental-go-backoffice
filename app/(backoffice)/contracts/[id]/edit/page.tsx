@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import ContractForm from '@/components/ui/contract-form'
 import type { Contract } from '@/lib/types'
 
 export default function EditContractPage() {
   const params = useParams()
+  const t = useTranslations('contractForm')
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -34,7 +36,7 @@ export default function EditContractPage() {
     )
   }
   if (error || !contract) {
-    return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">ไม่พบสัญญา</div>
+    return <div className="flex items-center justify-center py-20 text-slate-400 text-sm">{t('notFound')}</div>
   }
 
   return <ContractForm mode="edit" initialData={contract} />

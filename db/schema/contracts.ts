@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, real, timestamp, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, real, timestamp, pgEnum, boolean } from 'drizzle-orm/pg-core'
 import { customers } from './customers'
 import { vehicles } from './vehicles'
 
@@ -19,6 +19,7 @@ export const contracts = pgTable('contracts', {
   monthlyRate: real('monthly_rate').notNull(),
   depositAmount: real('deposit_amount').notNull(),
   documentUrl: varchar('document_url', { length: 500 }),
+  autoReminder: boolean('auto_reminder').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

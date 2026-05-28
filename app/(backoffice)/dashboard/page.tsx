@@ -1,7 +1,7 @@
 import { Car, KeyRound, CircleCheck, Wrench, UserCheck } from 'lucide-react'
 import { count, eq, lt, sum, and, gte, desc, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { vehicles, customers, invoices } from '@/db/schema'
+import { vehicles, customers, invoices, alerts as alertsTable } from '@/db/schema'
 import SummaryCard from '@/components/dashboard/summary-card'
 import AlertFeed from '@/components/dashboard/alert-feed'
 import RevenueChart from '@/components/charts/revenue-chart'
@@ -25,6 +25,7 @@ async function getDashboardData() {
     revenueRows,
     lowBatteryVehicles,
     overdueInvoicesList,
+    reminderAlerts,
   ] = await Promise.all([
     db.select({ status: vehicles.status, count: count() }).from(vehicles).groupBy(vehicles.status),
     db.select({ pendingKYC: count() }).from(customers).where(eq(customers.status, 'pending_kyc')),
@@ -51,6 +52,11 @@ async function getDashboardData() {
       .where(eq(invoices.status, 'overdue'))
       .orderBy(desc(invoices.daysOverdue))
       .limit(5),
+    db.select({ id: alertsTable.id, message: alertsTable.message, entityId: alertsTable.entityId, createdAt: alertsTable.createdAt })
+      .from(alertsTable)
+      .where(and(eq(alertsTable.type, 'payment_reminder'), eq(alertsTable.resolved, false)))
+      .orderBy(desc(alertsTable.createdAt))
+      .limit(10),
   ])
 
   const statusMap = Object.fromEntries(vehicleCounts.map(r => [r.status, Number(r.count)]))
@@ -67,6 +73,8 @@ async function getDashboardData() {
     revenueData.push(revenueMap.get(key) ?? { day: dayName, revenue: 0 })
   }
 
+  const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 }
+
   const alerts: Alert[] = [
     ...lowBatteryVehicles.map(v => ({
       id: `battery-${v.id}`,
@@ -74,6 +82,7 @@ async function getDashboardData() {
       message: `Battery Low (${v.socPercent}%) — ${v.plate}`,
       severity: 'critical' as const,
       createdAt: 'Just now',
+      href: `/fleet/vehicles/${v.id}`,
     })),
     ...overdueInvoicesList.map(inv => ({
       id: `overdue-${inv.id}`,
@@ -81,8 +90,17 @@ async function getDashboardData() {
       message: `Payment Overdue — ${inv.customerName}${inv.daysOverdue ? ` (${inv.daysOverdue}d)` : ''}`,
       severity: 'warning' as const,
       createdAt: 'Just now',
+      href: `/billing/invoices/${inv.id}`,
     })),
-  ]
+    ...reminderAlerts.map(a => ({
+      id: a.id,
+      type: 'payment_reminder' as const,
+      message: a.message,
+      severity: 'warning' as const,
+      createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      href: `/billing/invoices/${a.entityId}`,
+    })),
+  ].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
 
   // Map to lib/types Vehicle (coerce nullable fields)
   const mapVehicles: Vehicle[] = allVehicles.map(v => ({
@@ -145,10 +163,23 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4">
-          <h2 className="text-slate-700 font-semibold text-sm mb-3">Alerts Feed</h2>
+        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-slate-700 font-semibold text-sm">Alerts</h2>
+              {alerts.length > 0 && (
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                  alerts.some(a => a.severity === 'critical')
+                    ? 'bg-red-100 text-red-600'
+                    : 'bg-amber-100 text-amber-600'
+                }`}>
+                  {alerts.length}
+                </span>
+              )}
+            </div>
+          </div>
           {alerts.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">No active alerts</p>
+            <p className="text-slate-400 text-sm text-center py-8">ไม่มี alert ที่ต้องดำเนินการ</p>
           ) : (
             <AlertFeed alerts={alerts} />
           )}

@@ -9,7 +9,7 @@ import Badge from '@/components/ui/badge'
 import CircularProgress from '@/components/ui/circular-progress'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
-import { useCanWrite } from '@/lib/user-context'
+import { useCanWrite, useCanDelete } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
 import EmptyState from '@/components/ui/empty-state'
 import PaginationFooter from '@/components/ui/pagination-footer'
@@ -23,7 +23,8 @@ export default function VehiclesPage() {
   const t = useTranslations('vehicles')
   const router = useRouter()
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite  = useCanWrite('vehicles')
+  const canDelete = useCanDelete('vehicles')
 
   const filterOptions = [
     { value: '', label: t('filterAll') },
@@ -223,15 +224,15 @@ export default function VehiclesPage() {
                     <div className="flex items-center justify-end gap-1">
                       <ActionButton variant="view" href={`/fleet/vehicles/${v.id}`} icon={Eye} title={t('viewDetails')} />
                       {canWrite && (
-                        <>
-                          <ActionButton variant="edit" href={`/fleet/vehicles/${v.id}/edit`} icon={Pencil} title={t('edit')} />
-                          <ActionButton
-                            variant="delete"
-                            onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
-                            icon={Trash2}
-                            title={t('delete')}
-                          />
-                        </>
+                        <ActionButton variant="edit" href={`/fleet/vehicles/${v.id}/edit`} icon={Pencil} title={t('edit')} />
+                      )}
+                      {canDelete && (
+                        <ActionButton
+                          variant="delete"
+                          onClick={() => { setSelectedVehicle(v); setIsDeleteOpen(true) }}
+                          icon={Trash2}
+                          title={t('delete')}
+                        />
                       )}
                     </div>
                   </td>

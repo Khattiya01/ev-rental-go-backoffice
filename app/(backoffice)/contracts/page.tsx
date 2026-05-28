@@ -24,7 +24,7 @@ const FILTER_OPTIONS = [
 type FilterTab = 'all' | ContractStatus
 
 export default function ContractsPage() {
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('contracts')
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
   const [search, setSearch] = useState('')
   const [contracts, setContracts] = useState<Contract[]>([])

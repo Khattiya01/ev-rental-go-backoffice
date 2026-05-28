@@ -17,7 +17,7 @@ export default function KYCApprovalPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('customers')
   const customerId = searchParams.get('id')
 
   const [customer, setCustomer] = useState<Customer | null>(null)

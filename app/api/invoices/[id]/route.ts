@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { invoices } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { InvoiceStatus } from '@/lib/types'
 
 const VALID_STATUSES: InvoiceStatus[] = ['paid', 'pending', 'overdue']
@@ -13,6 +14,8 @@ export async function GET(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'billing', 'canRead')
+  if (denied) return denied
 
   const { id } = await params
   const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1)
@@ -27,9 +30,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const deniedWrite = await requirePermission(currentUser, 'billing', 'canWrite')
+  if (deniedWrite) return deniedWrite
 
   const { id } = await params
 
@@ -105,9 +107,8 @@ export async function DELETE(
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const denied = await requirePermission(currentUser, 'billing', 'canDelete')
+  if (denied) return denied
 
   const { id } = await params
 

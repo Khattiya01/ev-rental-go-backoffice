@@ -4,18 +4,20 @@ import { useState } from 'react'
 import Sidebar from './sidebar'
 import Header from './header'
 import type { CurrentUser } from '@/lib/dal'
+import type { UserPermissions } from '@/lib/types'
 import { UserProvider } from '@/lib/user-context'
 
 interface BackofficeShellProps {
   user: CurrentUser | null
+  permissions: UserPermissions | null
   children: React.ReactNode
 }
 
-export default function BackofficeShell({ user, children }: BackofficeShellProps) {
+export default function BackofficeShell({ user, permissions, children }: BackofficeShellProps) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <UserProvider user={user}>
+    <UserProvider user={user} permissions={permissions}>
       <div className="min-h-screen bg-slate-50">
         <Sidebar user={user} collapsed={collapsed} />
         <Header user={user} onToggle={() => setCollapsed(c => !c)} collapsed={collapsed} />

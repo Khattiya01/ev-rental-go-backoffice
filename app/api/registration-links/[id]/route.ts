@@ -3,19 +3,16 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { registrationLinks } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'admin' && currentUser.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'settings', 'canDelete')
+  if (denied) return denied
 
   const { id } = await params
 

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import { isDuplicateKeyError } from '@/lib/db-errors'
 import type { VehicleStatus } from '@/lib/types'
 
@@ -13,9 +14,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canRead')
+  if (denied) return denied
 
   const { id } = await params
 
@@ -39,13 +40,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canWrite')
+  if (denied) return denied
 
   const { id } = await params
 
@@ -191,13 +188,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canDelete')
+  if (denied) return denied
 
   const { id } = await params
 

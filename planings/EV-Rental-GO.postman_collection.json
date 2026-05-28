@@ -2102,6 +2102,111 @@
               "path": ["api", "cron", "mark-overdue"]
             }
           }
+        },
+
+        {
+          "name": "[6] POST Payment Reminders — Dev Trigger (valid CRON_SECRET)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has required fields', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j).to.have.property('contractsChecked');",
+                  "  pm.expect(j).to.have.property('reminded');",
+                  "  pm.expect(j).to.have.property('durationMs');",
+                  "  pm.expect(j.contractsChecked).to.be.a('number');",
+                  "  pm.expect(j.reminded).to.be.a('number');",
+                  "});",
+                  "pm.test('reminded <= contractsChecked', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.reminded).to.be.at.most(j.contractsChecked + 100);",
+                  "});",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('lastReminderCount', j.reminded);",
+                  "console.log('');",
+                  "console.log('===== Payment Reminders Result =====');",
+                  "console.log('Contracts checked : ' + j.contractsChecked + ' (autoReminder=true, active)');",
+                  "console.log('Alerts created    : ' + j.reminded);",
+                  "console.log('Duration          : ' + j.durationMs + 'ms');",
+                  "if (j.invoices && j.invoices.length > 0) {",
+                  "  console.log('');",
+                  "  console.log('--- รายการ Invoice ที่แจ้งเตือนแล้ว ---');",
+                  "  j.invoices.forEach(function(inv, i) {",
+                  "    const days = inv.daysUntilDue === 0 ? 'วันนี้' : 'อีก ' + inv.daysUntilDue + ' วัน';",
+                  "    console.log((i + 1) + '. [' + inv.invoiceNo + '] ' + inv.customerName + ' — ครบกำหนด' + days + ' (' + inv.dueDate + ')');",
+                  "  });",
+                  "} else {",
+                  "  console.log('');",
+                  "  console.log('✅ ไม่มี invoice ที่ต้องแจ้งเตือนวันนี้');",
+                  "  console.log('   (ยังไม่ถึงช่วง 3 วันก่อนครบกำหนด หรือแจ้งเตือนไปแล้ว)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cronSecret}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/payment-reminders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "payment-reminders"]
+            }
+          }
+        },
+
+        {
+          "name": "[7] POST Payment Reminders — No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/payment-reminders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "payment-reminders"]
+            }
+          }
+        },
+
+        {
+          "name": "[8] POST Payment Reminders — Wrong Secret (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer wrong-secret-should-fail" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/payment-reminders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "payment-reminders"]
+            }
+          }
         }
 
       ]

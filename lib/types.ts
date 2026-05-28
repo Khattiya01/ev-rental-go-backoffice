@@ -1,3 +1,7 @@
+export type PermResource = 'vehicles' | 'customers' | 'contracts' | 'billing' | 'maintenance' | 'reports' | 'settings'
+export type PermEntry = { canRead: boolean; canWrite: boolean; canDelete: boolean }
+export type UserPermissions = Record<PermResource, PermEntry>
+
 export type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair' | 'offline'
 export type CustomerStatus = 'pending_kyc' | 'rejected' | 'active' | 'suspended' | 'blacklisted'
 export type ContractStatus = 'active' | 'completed' | 'overdue'
@@ -68,6 +72,7 @@ export interface Contract {
   monthlyRate: number
   status: ContractStatus
   documentUrl?: string | null
+  autoReminder: boolean
   createdAt: string
 }
 
@@ -92,10 +97,11 @@ export interface Invoice {
 
 export interface Alert {
   id: string
-  type: 'battery_low' | 'geofence_breach' | 'payment_overdue' | 'service_due'
+  type: 'battery_low' | 'geofence_breach' | 'payment_overdue' | 'payment_reminder' | 'service_due'
   message: string
   severity: AlertSeverity
   createdAt: string
+  href?: string
 }
 
 export interface GeofenceZone {

@@ -1,5 +1,5 @@
 interface BadgeProps {
-  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'rejected' | 'suspended' | 'blacklisted' | 'paid' | 'overdue' | 'inactive' | 'critical' | 'warning'
+  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'rejected' | 'suspended' | 'blacklisted' | 'paid' | 'overdue' | 'completed' | 'inactive' | 'critical' | 'warning' | 'battery_low' | 'payment_overdue' | 'payment_reminder' | 'geofence_breach' | 'service_due'
   label?: string
   className?: string
 }
@@ -18,9 +18,15 @@ const variantStyles: Record<BadgeProps['variant'], string> = {
   blacklisted: 'bg-red-500/20 text-red-400 border-red-500/30',
   paid: 'bg-green-500/20 text-green-400 border-green-500/30',
   overdue: 'bg-red-500/20 text-red-400 border-red-500/30',
+  completed: 'bg-slate-400/20 text-slate-500 border-slate-400/30',
   inactive: 'bg-red-500/20 text-red-400 border-red-500/30',
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
   warning: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  battery_low:      'bg-red-100 text-red-600 border-red-200',
+  payment_overdue:  'bg-rose-100 text-rose-600 border-rose-200',
+  payment_reminder: 'bg-amber-100 text-amber-700 border-amber-200',
+  geofence_breach:  'bg-orange-100 text-orange-600 border-orange-200',
+  service_due:      'bg-blue-100 text-blue-600 border-blue-200',
 }
 
 const variantLabels: Record<BadgeProps['variant'], string> = {
@@ -37,9 +43,15 @@ const variantLabels: Record<BadgeProps['variant'], string> = {
   blacklisted: 'Blacklisted',
   paid: 'Paid',
   overdue: 'Overdue',
+  completed: 'Completed',
   inactive: 'Inactive',
   critical: 'Critical',
   warning: 'Warning',
+  battery_low:      'แบตต่ำ',
+  payment_overdue:  'เลยกำหนด',
+  payment_reminder: 'ใกล้ครบกำหนด',
+  geofence_breach:  'เขตพื้นที่',
+  service_due:      'ซ่อมบำรุง',
 }
 
 export default function Badge({ variant, label, className = '' }: BadgeProps) {

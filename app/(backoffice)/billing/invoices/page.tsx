@@ -17,7 +17,7 @@ import SearchFilterBar from '@/components/ui/search-filter-bar'
 import ActionButton from '@/components/ui/action-button'
 import type { Invoice, BillingType, InvoiceStatus, Customer, Vehicle } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
-import { useCanWrite } from '@/lib/user-context'
+import { useCanWrite, useCanDelete } from '@/lib/user-context'
 
 // ─── Constants ────────────────────────────────────────────────
 const PAGE_SIZE = 20
@@ -601,7 +601,8 @@ interface Summary {
 // ─── Main page ────────────────────────────────────────────────
 export default function InvoicesPage() {
   const { error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite  = useCanWrite('billing')
+  const canDelete = useCanDelete('billing')
 
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -783,7 +784,7 @@ export default function InvoicesPage() {
                       {canWrite && (
                         <ActionButton variant="edit" onClick={() => setEditTarget(inv)} icon={Pencil} title="แก้ไข" />
                       )}
-                      {canWrite && inv.status !== 'paid' && (
+                      {canDelete && inv.status !== 'paid' && (
                         <ActionButton variant="delete" onClick={() => setDeleteTarget(inv)} icon={Trash2} title="ลบ" />
                       )}
                     </div>

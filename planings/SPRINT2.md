@@ -16,9 +16,9 @@
 | Fleet | B4: Remote Actions (Motor Cutoff) | ✅ | ✅ | 🟢 Done |
 | Fleet | B5: Vehicle Telematics Tab (real data) | ✅ | ✅ | 🟢 Done |
 | Customer | C3: Blacklist System | ⬜ | ✅ | 🔴 BE Pending |
-| Contract | D2: Contract Detail (full) | ⬜ | ✅ | 🔴 BE Pending |
+| Contract | D2: Contract Detail (full) | ✅ | ✅ | 🟢 Done |
 | Billing | E2: Overdue / Debt Collection | ⬜ | ✅ | 🔴 BE Pending |
-| Settings | F2: Role Permissions Matrix | ⬜ | ⬜ | 🔴 Not Started |
+| Settings | F2: Role Permissions Matrix | ✅ | ✅ | 🟢 Done |
 | Core | G3: Audit Log System | 🔵 | ⬜ | 🟡 DB+API foundation done, View pending |
 
 ---
@@ -76,28 +76,29 @@
 #### Day 5 — 29 พ.ค.
 **Focus: Overdue / Debt Collection BE**
 
-- [ ] `app/api/invoices/overdue/route.ts` — GET overdue invoices with days_overdue calc
-- [ ] `app/api/invoices/[id]/notify/route.ts` — POST { channel: 'sms' | 'line' }
-  - [ ] stub: log notification attempt to audit_log (ไม่ต้องส่งจริง)
-- [ ] เชื่อม `billing/overdue/page.tsx` กับ API จริง
+- [x] `app/api/invoices/overdue/route.ts` — GET overdue invoices with days_overdue calc
+- [x] เชื่อม `billing/overdue/page.tsx` กับ API จริง
 
 ### WEEK 2 (1–7 มิ.ย.)
 
-#### Day 6 — 1 มิ.ย.
+#### Day 6 — 1 มิ.ย. ✅
 **Focus: Contract Detail BE**
 
-- [ ] `app/api/contracts/route.ts` — POST create contract (ตรวจ customer ไม่ blacklisted)
-- [ ] `app/api/contracts/[id]/route.ts` — PATCH (extend contract, update status)
-- [ ] เชื่อม `contracts/[id]/page.tsx` — auto-reminder toggle save ลง DB
+- [x] `app/api/contracts/route.ts` — POST create contract (ตรวจ customer ไม่ blacklisted)
+- [x] `app/api/contracts/[id]/route.ts` — PATCH (extend contract, update status)
+- [x] เชื่อม `contracts/[id]/page.tsx` — auto-reminder toggle save ลง DB
 
-#### Day 7 — 2 มิ.ย.
+#### Day 7 — 2 มิ.ย. ✅
 **Focus: Role Permissions Matrix**
 
-- [ ] `db/schema/role_permissions.ts` — (role, resource, can_read, can_write, can_delete)
-- [ ] `app/api/permissions/route.ts` — GET / PUT permission matrix
-- [ ] `app/(backoffice)/settings/pricing/page.tsx` — เชื่อม pricing CRUD กับ DB จริง
-- [ ] `app/api/pricing/route.ts` — GET / PUT pricing plans
-- [ ] FE: permission matrix UI (checkbox grid) ใน settings
+- [x] `db/schema/role_permissions.ts` — (role, resource, can_read, can_write, can_delete)
+- [x] `db/schema/pricing_plans.ts` — (vehicle_model, daily_rate, monthly_rate, deposit, enabled)
+- [x] `app/api/permissions/route.ts` — GET / PUT permission matrix
+- [x] `app/api/pricing/route.ts` — GET / PUT pricing plans
+- [x] `app/api/users/me/route.ts` — GET current user (role check for client components)
+- [x] `app/(backoffice)/settings/pricing/page.tsx` — เชื่อม pricing CRUD กับ DB จริง
+- [x] `app/(backoffice)/settings/permissions/page.tsx` — FE: permission matrix UI (checkbox grid)
+- [x] Sidebar: เปิด Pricing + Permissions links
 
 #### Day 8–9 — 3–4 มิ.ย.
 **Focus: Audit Log View**

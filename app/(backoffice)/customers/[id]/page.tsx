@@ -20,7 +20,7 @@ export default function CustomerProfilePage() {
   const router = useRouter()
   const t = useTranslations('customers')
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('customers')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)

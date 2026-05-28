@@ -3,6 +3,7 @@ import { eq, ilike, or, and, count, desc } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import { isDuplicateKeyError } from '@/lib/db-errors'
 import type { VehicleStatus } from '@/lib/types'
 
@@ -10,9 +11,9 @@ const VALID_STATUSES: VehicleStatus[] = ['available', 'rented', 'charging', 'und
 
 export async function GET(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canRead')
+  if (denied) return denied
 
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') ?? undefined
@@ -61,13 +62,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 async function handlePost(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canWrite')
+  if (denied) return denied
 
   let body: {
     plate?: unknown

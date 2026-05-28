@@ -14,7 +14,7 @@ import type { Invoice, BillingType, InvoiceStatus } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
 import ImageUploader from '@/components/ui/image-uploader'
 import ImageLightbox from '@/components/ui/image-lightbox'
-import { useCanWrite } from '@/lib/user-context'
+import { useCanWrite, useCanDelete } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
 import SectionCard from '@/components/ui/section-card'
 
@@ -221,7 +221,8 @@ export default function InvoiceDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite  = useCanWrite('billing')
+  const canDelete = useCanDelete('billing')
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
@@ -348,24 +349,22 @@ export default function InvoiceDetailPage() {
           {STATUS_LABEL[invoice.status]}
         </span>
         {canWrite && (
-          <>
-            <button
-              onClick={() => setEditOpen(true)}
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-            >
-              <Pencil size={14} />
-              แก้ไข
-            </button>
-            {invoice.status !== 'paid' && (
-              <button
-                onClick={() => setDeleteOpen(true)}
-                className="flex items-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-              >
-                <Trash2 size={14} />
-                ลบ
-              </button>
-            )}
-          </>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Pencil size={14} />
+            แก้ไข
+          </button>
+        )}
+        {canDelete && invoice.status !== 'paid' && (
+          <button
+            onClick={() => setDeleteOpen(true)}
+            className="flex items-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Trash2 size={14} />
+            ลบ
+          </button>
         )}
       </PageHeader>
 

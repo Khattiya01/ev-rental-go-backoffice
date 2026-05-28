@@ -3,6 +3,7 @@ import { eq, ilike, or, desc, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, customers, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { ContractStatus } from '@/lib/types'
 
 const VALID_STATUSES: ContractStatus[] = ['active', 'completed', 'overdue']
@@ -23,6 +24,8 @@ async function generateContractNo(): Promise<string> {
 export async function GET(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'contracts', 'canRead')
+  if (denied) return denied
 
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') ?? ''
@@ -81,9 +84,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 export async function POST(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const denied = await requirePermission(currentUser, 'contracts', 'canWrite')
+  if (denied) return denied
 
   let body: unknown
   try { body = await request.json() } catch {

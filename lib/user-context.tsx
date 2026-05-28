@@ -2,23 +2,54 @@
 
 import { createContext, useContext } from 'react'
 import type { CurrentUser } from '@/lib/dal'
+import type { PermResource, UserPermissions } from '@/lib/types'
 
-const UserContext = createContext<CurrentUser | null>(null)
+type UserContextValue = {
+  user: CurrentUser | null
+  permissions: UserPermissions | null
+}
 
-export function UserProvider({ user, children }: { user: CurrentUser | null; children: React.ReactNode }) {
-  return <UserContext.Provider value={user}>{children}</UserContext.Provider>
+const UserContext = createContext<UserContextValue>({ user: null, permissions: null })
+
+export function UserProvider({
+  user,
+  permissions,
+  children,
+}: {
+  user: CurrentUser | null
+  permissions: UserPermissions | null
+  children: React.ReactNode
+}) {
+  return <UserContext.Provider value={{ user, permissions }}>{children}</UserContext.Provider>
 }
 
 export function useCurrentUser(): CurrentUser | null {
-  return useContext(UserContext)
+  return useContext(UserContext).user
 }
 
-export function useCanWrite(): boolean {
-  const user = useContext(UserContext)
-  return user?.role === 'admin' || user?.role === 'super_admin'
+export function useCanRead(resource: PermResource): boolean {
+  const { user, permissions } = useContext(UserContext)
+  if (!user) return false
+  if (user.role === 'super_admin') return true
+  return permissions?.[resource]?.canRead ?? false
+}
+
+/** Pass a resource for matrix-aware check; omit for legacy role-only check. */
+export function useCanWrite(resource?: PermResource): boolean {
+  const { user, permissions } = useContext(UserContext)
+  if (!user) return false
+  if (user.role === 'super_admin') return true
+  if (!resource) return user.role === 'admin'
+  return permissions?.[resource]?.canWrite ?? false
+}
+
+export function useCanDelete(resource: PermResource): boolean {
+  const { user, permissions } = useContext(UserContext)
+  if (!user) return false
+  if (user.role === 'super_admin') return true
+  return permissions?.[resource]?.canDelete ?? false
 }
 
 export function useIsSuperAdmin(): boolean {
-  const user = useContext(UserContext)
-  return user?.role === 'super_admin'
+  return useContext(UserContext).user?.role === 'super_admin'
 }

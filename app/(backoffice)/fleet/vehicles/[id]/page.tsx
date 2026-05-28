@@ -12,8 +12,12 @@ import { useCanWrite } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
 import SectionCard from '@/components/ui/section-card'
 import { useToast } from '@/components/ui/toast'
+import PaginationFooter from '@/components/ui/pagination-footer'
+import EmptyState from '@/components/ui/empty-state'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
+
+const HISTORY_PAGE_SIZE = 10
 
 interface TelematicsData {
   vehicleId: string
@@ -27,13 +31,14 @@ interface TelematicsData {
 export default function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const t = useTranslations('vehicleDetail')
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('vehicles')
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('general')
   const [contracts, setContracts] = useState<Contract[]>([])
   const [contractsLoading, setContractsLoading] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
   const [telematics, setTelematics] = useState<TelematicsData | null>(null)
   const [telematicsLoading, setTelematicsLoading] = useState(false)
   const [cutoffModalOpen, setCutoffModalOpen] = useState(false)
@@ -71,7 +76,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     setContractsLoading(true)
     fetch(`/api/contracts?vehicleId=${vehicle.id}&limit=100`)
       .then(r => r.ok ? r.json() : { data: [] })
-      .then((json: { data: Contract[] }) => setContracts(json.data ?? []))
+      .then((json: { data: Contract[] }) => { setContracts(json.data ?? []); setHistoryPage(1) })
       .catch(() => setContracts([]))
       .finally(() => setContractsLoading(false))
   }, [vehicle?.id])
@@ -281,74 +286,80 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Tab: Rental History */}
-      {activeTab === 'history' && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-slate-700 font-semibold">{t('tabs.history')}</h3>
-            {contracts.length > 0 && (
-              <span className="text-slate-400 text-sm">{t('history.totalContracts', { count: contracts.length })}</span>
+      {activeTab === 'history' && (() => {
+        const historyTotalPages = Math.max(1, Math.ceil(contracts.length / HISTORY_PAGE_SIZE))
+        const pagedContracts = contracts.slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE)
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-200">
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.contractNo')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.customer')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.startDate')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.dueDate')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.dailyRate')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.monthlyRate')}</th>
+                  <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('history.status')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {contractsLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-28" /></td>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-32" /></td>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-24" /></td>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-24" /></td>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-20" /></td>
+                      <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-20" /></td>
+                      <td className="px-5 py-4"><div className="h-5 bg-slate-100 rounded-full animate-pulse w-16" /></td>
+                    </tr>
+                  ))
+                ) : contracts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState icon={FileText} title={t('history.noHistory')} />
+                    </td>
+                  </tr>
+                ) : (
+                  pagedContracts.map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <Link
+                          href={`/contracts/${c.id}`}
+                          className="flex items-center gap-1.5 text-blue-500 text-sm font-medium hover:underline"
+                        >
+                          <FileText size={13} />
+                          {c.contractNo}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700 text-sm">{c.customerName}</td>
+                      <td className="px-5 py-3.5 text-slate-500 text-sm">{c.startDate}</td>
+                      <td className="px-5 py-3.5 text-slate-500 text-sm">{c.dueDate}</td>
+                      <td className="px-5 py-3.5 text-slate-700 text-sm">฿{c.dailyRate.toLocaleString()}</td>
+                      <td className="px-5 py-3.5 text-slate-700 text-sm">฿{c.monthlyRate.toLocaleString()}</td>
+                      <td className="px-5 py-3.5">
+                        <Badge
+                          variant={c.status === 'active' ? 'active' : c.status === 'overdue' ? 'overdue' : 'completed'}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            {!contractsLoading && contracts.length > 0 && (
+              <PaginationFooter
+                page={historyPage}
+                totalPages={historyTotalPages}
+                label={t('history.showing', { count: pagedContracts.length, total: contracts.length })}
+                onPageChange={setHistoryPage}
+              />
             )}
           </div>
-          {contractsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-            </div>
-          ) : contracts.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">{t('history.noHistory')}</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left bg-slate-50">
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.contractNo')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.customer')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.startDate')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.dueDate')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.dailyRate')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.monthlyRate')}</th>
-                    <th className="px-6 py-3 text-xs font-medium text-slate-500">{t('history.status')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {contracts.map(c => {
-                    const statusColor =
-                      c.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                      c.status === 'overdue' ? 'bg-red-100 text-red-700' :
-                      'bg-slate-100 text-slate-500'
-                    const statusLabel =
-                      c.status === 'active' ? t('history.statusActive') :
-                      c.status === 'overdue' ? t('history.statusOverdue') :
-                      t('history.statusCompleted')
-                    return (
-                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <Link
-                            href={`/contracts/${c.id}`}
-                            className="flex items-center gap-1.5 text-blue-500 text-sm font-medium hover:underline"
-                          >
-                            <FileText size={13} />
-                            {c.contractNo}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 text-sm">{c.customerName}</td>
-                        <td className="px-6 py-4 text-slate-500 text-sm">{c.startDate}</td>
-                        <td className="px-6 py-4 text-slate-500 text-sm">{c.dueDate}</td>
-                        <td className="px-6 py-4 text-slate-700 text-sm">฿{c.dailyRate.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-slate-700 text-sm">฿{c.monthlyRate.toLocaleString()}</td>
-                        <td className="px-6 py-4">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor}`}>
-                            {statusLabel}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+        )
+      })()}
 
       {/* Tab: Remote Control */}
       {activeTab === 'remote' && (

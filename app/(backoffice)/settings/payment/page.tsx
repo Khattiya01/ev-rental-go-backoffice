@@ -22,7 +22,7 @@ const labelCls = 'block text-xs font-medium text-slate-600 mb-1.5'
 
 export default function PaymentSettingsPage() {
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('settings')
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
 

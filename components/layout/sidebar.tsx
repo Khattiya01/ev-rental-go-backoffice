@@ -8,10 +8,11 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import type { CurrentUser } from '@/lib/dal'
+import { useCanRead, useIsSuperAdmin } from '@/lib/user-context'
 import {
   LayoutDashboard, Car, Map, Locate, Users, BadgeCheck, Ban,
   FileText, Receipt, AlertTriangle, Wrench, BarChart3, UserCog, DollarSign,
-  Settings, ChevronDown, QrCode,
+  Settings, ChevronDown, QrCode, Shield,
   type LucideIcon
 } from 'lucide-react'
 
@@ -171,12 +172,24 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('sidebar')
 
-  const isSuperAdmin = user?.role === 'super_admin'
-  const isViewer = user?.role === 'viewer'
+  const isSuperAdmin = useIsSuperAdmin()
+  const canReadVehicles  = useCanRead('vehicles')
+  const canReadCustomers = useCanRead('customers')
+  const canReadContracts = useCanRead('contracts')
+  const canReadBilling   = useCanRead('billing')
+  const canReadSettings  = useCanRead('settings')
+
+  const settingsChildren: NavLeaf[] = [
+    ...(isSuperAdmin    ? [{ href: '/settings/users',       label: t('users'),       icon: UserCog  }] : []),
+    ...(isSuperAdmin    ? [{ href: '/settings/permissions', label: t('permissions'), icon: Shield   }] : []),
+    ...(canReadSettings ? [{ href: '/settings/pricing',     label: t('pricing'),     icon: DollarSign }] : []),
+    ...(canReadSettings ? [{ href: '/settings/payment',     label: t('payment'),     icon: QrCode   }] : []),
+  ]
 
   const navItems: NavItem[] = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    {
+
+    ...(canReadVehicles ? [{
       label: t('fleet'),
       icon: Car,
       basePath: '/fleet',
@@ -185,8 +198,9 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
         // { href: '/fleet/map', label: t('liveMap'), icon: Map },
         // { href: '/fleet/geofencing', label: t('geofencing'), icon: Locate },
       ],
-    },
-    {
+    } as NavGroup] : []),
+
+    ...(canReadCustomers ? [{
       label: t('customers'),
       icon: Users,
       basePath: '/customers',
@@ -195,9 +209,11 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
         // { href: '/customers/kyc', label: t('kycApproval'), icon: BadgeCheck },
         { href: '/customers/blacklist', label: t('blacklist'), icon: Ban },
       ],
-    },
-    { href: '/contracts', label: t('rentals'), icon: FileText },
-    {
+    } as NavGroup] : []),
+
+    ...(canReadContracts ? [{ href: '/contracts', label: t('rentals'), icon: FileText } as NavLeaf] : []),
+
+    ...(canReadBilling ? [{
       label: t('billing'),
       icon: Receipt,
       basePath: '/billing',
@@ -205,19 +221,17 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
         { href: '/billing/invoices', label: t('invoices'), icon: Receipt },
         { href: '/billing/overdue', label: t('collections'), icon: AlertTriangle },
       ],
-    },
+    } as NavGroup] : []),
+
     // { href: '/maintenance', label: t('maintenance'), icon: Wrench },
     // { href: '/reports', label: t('reports'), icon: BarChart3 },
-    {
+
+    ...(settingsChildren.length > 0 ? [{
       label: t('settings'),
       icon: Settings,
       basePath: '/settings',
-      children: [
-        ...(isSuperAdmin ? [{ href: '/settings/users', label: t('users'), icon: UserCog }] : []),
-        // ...(!isViewer ? [{ href: '/settings/pricing', label: t('pricing'), icon: DollarSign }] : []),
-        { href: '/settings/payment', label: t('payment'), icon: QrCode },
-      ],
-    },
+      children: settingsChildren,
+    } as NavGroup] : []),
   ]
 
   const roleLabelFor = (role: string) => t(`roles.${role}` as Parameters<typeof t>[0]) ?? role

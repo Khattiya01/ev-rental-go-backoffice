@@ -27,7 +27,7 @@ type FilterTab = 'all' | CustomerStatus
 export default function CustomersPage() {
   const t = useTranslations('customers')
   const { error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('customers')
 
   const filterOptions = [
     { value: 'all', label: t('filterAll') },

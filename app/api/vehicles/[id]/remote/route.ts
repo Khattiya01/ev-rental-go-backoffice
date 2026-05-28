@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/db'
 import { users, vehicles, auditLogs } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 
 const VALID_ACTIONS = ['cutoff', 'restore', 'reset'] as const
 type RemoteAction = typeof VALID_ACTIONS[number]
@@ -13,13 +14,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'vehicles', 'canWrite')
+  if (denied) return denied
 
   const { id } = await params
 

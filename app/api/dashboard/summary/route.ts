@@ -3,12 +3,13 @@ import { count, eq, sum, and, gte } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles, customers, invoices } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 
 export async function GET(): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'reports', 'canRead')
+  if (denied) return denied
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)

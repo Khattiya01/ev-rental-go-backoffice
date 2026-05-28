@@ -3,37 +3,33 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import {
   Download, Receipt, Plus,
   X, Loader2, CheckCircle2, AlertCircle, Clock, AlertTriangle, Pencil,
-  Eye, ChevronLeft, ChevronRight,
+  Eye, ChevronLeft, ChevronRight, Bell,
 } from 'lucide-react'
 import Badge from '@/components/ui/badge'
+import Toggle from '@/components/ui/toggle'
 import { useToast } from '@/components/ui/toast'
 import { useCanWrite } from '@/lib/user-context'
 import type { Contract, Invoice, BillingType, InvoiceStatus } from '@/lib/types'
 import PageHeader from '@/components/ui/page-header'
 import SectionCard from '@/components/ui/section-card'
 
-// ─── Helpers ─────────────────────────────────────────────────────
 function fmt(n: number) {
   return n.toLocaleString('th-TH', { minimumFractionDigits: 0 })
 }
 
 const INVOICE_STATUS_STYLE: Record<InvoiceStatus, string> = {
-  paid: 'bg-green-100 text-green-700 border-green-200',
+  paid:    'bg-green-100 text-green-700 border-green-200',
   pending: 'bg-amber-100 text-amber-700 border-amber-200',
   overdue: 'bg-red-100 text-red-700 border-red-200',
 }
-const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {
-  paid: 'ชำระแล้ว', pending: 'รอชำระ', overdue: 'เกินกำหนด',
-}
-const BILLING_TYPE_LABEL: Record<BillingType, string> = {
-  daily: 'รายวัน', monthly: 'รายเดือน', one_time: 'ครั้งเดียว',
-}
+
 const BILLING_TYPE_COLOR: Record<BillingType, string> = {
-  daily: 'bg-sky-100 text-sky-700 border-sky-200',
-  monthly: 'bg-violet-100 text-violet-700 border-violet-200',
+  daily:    'bg-sky-100 text-sky-700 border-sky-200',
+  monthly:  'bg-violet-100 text-violet-700 border-violet-200',
   one_time: 'bg-amber-100 text-amber-700 border-amber-200',
 }
 
@@ -47,6 +43,8 @@ function QuickInvoiceModal({
   onClose: () => void
   onCreated: () => void
 }) {
+  const t = useTranslations('contractDetail.quickInvoice')
+  const tBt = useTranslations('contractDetail.billingType')
   const { success, error: toastError } = useToast()
   const [saving, setSaving] = useState(false)
   const [billingType, setBillingType] = useState<BillingType>(contract.billingType as BillingType)
@@ -66,8 +64,8 @@ function QuickInvoiceModal({
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     const parsed = parseFloat(amount)
-    if (isNaN(parsed) || parsed <= 0) { toastError('กรุณาระบุจำนวนเงิน'); return }
-    if (!dueDate) { toastError('กรุณาระบุวันครบกำหนด'); return }
+    if (isNaN(parsed) || parsed <= 0) { toastError(t('amountRequired')); return }
+    if (!dueDate) { toastError(t('dueDateRequired')); return }
 
     setSaving(true)
     try {
@@ -86,8 +84,8 @@ function QuickInvoiceModal({
         }),
       })
       const data = await res.json()
-      if (!res.ok) { toastError(data.error ?? 'ออกใบแจ้งหนี้ไม่สำเร็จ'); return }
-      success(`ออกใบแจ้งหนี้ ${data.invoiceNo} เรียบร้อย`)
+      if (!res.ok) { toastError(data.error ?? t('toastError')); return }
+      success(t('toastSuccess', { invoiceNo: data.invoiceNo }))
       onCreated()
       onClose()
     } finally {
@@ -104,7 +102,7 @@ function QuickInvoiceModal({
               <Receipt size={16} className="text-white" />
             </div>
             <div>
-              <h2 className="text-slate-800 font-semibold text-sm">ออกใบแจ้งหนี้</h2>
+              <h2 className="text-slate-800 font-semibold text-sm">{t('title')}</h2>
               <p className="text-slate-400 text-xs">{contract.customerName} · {contract.vehiclePlate}</p>
             </div>
           </div>
@@ -114,9 +112,8 @@ function QuickInvoiceModal({
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Billing type */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">ประเภทการชำระ</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t('paymentTypeLabel')}</label>
             <div className="flex gap-2">
               {(['monthly', 'daily', 'one_time'] as BillingType[]).map(bt => (
                 <button
@@ -129,15 +126,14 @@ function QuickInvoiceModal({
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-violet-300'
                   }`}
                 >
-                  {BILLING_TYPE_LABEL[bt]}
+                  {tBt(bt)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Amount */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">จำนวนเงิน</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t('amountLabel')}</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">฿</span>
               <input
@@ -149,9 +145,8 @@ function QuickInvoiceModal({
             </div>
           </div>
 
-          {/* Due date */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">วันครบกำหนดชำระ</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t('dueDateLabel')}</label>
             <input
               type="date" required
               value={dueDate}
@@ -160,14 +155,13 @@ function QuickInvoiceModal({
             />
           </div>
 
-          {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">หมายเหตุ (ไม่บังคับ)</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t('notesLabel')}</label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="เช่น ค่าเช่าเดือน มิ.ย. 2569"
+              placeholder={t('notesPlaceholder')}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
             />
           </div>
@@ -177,14 +171,14 @@ function QuickInvoiceModal({
               type="button" onClick={onClose}
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
             >
-              ยกเลิก
+              {t('cancel')}
             </button>
             <button
               type="submit" disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-60"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
-              {saving ? 'กำลังออก...' : 'ออกใบแจ้งหนี้'}
+              {saving ? t('submitting') : t('submit')}
             </button>
           </div>
         </form>
@@ -201,6 +195,7 @@ function CloseContractModal({
   onClose: () => void
   onClosed: () => void
 }) {
+  const t = useTranslations('contractDetail.closeModal')
   const { success, error: toastError } = useToast()
   const [saving, setSaving] = useState(false)
 
@@ -212,8 +207,8 @@ function CloseContractModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed' }),
       })
-      if (!res.ok) { toastError('ปิดสัญญาไม่สำเร็จ'); return }
-      success('ปิดสัญญาเรียบร้อย รถพร้อมให้เช่าต่อ')
+      if (!res.ok) { toastError(t('toastError')); return }
+      success(t('toastSuccess'))
       onClosed()
       onClose()
     } finally {
@@ -229,11 +224,9 @@ function CloseContractModal({
             <AlertTriangle size={20} className="text-amber-600" />
           </div>
           <div>
-            <h3 className="text-slate-800 font-semibold">ปิดสัญญา {contract.contractNo}?</h3>
+            <h3 className="text-slate-800 font-semibold">{t('title', { contractNo: contract.contractNo })}</h3>
             <p className="text-slate-500 text-sm mt-1">
-              รถ <span className="font-mono font-medium">{contract.vehiclePlate}</span> จะกลับมาเป็น
-              สถานะ <span className="font-medium text-green-600">available</span> ทันที
-              และไม่สามารถแก้ไขสถานะสัญญาได้อีก
+              {t('description', { plate: contract.vehiclePlate })}
             </p>
           </div>
         </div>
@@ -242,7 +235,7 @@ function CloseContractModal({
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
           >
-            ยกเลิก
+            {t('cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -250,7 +243,7 @@ function CloseContractModal({
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors disabled:opacity-60"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'กำลังปิด...' : 'ยืนยันปิดสัญญา'}
+            {saving ? t('confirming') : t('confirm')}
           </button>
         </div>
       </div>
@@ -262,8 +255,13 @@ function CloseContractModal({
 export default function ContractDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const t = useTranslations('contractDetail')
+  const tBt = useTranslations('contractDetail.billingType')
+  const tIs = useTranslations('contractDetail.invoiceStatus')
+  const tInv = useTranslations('contractDetail.invoices')
+  const tMock = useTranslations('contractDetail.mockContract')
+  const { success, error: toastError } = useToast()
+  const canWrite = useCanWrite('contracts')
 
   const [contract, setContract] = useState<Contract | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -272,17 +270,18 @@ export default function ContractDetailPage() {
   const [invoicePage, setInvoicePage] = useState(1)
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [reminderSaving, setReminderSaving] = useState(false)
 
   const loadContract = useCallback(async () => {
     try {
       const res = await fetch(`/api/contracts/${params.id}`)
       if (res.status === 404) { router.push('/contracts'); return }
-      if (!res.ok) { toastError('โหลดข้อมูลสัญญาไม่สำเร็จ'); return }
+      if (!res.ok) { toastError(t('toast.loadError')); return }
       setContract(await res.json())
     } finally {
       setLoadingContract(false)
     }
-  }, [params.id, router, toastError])
+  }, [params.id, router, toastError, t])
 
   const loadInvoices = useCallback(async () => {
     if (!params.id) return
@@ -294,6 +293,24 @@ export default function ContractDetailPage() {
       setLoadingInvoices(false)
     }
   }, [params.id])
+
+  async function toggleReminder() {
+    if (!contract || reminderSaving) return
+    setReminderSaving(true)
+    try {
+      const res = await fetch(`/api/contracts/${contract.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoReminder: !contract.autoReminder }),
+      })
+      if (!res.ok) { toastError(t('toast.reminderError')); return }
+      const updated = await res.json()
+      setContract(updated)
+      success(updated.autoReminder ? t('toast.reminderEnabled') : t('toast.reminderDisabled'))
+    } finally {
+      setReminderSaving(false)
+    }
+  }
 
   useEffect(() => { loadContract() }, [loadContract])
   useEffect(() => { loadInvoices() }, [loadInvoices])
@@ -311,18 +328,31 @@ export default function ContractDetailPage() {
     contract.status === 'active' ? 'active' as const
       : contract.status === 'overdue' ? 'overdue' as const : 'paid' as const
 
-  const paidInvoices = invoices.filter(inv => inv.status === 'paid')
+  const paidInvoices    = invoices.filter(inv => inv.status === 'paid')
   const pendingInvoices = invoices.filter(inv => inv.status !== 'paid')
-  const totalPaid = paidInvoices.reduce((s, inv) => s + inv.amount, 0)
-  const totalPending = pendingInvoices.reduce((s, inv) => s + inv.amount, 0)
+  const totalPaid       = paidInvoices.reduce((s, inv) => s + inv.amount, 0)
+  const totalPending    = pendingInvoices.reduce((s, inv) => s + inv.amount, 0)
   const invoiceTotalPages = Math.max(1, Math.ceil(invoices.length / INVOICE_PAGE_SIZE))
-  const pagedInvoices = invoices.slice((invoicePage - 1) * INVOICE_PAGE_SIZE, invoicePage * INVOICE_PAGE_SIZE)
+  const pagedInvoices   = invoices.slice((invoicePage - 1) * INVOICE_PAGE_SIZE, invoicePage * INVOICE_PAGE_SIZE)
 
   const invoiceStatusIcon = (status: InvoiceStatus) => {
-    if (status === 'paid') return <CheckCircle2 size={14} className="text-green-500" />
-    if (status === 'overdue') return <AlertCircle size={14} className="text-red-500" />
+    if (status === 'paid')    return <CheckCircle2 size={14} className="text-green-500" />
+    if (status === 'overdue') return <AlertCircle  size={14} className="text-red-500" />
     return <Clock size={14} className="text-amber-500" />
   }
+
+  // Mock contract field rows
+  const mockFields: [string, string][] = [
+    [tMock('fieldContractNo'), contract.contractNo],
+    [tMock('fieldRenter'), contract.customerName],
+    [tMock('fieldPlate'), contract.vehiclePlate],
+    [tMock('fieldPeriod'), `${contract.startDate} – ${contract.dueDate}`],
+    [t('fields.billingType'), tBt(contract.billingType as BillingType)],
+    contract.billingType === 'daily'
+      ? [tMock('fieldDailyRate'),   `฿${fmt(contract.dailyRate)}`]
+      : [tMock('fieldMonthlyRate'), `฿${fmt(contract.monthlyRate)}`],
+    [tMock('fieldDeposit'), `฿${fmt(contract.depositAmount)}`],
+  ]
 
   return (
     <div className="space-y-5">
@@ -335,7 +365,7 @@ export default function ContractDetailPage() {
             onClick={() => setCloseModalOpen(true)}
             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
-            ปิดสัญญา
+            {t('closeContract')}
           </button>
         )}
         {canWrite && (
@@ -344,7 +374,7 @@ export default function ContractDetailPage() {
             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             <Pencil className="w-4 h-4" />
-            แก้ไข
+            {t('edit')}
           </Link>
         )}
         {contract.documentUrl && (
@@ -355,7 +385,7 @@ export default function ContractDetailPage() {
             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             <Download className="w-4 h-4" />
-            ดาวน์โหลด PDF
+            {t('downloadPdf')}
           </a>
         )}
       </PageHeader>
@@ -365,18 +395,18 @@ export default function ContractDetailPage() {
         {/* ── Left column ── */}
         <div className="col-span-2 space-y-4">
           {/* Contract details */}
-          <SectionCard title="รายละเอียดสัญญา">
+          <SectionCard title={t('sections.details')}>
             <dl className="space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <dt className="text-slate-400 text-xs">เงินมัดจำ</dt>
+                  <dt className="text-slate-400 text-xs">{t('fields.deposit')}</dt>
                   <dd className="text-slate-800 text-2xl font-bold">฿{fmt(contract.depositAmount)}</dd>
                 </div>
                 <div className="text-right">
-                  <dt className="text-slate-400 text-xs mb-1">รูปแบบการชำระ</dt>
+                  <dt className="text-slate-400 text-xs mb-1">{t('fields.billingType')}</dt>
                   <dd>
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[contract.billingType as BillingType]}`}>
-                      {BILLING_TYPE_LABEL[contract.billingType as BillingType]}
+                      {tBt(contract.billingType as BillingType)}
                     </span>
                   </dd>
                 </div>
@@ -384,9 +414,9 @@ export default function ContractDetailPage() {
               <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-3">
                 <div className={`rounded-xl p-2 -m-2 transition-colors ${contract.billingType === 'daily' ? 'bg-sky-50' : ''}`}>
                   <dt className="text-slate-400 text-xs flex items-center gap-1">
-                    ค่าเช่า/วัน
+                    {t('fields.dailyRate')}
                     {contract.billingType === 'daily' && (
-                      <span className="px-1 py-px bg-sky-100 text-sky-600 text-[10px] font-semibold rounded">ใช้อยู่</span>
+                      <span className="px-1 py-px bg-sky-100 text-sky-600 text-[10px] font-semibold rounded">{t('fields.activeLabel')}</span>
                     )}
                   </dt>
                   <dd className={`text-lg font-bold mt-0.5 ${contract.billingType === 'daily' ? 'text-sky-700' : 'text-slate-800'}`}>
@@ -395,9 +425,9 @@ export default function ContractDetailPage() {
                 </div>
                 <div className={`rounded-xl p-2 -m-2 transition-colors ${contract.billingType === 'monthly' ? 'bg-violet-50' : ''}`}>
                   <dt className="text-slate-400 text-xs flex items-center gap-1">
-                    ค่าเช่า/เดือน
+                    {t('fields.monthlyRate')}
                     {contract.billingType === 'monthly' && (
-                      <span className="px-1 py-px bg-violet-100 text-violet-600 text-[10px] font-semibold rounded">ใช้อยู่</span>
+                      <span className="px-1 py-px bg-violet-100 text-violet-600 text-[10px] font-semibold rounded">{t('fields.activeLabel')}</span>
                     )}
                   </dt>
                   <dd className={`text-lg font-bold mt-0.5 ${contract.billingType === 'monthly' ? 'text-violet-700' : 'text-slate-800'}`}>
@@ -407,25 +437,41 @@ export default function ContractDetailPage() {
               </div>
               <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-3">
                 <div>
-                  <dt className="text-slate-400 text-xs">วันเริ่มสัญญา</dt>
+                  <dt className="text-slate-400 text-xs">{t('fields.startDate')}</dt>
                   <dd className="text-slate-700 text-sm font-medium mt-0.5">{contract.startDate}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-400 text-xs">วันครบกำหนด</dt>
+                  <dt className="text-slate-400 text-xs">{t('fields.dueDate')}</dt>
                   <dd className={`text-sm font-medium mt-0.5 ${contract.status === 'overdue' ? 'text-red-600' : 'text-slate-700'}`}>
                     {contract.dueDate}
                   </dd>
                 </div>
               </div>
               <div className="border-t border-slate-100 pt-3">
-                <dt className="text-slate-400 text-xs">ค่าปรับแบตเตอรี่</dt>
-                <dd className="text-slate-500 text-xs mt-0.5">ความจุลดเกิน 5% คิดเพิ่ม ฿200</dd>
+                <dt className="text-slate-400 text-xs">{t('fields.batteryPenalty')}</dt>
+                <dd className="text-slate-500 text-xs mt-0.5">{t('fields.batteryPenaltyDesc')}</dd>
+              </div>
+              <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={13} className={contract.autoReminder ? 'text-violet-600' : 'text-slate-400'} />
+                  <div>
+                    <dt className="text-slate-700 text-xs font-medium">{t('fields.autoReminder')}</dt>
+                    <dd className="text-slate-400 text-[10px] mt-px">{t('fields.autoReminderDesc')}</dd>
+                  </div>
+                </div>
+                <Toggle
+                  checked={contract.autoReminder}
+                  onChange={toggleReminder}
+                  disabled={!canWrite}
+                  loading={reminderSaving}
+                  label={t('fields.autoReminder')}
+                />
               </div>
             </dl>
           </SectionCard>
 
           {/* Customer & Vehicle */}
-          <SectionCard title="ผู้เช่า & รถ">
+          <SectionCard title={t('sections.renterVehicle')}>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -433,18 +479,17 @@ export default function ContractDetailPage() {
                 </div>
                 <div>
                   <p className="text-slate-700 text-sm font-medium">{contract.customerName}</p>
-                  <p className="text-slate-400 text-xs mt-0.5">ผู้เช่า</p>
+                  <p className="text-slate-400 text-xs mt-0.5">{t('fields.renter')}</p>
                 </div>
               </div>
               <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-xs">ทะเบียนรถ</p>
+                  <p className="text-slate-400 text-xs">{t('fields.plate')}</p>
                   <p className="text-slate-700 text-sm font-mono font-medium mt-0.5">{contract.vehiclePlate}</p>
                 </div>
               </div>
             </div>
           </SectionCard>
-
         </div>
 
         {/* ── Right: PDF preview ── */}
@@ -454,7 +499,6 @@ export default function ContractDetailPage() {
           </div>
 
           {contract.documentUrl ? (
-            /* ── Real PDF iframe ── */
             <iframe
               src={contract.documentUrl}
               className="w-full flex-1 min-h-0"
@@ -462,28 +506,14 @@ export default function ContractDetailPage() {
               title={`สัญญา ${contract.contractNo}`}
             />
           ) : (
-            /* ── Mock contract (no PDF uploaded yet) ── */
             <div className="flex flex-col items-center justify-center h-[540px] bg-slate-50 p-8 gap-6">
               <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-8 text-slate-800">
-                <h2 className="text-xl font-bold text-center mb-1">สัญญาเช่ารถ</h2>
-                <p className="text-center text-slate-400 text-xs mb-4">EV RENTAL GO</p>
+                <h2 className="text-xl font-bold text-center mb-1">{tMock('title')}</h2>
+                <p className="text-center text-slate-400 text-xs mb-4">{tMock('company')}</p>
                 <div className="h-px bg-slate-200 mb-4" />
-                <p className="text-xs text-slate-500 mb-4">
-                  สัญญาฉบับนี้ทำขึ้นระหว่าง EV Rental GO และผู้เช่าที่ระบุไว้ด้านล่าง
-                  ภายใต้ข้อกำหนดและเงื่อนไขต่อไปนี้
-                </p>
+                <p className="text-xs text-slate-500 mb-4">{tMock('preamble')}</p>
                 <div className="space-y-2 text-xs text-slate-700">
-                  {[
-                    ['เลขสัญญา', contract.contractNo],
-                    ['ผู้เช่า', contract.customerName],
-                    ['ทะเบียนรถ', contract.vehiclePlate],
-                    ['ระยะเวลา', `${contract.startDate} – ${contract.dueDate}`],
-                    ['รูปแบบการชำระ', BILLING_TYPE_LABEL[contract.billingType as BillingType]],
-                    contract.billingType === 'daily'
-                      ? ['ค่าเช่ารายวัน', `฿${fmt(contract.dailyRate)}`]
-                      : ['ค่าเช่ารายเดือน', `฿${fmt(contract.monthlyRate)}`],
-                    ['เงินมัดจำ', `฿${fmt(contract.depositAmount)}`],
-                  ].map(([k, v]) => (
+                  {mockFields.map(([k, v]) => (
                     <div key={k} className="flex justify-between">
                       <span className="text-slate-400">{k}</span>
                       <span className="font-medium">{v}</span>
@@ -491,24 +521,21 @@ export default function ContractDetailPage() {
                   ))}
                 </div>
                 <div className="mt-5 p-3 bg-slate-50 rounded-lg">
-                  <h3 className="font-bold text-xs mb-1.5">ข้อกำหนดและเงื่อนไข</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    1. คืนรถในสภาพเดิม 2. ค่าปรับแบตเตอรี่กรณีความจุลดเกิน 5% คิดเพิ่ม ฿200
-                    3. คืนรถช้ากว่ากำหนดมีค่าปรับรายวัน
-                  </p>
+                  <h3 className="font-bold text-xs mb-1.5">{tMock('terms')}</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">{tMock('termsContent')}</p>
                 </div>
                 <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
                   <div className="text-center">
-                    <div className="text-slate-400 text-xs h-8 flex items-end justify-center">ลายเซ็นดิจิตอล</div>
+                    <div className="text-slate-400 text-xs h-8 flex items-end justify-center">{tMock('signatureLabel')}</div>
                     <div className="h-px bg-slate-300 w-24 mt-1" />
-                    <p className="text-xs text-slate-400 mt-1">ผู้ให้เช่า</p>
+                    <p className="text-xs text-slate-400 mt-1">{tMock('signatureLessor')}</p>
                   </div>
                   <div className="text-center">
                     <div className="text-slate-600 italic text-sm h-8 flex items-end justify-center">
                       {contract.customerName.split(' ')[0]}
                     </div>
                     <div className="h-px bg-slate-300 w-24 mt-1" />
-                    <p className="text-xs text-slate-400 mt-1">ผู้เช่า</p>
+                    <p className="text-xs text-slate-400 mt-1">{tMock('signatureLessee')}</p>
                   </div>
                 </div>
               </div>
@@ -517,29 +544,28 @@ export default function ContractDetailPage() {
                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
               >
                 <Pencil size={14} />
-                อัปโหลดเอกสารสัญญา PDF
+                {tMock('uploadPdf')}
               </Link>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Invoices panel (full width) ── */}
+      {/* ── Invoices panel ── */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Receipt size={18} className="text-violet-600" />
-            <h2 className="text-slate-800 font-semibold">ใบแจ้งหนี้ในสัญญานี้</h2>
-            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full">{invoices.length} รายการ</span>
+            <h2 className="text-slate-800 font-semibold">{tInv('title')}</h2>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full">{tInv('countLabel', { count: invoices.length })}</span>
           </div>
-          {/* Summary */}
           <div className="flex items-center gap-6 text-sm">
             <div className="text-right">
-              <p className="text-slate-400 text-xs">รับชำระแล้ว</p>
+              <p className="text-slate-400 text-xs">{tInv('received')}</p>
               <p className="text-green-600 font-bold">฿{fmt(totalPaid)}</p>
             </div>
             <div className="text-right">
-              <p className="text-slate-400 text-xs">ค้างชำระ</p>
+              <p className="text-slate-400 text-xs">{tInv('outstanding')}</p>
               <p className="text-amber-600 font-bold">฿{fmt(totalPending)}</p>
             </div>
             {canWrite && contract.status !== 'completed' && (
@@ -548,7 +574,7 @@ export default function ContractDetailPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-medium transition-colors"
               >
                 <Plus size={13} />
-                ออกใบแจ้งหนี้
+                {tInv('issueInvoice')}
               </button>
             )}
           </div>
@@ -561,99 +587,111 @@ export default function ContractDetailPage() {
         ) : invoices.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
             <Receipt size={28} className="text-slate-200" />
-            <p className="text-sm">ยังไม่มีใบแจ้งหนี้</p>
+            <p className="text-sm">{tInv('empty')}</p>
             {canWrite && contract.status !== 'completed' && (
               <button
                 onClick={() => setInvoiceModalOpen(true)}
                 className="mt-1 flex items-center gap-1.5 text-violet-600 hover:text-violet-700 text-sm font-medium transition-colors"
               >
                 <Plus size={14} />
-                ออกใบแจ้งหนี้แรก
+                {tInv('issueFirst')}
               </button>
             )}
           </div>
         ) : (
           <>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-100">
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">Invoice #</th>
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">ประเภท</th>
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">จำนวนเงิน</th>
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">ครบกำหนด</th>
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">ชำระเมื่อ</th>
-                <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider">สถานะ</th>
-                <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {pagedInvoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="px-5 py-3">
-                    <span className="text-sm font-mono font-semibold text-slate-700">{inv.invoiceNo}</span>
-                    {inv.description && (
-                      <p className="text-slate-400 text-xs mt-0.5 truncate max-w-[140px]">{inv.description}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[inv.billingType]}`}>
-                      {BILLING_TYPE_LABEL[inv.billingType]}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-sm font-semibold text-slate-800 tabular-nums">฿{fmt(inv.amount)}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-sm ${inv.status === 'overdue' ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
-                      {inv.dueDate}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-slate-400">{inv.paidAt ?? '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${INVOICE_STATUS_STYLE[inv.status]}`}>
-                      {invoiceStatusIcon(inv.status)}
-                      {INVOICE_STATUS_LABEL[inv.status]}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/billing/invoices/${inv.id}`}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="จัดการใบแจ้งหนี้"
-                      >
-                        <Eye size={14} />
-                      </Link>
-                    </div>
-                  </td>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-100">
+                  {([
+                    tInv('columns.invoiceNo'),
+                    tInv('columns.type'),
+                    tInv('columns.amount'),
+                    tInv('columns.dueDate'),
+                    tInv('columns.paidAt'),
+                    tInv('columns.status'),
+                    '',
+                  ] as string[]).map((col, i) => (
+                    <th
+                      key={i}
+                      className={`text-slate-400 text-xs font-semibold px-5 py-3 uppercase tracking-wider ${i === 6 ? 'text-right' : 'text-left'}`}
+                    >
+                      {col}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pagedInvoices.map(inv => (
+                  <tr key={inv.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-5 py-3">
+                      <span className="text-sm font-mono font-semibold text-slate-700">{inv.invoiceNo}</span>
+                      {inv.description && (
+                        <p className="text-slate-400 text-xs mt-0.5 truncate max-w-[140px]">{inv.description}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[inv.billingType]}`}>
+                        {tBt(inv.billingType)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-sm font-semibold text-slate-800 tabular-nums">฿{fmt(inv.amount)}</td>
+                    <td className="px-5 py-3">
+                      <span className={`text-sm ${inv.status === 'overdue' ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
+                        {inv.dueDate}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-400">{inv.paidAt ?? '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${INVOICE_STATUS_STYLE[inv.status]}`}>
+                        {invoiceStatusIcon(inv.status)}
+                        {tIs(inv.status)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/billing/invoices/${inv.id}`}
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title={tInv('columns.invoiceNo')}
+                        >
+                          <Eye size={14} />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* Pagination */}
-          {invoices.length > INVOICE_PAGE_SIZE && (
-            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <span className="text-xs text-slate-500">
-                แสดง {(invoicePage - 1) * INVOICE_PAGE_SIZE + 1}–{Math.min(invoicePage * INVOICE_PAGE_SIZE, invoices.length)} จาก {invoices.length} รายการ
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setInvoicePage(p => p - 1)}
-                  disabled={invoicePage === 1}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={13} />
-                </button>
-                <span className="text-xs text-slate-600 px-1 tabular-nums">{invoicePage} / {invoiceTotalPages}</span>
-                <button
-                  onClick={() => setInvoicePage(p => p + 1)}
-                  disabled={invoicePage >= invoiceTotalPages}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight size={13} />
-                </button>
+            {invoices.length > INVOICE_PAGE_SIZE && (
+              <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {tInv('pagination.showing', {
+                    from: (invoicePage - 1) * INVOICE_PAGE_SIZE + 1,
+                    to: Math.min(invoicePage * INVOICE_PAGE_SIZE, invoices.length),
+                    total: invoices.length,
+                  })}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setInvoicePage(p => p - 1)}
+                    disabled={invoicePage === 1}
+                    className="flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft size={13} />
+                  </button>
+                  <span className="text-xs text-slate-600 px-1 tabular-nums">{invoicePage} / {invoiceTotalPages}</span>
+                  <button
+                    onClick={() => setInvoicePage(p => p + 1)}
+                    disabled={invoicePage >= invoiceTotalPages}
+                    className="flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </>
         )}
       </div>

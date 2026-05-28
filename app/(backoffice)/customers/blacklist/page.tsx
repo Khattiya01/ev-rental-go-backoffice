@@ -18,7 +18,7 @@ const PAGE_SIZE = 20
 export default function BlacklistPage() {
   const t = useTranslations('customers.blacklist')
   const { success, error: toastError } = useToast()
-  const canWrite = useCanWrite()
+  const canWrite = useCanWrite('customers')
   const [blacklisted, setBlacklisted] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')

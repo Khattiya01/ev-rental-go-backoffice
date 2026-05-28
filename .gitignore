@@ -43,3 +43,6 @@ next-env.d.ts
 # user uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# sonar q
+sonar-project.properties

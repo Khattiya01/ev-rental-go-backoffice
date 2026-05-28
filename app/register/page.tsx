@@ -29,7 +29,7 @@ const schema = z
   .object({
     name: z.string().min(1, 'กรุณากรอกชื่อ-นามสกุล'),
     phone: z.string().min(1, 'กรุณากรอกเบอร์โทรศัพท์'),
-    email: z.string(),
+    email: z.union([z.literal(''), z.email('รูปแบบอีเมลไม่ถูกต้อง')]),
     dateOfBirth: z.string(),
     idCardNumber: z.string(),
     address: z.string(),
@@ -45,10 +45,7 @@ const schema = z
     if (data.phone && !/^[0-9]{9,10}$/.test(data.phone)) {
       ctx.addIssue({ code: 'custom', path: ['phone'], message: 'เบอร์โทรต้องเป็นตัวเลข 9–10 หลัก' })
     }
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      ctx.addIssue({ code: 'custom', path: ['email'], message: 'รูปแบบอีเมลไม่ถูกต้อง' })
-    }
-    if (data.idCardNumber && !/^[0-9]{13}$/.test(data.idCardNumber)) {
+if (data.idCardNumber && !/^[0-9]{13}$/.test(data.idCardNumber)) {
       ctx.addIssue({ code: 'custom', path: ['idCardNumber'], message: 'เลขบัตรประชาชนต้อง 13 หลัก' })
     }
     if (data.driverType !== 'Private' && !data.grabBoltScreenshotUrl) {

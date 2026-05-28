@@ -3,6 +3,7 @@ import { eq, ilike, or, and, count, desc } from 'drizzle-orm'
 import { db } from '@/db'
 import { customers } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
+import { requirePermission } from '@/lib/permissions'
 import type { CustomerStatus, DriverType } from '@/lib/types'
 
 const VALID_CUSTOMER_STATUSES: CustomerStatus[] = ['pending_kyc', 'rejected', 'active', 'suspended', 'blacklisted']
@@ -10,9 +11,9 @@ const VALID_DRIVER_TYPES: DriverType[] = ['Grab', 'Bolt', 'Private']
 
 export async function GET(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'customers', 'canRead')
+  if (denied) return denied
 
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') ?? undefined
@@ -59,13 +60,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 async function handlePost(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (currentUser.role !== 'admin' && currentUser.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requirePermission(currentUser, 'customers', 'canWrite')
+  if (denied) return denied
 
   let body: unknown
   try {
