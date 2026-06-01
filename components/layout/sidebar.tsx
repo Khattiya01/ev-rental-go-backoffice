@@ -12,7 +12,7 @@ import { useCanRead, useIsSuperAdmin } from '@/lib/user-context'
 import {
   LayoutDashboard, Car, Map, Locate, Users, BadgeCheck, Ban,
   FileText, Receipt, AlertTriangle, Wrench, BarChart3, UserCog, DollarSign,
-  Settings, ChevronDown, QrCode, Shield,
+  Settings, ChevronDown, QrCode, Shield, ClipboardList,
   type LucideIcon
 } from 'lucide-react'
 
@@ -180,10 +180,11 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
   const canReadSettings  = useCanRead('settings')
 
   const settingsChildren: NavLeaf[] = [
-    ...(isSuperAdmin    ? [{ href: '/settings/users',       label: t('users'),       icon: UserCog  }] : []),
-    ...(isSuperAdmin    ? [{ href: '/settings/permissions', label: t('permissions'), icon: Shield   }] : []),
-    ...(canReadSettings ? [{ href: '/settings/pricing',     label: t('pricing'),     icon: DollarSign }] : []),
-    ...(canReadSettings ? [{ href: '/settings/payment',     label: t('payment'),     icon: QrCode   }] : []),
+    ...(isSuperAdmin    ? [{ href: '/settings/users',       label: t('users'),       icon: UserCog       }] : []),
+    ...(isSuperAdmin    ? [{ href: '/settings/permissions', label: t('permissions'), icon: Shield        }] : []),
+    ...(isSuperAdmin    ? [{ href: '/settings/audit-log',   label: t('auditLog'),    icon: ClipboardList }] : []),
+    ...(canReadSettings ? [{ href: '/settings/pricing',     label: t('pricing'),     icon: DollarSign    }] : []),
+    ...(canReadSettings ? [{ href: '/settings/payment',     label: t('payment'),     icon: QrCode        }] : []),
   ]
 
   const navItems: NavItem[] = [

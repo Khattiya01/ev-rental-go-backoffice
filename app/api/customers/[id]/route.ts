@@ -149,6 +149,12 @@ export async function PATCH(
           { status: 400 },
         )
       }
+      if (body.bannedReason.trim().length > 1000) {
+        return NextResponse.json(
+          { error: 'bannedReason must be 1–1000 characters' },
+          { status: 400 },
+        )
+      }
       fields.bannedReason = body.bannedReason.trim()
     } else if (newStatus === 'rejected') {
       const reason = typeof body.kycRejectReason === 'string' ? body.kycRejectReason.trim() : ''

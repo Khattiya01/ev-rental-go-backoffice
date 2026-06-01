@@ -31,6 +31,7 @@
     "permissions": "Permissions",
     "pricing": "Pricing",
     "payment": "Payment Account",
+    "auditLog": "Audit Log",
     "roles": {
       "super_admin": "Super Admin",
       "admin": "Admin",
@@ -762,6 +763,57 @@
       "saveSuccess": "Pricing saved successfully",
       "saveError": "Save failed",
       "genericError": "An error occurred, please try again"
+    }
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "subtitle": "Complete record of all admin actions",
+    "filters": {
+      "actionType": "Action Type",
+      "all": "All",
+      "performer": "Performer",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "clearFilters": "Clear Filters"
+    },
+    "table": {
+      "time": "Time",
+      "performer": "Performer",
+      "action": "Action",
+      "entity": "Entity",
+      "details": "Details"
+    },
+    "empty": {
+      "title": "No Audit Logs",
+      "subtitleFiltered": "No records match the selected filters",
+      "subtitle": "No actions have been recorded in the system yet"
+    },
+    "toast": {
+      "loadError": "Failed to load Audit Log",
+      "genericError": "An error occurred, please try again"
+    },
+    "pagination": {
+      "label": "{total} records"
+    },
+    "metadata": {
+      "more": "+{count} more"
+    },
+    "actions": {
+      "remote_cutoff": "Motor Cutoff",
+      "remote_reset": "IoT Reset",
+      "blacklist_customer": "Add to Blacklist",
+      "unblacklist_customer": "Remove from Blacklist",
+      "update_vehicle_status": "Update Vehicle Status",
+      "create_contract": "Create Contract",
+      "update_contract": "Update Contract",
+      "create_customer": "Create Customer",
+      "update_customer": "Update Customer",
+      "delete_customer": "Delete Customer",
+      "update_permissions": "Update Permissions",
+      "update_pricing": "Update Pricing",
+      "create_user": "Create User",
+      "update_user": "Update User",
+      "delete_user": "Delete User"
     }
   },
   "contractForm": {

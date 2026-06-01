@@ -31,6 +31,7 @@
     "permissions": "สิทธิ์การใช้งาน",
     "pricing": "ราคา",
     "payment": "บัญชีรับโอนเงิน",
+    "auditLog": "Audit Log",
     "roles": {
       "super_admin": "ผู้ดูแลระบบสูงสุด",
       "admin": "แอดมิน",
@@ -762,6 +763,57 @@
       "saveSuccess": "บันทึก Pricing เรียบร้อย",
       "saveError": "บันทึกไม่สำเร็จ",
       "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    }
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "subtitle": "บันทึกการกระทำของผู้ดูแลระบบทั้งหมด",
+    "filters": {
+      "actionType": "ประเภทการกระทำ",
+      "all": "ทั้งหมด",
+      "performer": "ผู้ดำเนินการ",
+      "dateFrom": "ตั้งแต่",
+      "dateTo": "ถึง",
+      "clearFilters": "ล้างตัวกรอง"
+    },
+    "table": {
+      "time": "เวลา",
+      "performer": "ผู้ดำเนินการ",
+      "action": "การกระทำ",
+      "entity": "Entity",
+      "details": "รายละเอียด"
+    },
+    "empty": {
+      "title": "ไม่มีข้อมูล Audit Log",
+      "subtitleFiltered": "ไม่พบรายการที่ตรงกับตัวกรองที่เลือก",
+      "subtitle": "ยังไม่มีการบันทึกการกระทำใดๆ ในระบบ"
+    },
+    "toast": {
+      "loadError": "โหลด Audit Log ไม่สำเร็จ",
+      "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    },
+    "pagination": {
+      "label": "{total} รายการ"
+    },
+    "metadata": {
+      "more": "+{count} รายการ"
+    },
+    "actions": {
+      "remote_cutoff": "ตัดกระแสไฟ (Motor Cutoff)",
+      "remote_reset": "รีเซ็ต IoT",
+      "blacklist_customer": "เพิ่ม Blacklist",
+      "unblacklist_customer": "ยกเลิก Blacklist",
+      "update_vehicle_status": "อัปเดตสถานะรถ",
+      "create_contract": "สร้างสัญญา",
+      "update_contract": "แก้ไขสัญญา",
+      "create_customer": "สร้างลูกค้า",
+      "update_customer": "แก้ไขลูกค้า",
+      "delete_customer": "ลบลูกค้า",
+      "update_permissions": "แก้ไขสิทธิ์",
+      "update_pricing": "แก้ไขราคา",
+      "create_user": "สร้างผู้ใช้งาน",
+      "update_user": "แก้ไขผู้ใช้งาน",
+      "delete_user": "ลบผู้ใช้งาน"
     }
   },
   "contractForm": {

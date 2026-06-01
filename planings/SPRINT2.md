@@ -19,7 +19,7 @@
 | Contract | D2: Contract Detail (full) | ✅ | ✅ | 🟢 Done |
 | Billing | E2: Overdue / Debt Collection | ⬜ | ✅ | 🔴 BE Pending |
 | Settings | F2: Role Permissions Matrix | ✅ | ✅ | 🟢 Done |
-| Core | G3: Audit Log System | 🔵 | ⬜ | 🟡 DB+API foundation done, View pending |
+| Core | G3: Audit Log System | ✅ | ✅ | 🟢 Done |
 
 ---
 
@@ -103,19 +103,38 @@
 #### Day 8–9 — 3–4 มิ.ย.
 **Focus: Audit Log View**
 
-- [ ] `app/api/audit-logs/route.ts` — GET (filter by action, admin, date range)
-- [ ] สร้าง `app/(backoffice)/settings/audit-log/page.tsx`
-  - [ ] table: timestamp, admin, action, entity, detail
-  - [ ] filter: by admin user, by action type, by date
+- [x] `app/api/audit-logs/route.ts` — GET (filter by action, admin, date range)
+- [x] สร้าง `app/(backoffice)/settings/audit-log/page.tsx`
+  - [x] table: timestamp, admin, action, entity, detail
+  - [x] filter: by admin user, by action type, by date
 
 #### Day 10–11 — 5–6 มิ.ย.
 **Focus: Integration Test + Security**
 
-- [ ] ทดสอบ RBAC: viewer ไม่สามารถเรียก PATCH/DELETE APIs ได้
-- [ ] ทดสอบ blacklist enforcement ใน contract creation
-- [ ] ทดสอบ motor cutoff ต้องผ่าน password (ไม่มี bypass)
-- [ ] Input validation ทุก POST/PATCH endpoint (reject unexpected fields)
-- [ ] Error handling สม่ำเสมอทุก API
+- [x] ทดสอบ RBAC: viewer ไม่สามารถเรียก PATCH/DELETE APIs ได้
+- [x] ทดสอบ blacklist enforcement ใน contract creation
+- [x] ทดสอบ motor cutoff ต้องผ่าน password (ไม่มี bypass)
+- [x] Input validation ทุก POST/PATCH endpoint (reject unexpected fields)
+- [x] Error handling สม่ำเสมอทุก API
+
+**Postman Collection:** `planings/EV-Rental-GO-Sprint2.postman_collection.json`  
+**Environment:** `planings/EV-Rental-GO.postman_environment.json` (updated — Sprint 2 vars added)
+
+| Folder | Coverage |
+|---|---|
+| 🔐 Setup | Login as super_admin |
+| 📊 Dashboard | Summary aggregation, Revenue chart, Alerts feed, 401 guard |
+| 🚗 Fleet — Vehicle Status | PATCH all 5 statuses, invalid status 400, not found 404 |
+| 📡 Fleet — Telematics | GET telematics shape, not found 404 |
+| ⚡ Fleet — Remote Actions | reset (no password), cutoff + restore (with password), wrong password 401, no password 400, unknown action 400, not found 404 |
+| 🚫 Customer Blacklist | POST blacklist, GET blacklist list, audit trail verification, unblacklist, no-reason 400 |
+| 🔒 Blacklist Enforcement | Contract creation blocked for blacklisted customer |
+| 📋 Audit Log | All filters (action, adminId, dateFrom/dateTo), pagination, invalid action ignored, 401 guard |
+| ⚙️ Permissions | GET matrix shape, PUT update, empty body 400 |
+| 💰 Pricing | GET plans, PUT update + verify, negative rate 400, missing model 400, empty array 400 |
+| 👤 Users — Me | GET /me shape, 401 guard |
+| 🔒 RBAC Security | Viewer: blocked on write/delete/remote/blacklist/permissions/pricing/users; Admin: blocked on permissions PUT + user management |
+| 🌐 Input Validation | SQL injection, XSS, oversized input, non-numeric types |
 
 #### Day 12 — 7 มิ.ย. 🎯 DEMO DAY
 **Sprint 2 Demo Checklist:**
