@@ -34,18 +34,18 @@
 #### Day 1 — 8 มิ.ย.
 **Focus: Redis Setup + GPS Data Layer + Simulator**
 
-- [ ] Install `ioredis` → `pnpm add ioredis`
-- [ ] `lib/redis.ts` — Redis client singleton
-- [ ] กำหนด Redis key convention (ต้องตรงกับที่ IoT Gateway จะใช้ใน Production):
+- [x] Install `ioredis` → `pnpm add ioredis`
+- [x] `lib/redis.ts` — Redis client singleton
+- [x] กำหนด Redis key convention (ต้องตรงกับที่ IoT Gateway จะใช้ใน Production):
   - key: `vehicle:pos:{vehicle_id}`
   - value: `{ lat, lng, soc, speed, status, updated_at }`
-- [ ] `app/api/vehicles/positions/route.ts` — GET all vehicle positions from Redis
-  - [ ] fallback: ถ้า Redis miss → query last known position from PostgreSQL
-- [ ] GPS Simulator script: `scripts/gps-simulator.ts`
-  - [ ] loop ทุก 5 วินาที → random walk positions ของทุก vehicle
-  - [ ] เขียน Redis ด้วย key format เดียวกับ IoT Gateway จริง (สำคัญมาก)
-  - [ ] รัน `pnpm sim:gps` → start, Ctrl+C → stop
-  - [ ] ใช้ vehicle IDs จาก PostgreSQL จริง (ไม่ hardcode)
+- [x] `app/api/vehicles/positions/route.ts` — GET all vehicle positions from Redis
+  - [x] fallback: ถ้า Redis miss → query last known position from PostgreSQL
+- [x] GPS Simulator script: `scripts/gps-simulator.ts`
+  - [x] loop ทุก 5 วินาที → random walk positions ของทุก vehicle
+  - [x] เขียน Redis ด้วย key format เดียวกับ IoT Gateway จริง (สำคัญมาก)
+  - [x] รัน `pnpm sim:gps` → start, Ctrl+C → stop
+  - [x] ใช้ vehicle IDs จาก PostgreSQL จริง (ไม่ hardcode)
 
 #### Day 2 — 9 มิ.ย.
 **Focus: WebSocket Server**

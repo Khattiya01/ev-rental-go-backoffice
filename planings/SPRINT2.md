@@ -12,6 +12,7 @@
 | Epic | Feature | BE | FE | Status |
 |---|---|---|---|---|
 | Dashboard | A1: Admin Dashboard (real data) | ✅ | ✅ | 🟢 Done |
+| Dashboard | A2: Dashboard UI Enhancement | — | ⬜ | 🔵 In Plan |
 | Fleet | B3: Vehicle Status Update | ✅ | ✅ | 🟢 Done |
 | Fleet | B4: Remote Actions (Motor Cutoff) | ✅ | ✅ | 🟢 Done |
 | Fleet | B5: Vehicle Telematics Tab (real data) | ✅ | ✅ | 🟢 Done |
@@ -100,7 +101,54 @@
 - [x] `app/(backoffice)/settings/permissions/page.tsx` — FE: permission matrix UI (checkbox grid)
 - [x] Sidebar: เปิด Pricing + Permissions links
 
-#### Day 8–9 — 3–4 มิ.ย.
+#### Day 8 — 3 มิ.ย.
+**Focus: Dashboard UI Enhancement (A2)**
+
+**Layout:** 2-row KPI (4 primary + 4 secondary) + Fleet Donut chart + Map filter/legend
+
+**Components ใหม่:**
+- [x] `components/dashboard/fleet-health-bar.tsx` — pill row แสดง Total / Charging / Repair / Offline
+- [x] `components/charts/fleet-donut-chart.tsx` — Recharts PieChart fleet distribution + legend
+
+**ปรับ components เดิม:**
+- [x] `components/maps/DashboardMap.tsx` — เพิ่ม status filter chips + color legend overlay
+- [x] `app/(backoffice)/dashboard/page.tsx`
+  - [x] `getDashboardData()` return `charging`, `offline` counts (ดึงจาก statusMap ที่มีแล้ว)
+  - [x] Row 1: 4 primary KPI cards (Revenue Today, Active Rentals, Available, Pending KYC)
+  - [x] Row 2: `FleetHealthBar` — Total / Charging / Repair / Offline
+  - [x] Row 3: Map (60%) + AlertFeed (40%) — เพิ่ม geofence_breach alert type
+  - [x] Row 4: RevenueChart (65%) + `FleetDonutChart` (35%)
+
+**UI Spec:**
+```
+Row 1 — 4 cols (primary KPIs)
+  ┌─ 💰 Revenue Today  ┐ ┌─ 🚗 Rented ┐ ┌─ ✅ Available ┐ ┌─ 👤 Pending KYC ┐
+  │  ฿52,000 [spark]   │ │  8 [spark] │ │  12           │ │  3              │
+  └────────────────────┘ └────────────┘ └───────────────┘ └─────────────────┘
+
+Row 2 — FleetHealthBar (1 wide row, 4 pill stats)
+  [ 🚘 Total: 26 ]  [ ⚡ Charging: 3 ]  [ 🔧 Repair: 2 ]  [ 📴 Offline: 1 ]
+
+Row 3 — 3:2 split
+  ┌─ 📍 Live Map (filter chips + legend) ─┐  ┌─ 🔔 Alerts ──────────────────────┐
+  │  [All][Rented][Avail][Chrg][Repair]  │  │  3 Critical  2 Warning           │
+  │  [map area]                          │  │  🔴 Battery 8% กข-1234 → ดูรถ   │
+  │  ● Available ● Rented ● Charging     │  │  🔴 Geofence Breach กก-9999      │
+  │  ● Repair    ● Offline               │  │  🟡 Overdue 5d — สมชาย           │
+  └──────────────────────────────────────┘  └──────────────────────────────────┘
+
+Row 4 — 65:35 split
+  ┌─ 📈 Revenue Trend (7-day area chart) ──┐  ┌─ 🍩 Fleet Distribution ──────┐
+  │  This week: ฿312,000                   │  │  [Donut chart]               │
+  └────────────────────────────────────────┘  │  ● Available 12              │
+                                              │  ● Rented    8               │
+                                              │  ● Charging  3               │
+                                              │  ● Repair    2               │
+                                              │  ● Offline   1               │
+                                              └──────────────────────────────┘
+```
+
+#### Day 9 — 4 มิ.ย.
 **Focus: Audit Log View**
 
 - [x] `app/api/audit-logs/route.ts` — GET (filter by action, admin, date range)
@@ -139,7 +187,9 @@
 #### Day 12 — 7 มิ.ย. 🎯 DEMO DAY
 **Sprint 2 Demo Checklist:**
 
-- [ ] Dashboard แสดงตัวเลขสรุปจาก DB จริง (ไม่ mock)
+- [ ] Dashboard แสดง 2 แถว KPI — Row 1: Revenue/Rented/Available/KYC, Row 2: Total/Charging/Repair/Offline
+- [ ] Fleet Distribution Donut chart แสดง breakdown ครบ 5 status
+- [ ] Map มี filter chips กรอง vehicle status ได้ + color legend
 - [ ] Revenue chart มีข้อมูลจริงจาก invoices
 - [ ] Blacklist ลูกค้าได้ → ลูกค้านั้นทำสัญญาใหม่ไม่ได้
 - [ ] Motor cutoff ต้องพิมพ์ password จึงทำงาน
@@ -156,6 +206,11 @@ db/schema/
   alerts.ts           ← NEW
   role_permissions.ts ← NEW
   pricing_plans.ts    ← NEW
+
+components/dashboard/
+  fleet-health-bar.tsx    ← NEW (A2)
+components/charts/
+  fleet-donut-chart.tsx   ← NEW (A2)
 
 app/api/
   dashboard/

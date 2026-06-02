@@ -56,7 +56,33 @@
     "revenueTrend": "แนวโน้มรายได้",
     "search": "ค้นหา...",
     "thisWeek": "สัปดาห์นี้",
-    "vsLastWeek": "เทียบสัปดาห์ที่แล้ว"
+    "vsLastWeek": "เทียบสัปดาห์ที่แล้ว",
+    "revenueToday": "รายได้วันนี้",
+    "todayPrefix": "วันนี้",
+    "thisWeekPrefix": "สัปดาห์นี้",
+    "paidInvoices": "ชำระแล้ว",
+    "currentlyRented": "กำลังเช่าอยู่",
+    "readyToRent": "พร้อมให้เช่า",
+    "awaitingReview": "รอตรวจสอบ",
+    "noAlerts": "ไม่มี alert ที่ต้องดำเนินการ",
+    "criticalBadge": "{count} วิกฤต",
+    "warningBadge": "{count} เตือน",
+    "fleetDistribution": "สัดส่วนยานพาหนะ",
+    "vehicleUnit": "คัน",
+    "fleetHealth": {
+      "totalFleet": "รถทั้งหมด",
+      "charging": "กำลังชาร์จ",
+      "underRepair": "ซ่อมบำรุง",
+      "offline": "ออฟไลน์"
+    },
+    "mapFilter": {
+      "all": "ทั้งหมด",
+      "available": "ว่าง",
+      "rented": "เช่าแล้ว",
+      "charging": "ชาร์จ",
+      "underRepair": "ซ่อม",
+      "offline": "ออฟไลน์"
+    }
   },
   "users": {
     "title": "ผู้ใช้งานระบบ",

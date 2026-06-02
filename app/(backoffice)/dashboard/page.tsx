@@ -1,10 +1,13 @@
-import { Car, KeyRound, CircleCheck, Wrench, UserCheck } from 'lucide-react'
+import { DollarSign, KeyRound, CircleCheck, UserCheck } from 'lucide-react'
 import { count, eq, lt, sum, and, gte, desc, sql } from 'drizzle-orm'
+import { getTranslations } from 'next-intl/server'
 import { db } from '@/db'
 import { vehicles, customers, invoices, alerts as alertsTable } from '@/db/schema'
 import SummaryCard from '@/components/dashboard/summary-card'
+import FleetHealthBar from '@/components/dashboard/fleet-health-bar'
 import AlertFeed from '@/components/dashboard/alert-feed'
 import RevenueChart from '@/components/charts/revenue-chart'
+import FleetDonutChart from '@/components/charts/fleet-donut-chart'
 import DashboardMapClient from '@/components/maps/DashboardMapClient'
 import PageHeader from '@/components/ui/page-header'
 import type { Alert, RevenueDataPoint, Vehicle } from '@/lib/types'
@@ -26,6 +29,7 @@ async function getDashboardData() {
     lowBatteryVehicles,
     overdueInvoicesList,
     reminderAlerts,
+    geofenceAlerts,
   ] = await Promise.all([
     db.select({ status: vehicles.status, count: count() }).from(vehicles).groupBy(vehicles.status),
     db.select({ pendingKYC: count() }).from(customers).where(eq(customers.status, 'pending_kyc')),
@@ -57,6 +61,11 @@ async function getDashboardData() {
       .where(and(eq(alertsTable.type, 'payment_reminder'), eq(alertsTable.resolved, false)))
       .orderBy(desc(alertsTable.createdAt))
       .limit(10),
+    db.select({ id: alertsTable.id, message: alertsTable.message, entityId: alertsTable.entityId, createdAt: alertsTable.createdAt })
+      .from(alertsTable)
+      .where(and(eq(alertsTable.type, 'geofence_breach'), eq(alertsTable.resolved, false)))
+      .orderBy(desc(alertsTable.createdAt))
+      .limit(5),
   ])
 
   const statusMap = Object.fromEntries(vehicleCounts.map(r => [r.status, Number(r.count)]))
@@ -100,6 +109,14 @@ async function getDashboardData() {
       createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
       href: `/billing/invoices/${a.entityId}`,
     })),
+    ...geofenceAlerts.map(a => ({
+      id: a.id,
+      type: 'geofence_breach' as const,
+      message: a.message,
+      severity: 'critical' as const,
+      createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      href: `/fleet/vehicles/${a.entityId}`,
+    })),
   ].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
 
   // Map to lib/types Vehicle (coerce nullable fields)
@@ -112,7 +129,9 @@ async function getDashboardData() {
     totalVehicles: vehicleCounts.reduce((acc, r) => acc + Number(r.count), 0),
     rented: statusMap['rented'] ?? 0,
     available: statusMap['available'] ?? 0,
+    charging: statusMap['charging'] ?? 0,
     underRepair: statusMap['under_repair'] ?? 0,
+    offline: statusMap['offline'] ?? 0,
     pendingKYC: Number(pendingKYC),
     todayRevenue: Number(todayRevenue ?? 0),
     mapVehicles,
@@ -122,42 +141,42 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
-  const {
+  const [t, {
     totalVehicles,
     rented,
     available,
+    charging,
     underRepair,
+    offline,
     pendingKYC,
     todayRevenue,
     mapVehicles,
     revenueData,
     alerts,
-  } = await getDashboardData()
+  }] = await Promise.all([getTranslations('dashboard'), getDashboardData()])
 
-  const lastRevenue = revenueData.at(-1)?.revenue ?? 0
+  const criticalCount = alerts.filter(a => a.severity === 'critical').length
+  const warningCount = alerts.filter(a => a.severity === 'warning').length
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Dashboard Overview" />
+    <div className="space-y-4">
+      <PageHeader title={t('title')} />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-5 gap-4">
-        <SummaryCard title="Total Vehicles" value={totalVehicles} icon={Car} iconColor="text-blue-600" color="bg-blue-500/15" sparklineData={[40, 55, 35, 60, 45, 70, 65, totalVehicles]} sparklineColor="#3b82f6" trend="Fleet size" />
-        <SummaryCard title="Active Rentals" value={rented} icon={KeyRound} iconColor="text-teal-600" color="bg-teal-500/15" sparklineData={[30, 50, 40, 65, 55, 70, rented]} sparklineColor="#14b8a6" trend="Currently rented" />
-        <SummaryCard title="Available" value={available} icon={CircleCheck} iconColor="text-green-600" color="bg-green-500/15" sparklineData={[70, 60, 75, 65, 80, 72, available]} sparklineColor="#22c55e" trend="Ready to rent" />
-        <SummaryCard title="Maintenance" value={underRepair} icon={Wrench} iconColor="text-amber-600" color="bg-amber-500/15" sparklineData={[10, 15, 12, 18, 14, 16, underRepair]} sparklineColor="#f59e0b" trend="Under repair" />
-        <SummaryCard title="Pending e-KYC" value={pendingKYC} icon={UserCheck} iconColor="text-purple-600" color="bg-purple-500/15" sparklineData={[5, 8, 6, 10, 7, 9, pendingKYC]} sparklineColor="#a855f7" trend="Awaiting review" />
+      {/* Row 1 — Primary KPIs */}
+      <div className="grid grid-cols-4 gap-4">
+        <SummaryCard title={t('revenueToday')} value={`฿${todayRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-emerald-600" color="bg-emerald-500/15" sparklineData={revenueData.map(d => d.revenue)} sparklineColor="#10b981" trend={t('paidInvoices')} />
+        <SummaryCard title={t('activeRentals')} value={rented} icon={KeyRound} iconColor="text-blue-600" color="bg-blue-500/15" sparklineData={[30, 50, 40, 65, 55, 70, rented]} sparklineColor="#3b82f6" trend={t('currentlyRented')} />
+        <SummaryCard title={t('available')} value={available} icon={CircleCheck} iconColor="text-green-600" color="bg-green-500/15" sparklineData={[70, 60, 75, 65, 80, 72, available]} sparklineColor="#22c55e" trend={t('readyToRent')} />
+        <SummaryCard title={t('pendingKYC')} value={pendingKYC} icon={UserCheck} iconColor="text-purple-600" color="bg-purple-500/15" sparklineData={[5, 8, 6, 10, 7, 9, pendingKYC]} sparklineColor="#a855f7" trend={t('awaitingReview')} />
       </div>
 
-      {/* Map + Alerts */}
+      {/* Row 2 — Fleet Health Pills */}
+      <FleetHealthBar total={totalVehicles} charging={charging} underRepair={underRepair} offline={offline} />
+
+      {/* Row 3 — Map + Alerts */}
       <div className="grid grid-cols-5 gap-4">
         <div className="col-span-3 bg-white rounded-xl border border-slate-200 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-slate-700 font-semibold text-sm">Live Vehicle Locations</h2>
-            <div className="relative">
-              <input placeholder="Search..." className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600 placeholder-slate-400 focus:outline-none w-36" />
-            </div>
-          </div>
+          <h2 className="text-slate-700 font-semibold text-sm mb-3">{t('liveLocations')}</h2>
           <div className="h-80 rounded-xl overflow-hidden">
             <DashboardMapClient vehicles={mapVehicles} />
           </div>
@@ -165,41 +184,57 @@ export default async function DashboardPage() {
 
         <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-slate-700 font-semibold text-sm">Alerts</h2>
-              {alerts.length > 0 && (
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                  alerts.some(a => a.severity === 'critical')
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-amber-100 text-amber-600'
-                }`}>
-                  {alerts.length}
-                </span>
-              )}
-            </div>
+            <h2 className="text-slate-700 font-semibold text-sm">{t('alertsFeed')}</h2>
+            {alerts.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                {criticalCount > 0 && (
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                    {t('criticalBadge', { count: criticalCount })}
+                  </span>
+                )}
+                {warningCount > 0 && (
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">
+                    {t('warningBadge', { count: warningCount })}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           {alerts.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">ไม่มี alert ที่ต้องดำเนินการ</p>
+            <p className="text-slate-400 text-sm text-center py-8">{t('noAlerts')}</p>
           ) : (
             <AlertFeed alerts={alerts} />
           )}
         </div>
       </div>
 
-      {/* Revenue Chart */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-slate-700 font-semibold text-sm">Revenue Trend</h2>
-          <span className="text-blue-500 text-sm font-semibold">
-            Today: ฿{todayRevenue.toLocaleString()}
-            {lastRevenue > 0 && (
-              <span className="text-slate-400 text-xs ml-2 font-normal">
-                This week: ฿{revenueData.reduce((s, d) => s + d.revenue, 0).toLocaleString()}
+      {/* Row 4 — Revenue Chart + Fleet Distribution */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="col-span-3 bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-slate-700 font-semibold text-sm">{t('revenueTrend')}</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-emerald-600 text-sm font-semibold">
+                {t('todayPrefix')}: ฿{todayRevenue.toLocaleString()}
               </span>
-            )}
-          </span>
+              <span className="text-slate-400 text-xs">
+                {t('thisWeekPrefix')}: ฿{revenueData.reduce((s, d) => s + d.revenue, 0).toLocaleString()}
+              </span>
+            </div>
+          </div>
+          <RevenueChart data={revenueData} />
         </div>
-        <RevenueChart data={revenueData} />
+
+        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <h2 className="text-slate-700 font-semibold text-sm mb-4">{t('fleetDistribution')}</h2>
+          <FleetDonutChart
+            available={available}
+            rented={rented}
+            charging={charging}
+            underRepair={underRepair}
+            offline={offline}
+          />
+        </div>
       </div>
     </div>
   )

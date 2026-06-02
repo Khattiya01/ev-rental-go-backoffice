@@ -52,11 +52,37 @@
     "maintenance": "Maintenance",
     "pendingKYC": "Pending e-KYC",
     "liveLocations": "Live Vehicle Locations",
-    "alertsFeed": "Alerts Feed",
+    "alertsFeed": "Alerts",
     "revenueTrend": "Revenue Trend",
     "search": "Search...",
     "thisWeek": "This Week",
-    "vsLastWeek": "vs last week"
+    "vsLastWeek": "vs last week",
+    "revenueToday": "Revenue Today",
+    "todayPrefix": "Today",
+    "thisWeekPrefix": "This week",
+    "paidInvoices": "Paid invoices",
+    "currentlyRented": "Currently rented",
+    "readyToRent": "Ready to rent",
+    "awaitingReview": "Awaiting review",
+    "noAlerts": "No alerts requiring attention",
+    "criticalBadge": "{count} critical",
+    "warningBadge": "{count} warning",
+    "fleetDistribution": "Fleet Distribution",
+    "vehicleUnit": "vehicles",
+    "fleetHealth": {
+      "totalFleet": "Total Fleet",
+      "charging": "Charging",
+      "underRepair": "Under Repair",
+      "offline": "Offline"
+    },
+    "mapFilter": {
+      "all": "All",
+      "available": "Available",
+      "rented": "Rented",
+      "charging": "Charging",
+      "underRepair": "Repair",
+      "offline": "Offline"
+    }
   },
   "users": {
     "title": "Users & Roles",
