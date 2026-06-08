@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx --env-file=.env.local server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production tsx --env-file=.env.local server.ts",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -13,11 +13,11 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx --env-file=.env.local db/seed.ts",
     "sim:gps": "tsx --env-file=.env.local scripts/gps-simulator.ts",
-    "sim:gps": "tsx --env-file=.env.local scripts/gps-simulator.ts",
     "sonar": "sonar"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@types/ws": "^8.18.1",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "flag-icons": "^7.5.0",
@@ -36,6 +36,7 @@
     "react-leaflet-draw": "^0.21.0",
     "react-qr-code": "^2.0.21",
     "recharts": "^3.8.1",
+    "ws": "^8.21.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

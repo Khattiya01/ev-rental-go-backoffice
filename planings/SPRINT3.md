@@ -20,7 +20,7 @@
 | Epic | Feature | BE | FE | Status |
 |---|---|---|---|---|
 | Fleet | Live GPS Map (Redis read) | ⬜ | ✅ | 🔴 BE Pending |
-| Fleet | WebSocket real-time position | ⬜ | ⬜ | 🔴 Not Started |
+| Fleet | WebSocket real-time position | ✅ | ⬜ | 🟡 BE Done |
 | Fleet | Geofencing CRUD | ⬜ | ✅ | 🔴 BE Pending |
 | Fleet | Geofence breach alert | ⬜ | ⬜ | 🔴 Not Started |
 | Fleet | Vehicle clustering on map | ⬜ | ⬜ | 🔴 Not Started |
@@ -50,11 +50,13 @@
 #### Day 2 — 9 มิ.ย.
 **Focus: WebSocket Server**
 
-- [ ] `app/api/fleet/ws/route.ts` — WebSocket route handler (Next.js 16)
-  - [ ] client connect → server push vehicle positions ทุก 5 วินาที
-  - [ ] broadcast เฉพาะ vehicles ที่ position เปลี่ยนแปลง
-- [ ] `lib/ws-broadcaster.ts` — manage connected clients + broadcast loop
-- [ ] ทดสอบ WebSocket connection ด้วย websocat / browser devtools
+- [x] WebSocket endpoint — `/api/fleet/ws` (ใช้ `server.ts` custom server แทน route handler เพราะ Next.js จะ `socket.end()` ถ้ามี route file ตรงกัน)
+  - [x] client connect → server push vehicle positions ทุก 5 วินาที
+  - [x] broadcast เฉพาะ vehicles ที่ position เปลี่ยนแปลง (change detection)
+  - [x] auth: validate session JWT cookie ก่อน accept WS connection
+  - [x] immediate snapshot ส่งให้ client ที่ connect ใหม่ทันที
+- [x] `lib/ws-broadcaster.ts` — manage connected clients + Redis polling + broadcast loop
+- [x] ทดสอบ WebSocket connection ด้วย browser DevTools console ✅
 
 #### Day 3 — 10 มิ.ย.
 **Focus: Live Map FE เชื่อม WebSocket**

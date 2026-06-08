@@ -26,7 +26,7 @@ async function seed() {
 
   // ── Vehicles ───────────────────────────────────────────────────────────────
   const insertedVehicles = await db.insert(schema.vehicles).values([
-    // Available (4)
+    // Available (5)
     {
       plate: 'กข-1234', make: 'Tesla', model: 'Model 3', year: 2023, color: 'White',
       vin: 'LRWXB2FS8PC000001', status: 'available', socPercent: 87,
@@ -50,6 +50,12 @@ async function seed() {
       vin: 'LSJA24C08R7000001', status: 'available', socPercent: 100,
       odometer: 1800, mileage: 1800, lat: 13.7580, lng: 100.5235,
       condition: 'Excellent', location: 'Rama 9 Hub', nextServiceDate: '2025-01-01',
+    },
+    {
+      plate: 'ปผ-3355', make: 'GAC', model: 'Aion S Plus', year: 2024, color: 'Pearl White',
+      vin: 'LSGBCACB8R1000001', status: 'available', socPercent: 91,
+      odometer: 3200, mileage: 3200, lat: 13.7635, lng: 100.5380,
+      condition: 'Excellent', location: 'Sukhumvit Hub', nextServiceDate: '2025-03-01',
     },
     // Rented (3)
     {
