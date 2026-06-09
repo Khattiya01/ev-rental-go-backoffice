@@ -1,11 +1,10 @@
 import { DollarSign, KeyRound, CircleCheck, UserCheck } from 'lucide-react'
-import { count, eq, lt, sum, and, gte, desc, sql } from 'drizzle-orm'
+import { count, eq, sum, and, gte, desc, sql } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { db } from '@/db'
 import { vehicles, customers, invoices, alerts as alertsTable } from '@/db/schema'
 import SummaryCard from '@/components/dashboard/summary-card'
 import FleetHealthBar from '@/components/dashboard/fleet-health-bar'
-import AlertFeed from '@/components/dashboard/alert-feed'
 import RevenueChart from '@/components/charts/revenue-chart'
 import FleetDonutChart from '@/components/charts/fleet-donut-chart'
 import DashboardMapClient from '@/components/maps/DashboardMapClient'
@@ -26,7 +25,6 @@ async function getDashboardData() {
     [{ todayRevenue }],
     allVehicles,
     revenueRows,
-    lowBatteryVehicles,
     overdueInvoicesList,
     reminderAlerts,
     geofenceAlerts,
@@ -46,11 +44,6 @@ async function getDashboardData() {
       .where(and(eq(invoices.status, 'paid'), gte(invoices.createdAt, sevenDaysAgo)))
       .groupBy(sql`DATE_TRUNC('day', ${invoices.createdAt})`)
       .orderBy(sql`DATE_TRUNC('day', ${invoices.createdAt})`),
-    db.select({ id: vehicles.id, plate: vehicles.plate, socPercent: vehicles.socPercent })
-      .from(vehicles)
-      .where(lt(vehicles.socPercent, 15))
-      .orderBy(vehicles.socPercent)
-      .limit(5),
     db.select({ id: invoices.id, customerName: invoices.customerName, daysOverdue: invoices.daysOverdue })
       .from(invoices)
       .where(eq(invoices.status, 'overdue'))
@@ -84,15 +77,9 @@ async function getDashboardData() {
 
   const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 }
 
-  const alerts: Alert[] = [
-    ...lowBatteryVehicles.map(v => ({
-      id: `battery-${v.id}`,
-      type: 'battery_low' as const,
-      message: `Battery Low (${v.socPercent}%) — ${v.plate}`,
-      severity: 'critical' as const,
-      createdAt: 'Just now',
-      href: `/fleet/vehicles/${v.id}`,
-    })),
+  // Battery-low alerts are generated live in DashboardMapClient from WebSocket positions.
+  // This array contains only static DB-sourced alerts.
+  const staticAlerts: Alert[] = [
     ...overdueInvoicesList.map(inv => ({
       id: `overdue-${inv.id}`,
       type: 'payment_overdue' as const,
@@ -136,7 +123,7 @@ async function getDashboardData() {
     todayRevenue: Number(todayRevenue ?? 0),
     mapVehicles,
     revenueData,
-    alerts,
+    staticAlerts,
   }
 }
 
@@ -152,11 +139,8 @@ export default async function DashboardPage() {
     todayRevenue,
     mapVehicles,
     revenueData,
-    alerts,
+    staticAlerts,
   }] = await Promise.all([getTranslations('dashboard'), getDashboardData()])
-
-  const criticalCount = alerts.filter(a => a.severity === 'critical').length
-  const warningCount = alerts.filter(a => a.severity === 'warning').length
 
   return (
     <div className="space-y-4">
@@ -173,40 +157,8 @@ export default async function DashboardPage() {
       {/* Row 2 — Fleet Health Pills */}
       <FleetHealthBar total={totalVehicles} charging={charging} underRepair={underRepair} offline={offline} />
 
-      {/* Row 3 — Map + Alerts */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 bg-white rounded-xl border border-slate-200 p-4">
-          <h2 className="text-slate-700 font-semibold text-sm mb-3">{t('liveLocations')}</h2>
-          <div className="h-80 rounded-xl overflow-hidden">
-            <DashboardMapClient vehicles={mapVehicles} />
-          </div>
-        </div>
-
-        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-3 shrink-0">
-            <h2 className="text-slate-700 font-semibold text-sm">{t('alertsFeed')}</h2>
-            {alerts.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                {criticalCount > 0 && (
-                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                    {t('criticalBadge', { count: criticalCount })}
-                  </span>
-                )}
-                {warningCount > 0 && (
-                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">
-                    {t('warningBadge', { count: warningCount })}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          {alerts.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">{t('noAlerts')}</p>
-          ) : (
-            <AlertFeed alerts={alerts} />
-          )}
-        </div>
-      </div>
+      {/* Row 3 — Live Map + Alert Feed (real-time via WebSocket) */}
+      <DashboardMapClient initialVehicles={mapVehicles} staticAlerts={staticAlerts} />
 
       {/* Row 4 — Revenue Chart + Fleet Distribution */}
       <div className="grid grid-cols-5 gap-4">

@@ -196,7 +196,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
       basePath: '/fleet',
       children: [
         { href: '/fleet/vehicles', label: t('vehicles'), icon: Car },
-        // { href: '/fleet/map', label: t('liveMap'), icon: Map },
+        { href: '/fleet/map', label: t('liveMap'), icon: Map },
         // { href: '/fleet/geofencing', label: t('geofencing'), icon: Locate },
       ],
     } as NavGroup] : []),

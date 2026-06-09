@@ -20,10 +20,12 @@
 | Epic | Feature | BE | FE | Status |
 |---|---|---|---|---|
 | Fleet | Live GPS Map (Redis read) | ⬜ | ✅ | 🔴 BE Pending |
-| Fleet | WebSocket real-time position | ✅ | ⬜ | 🟡 BE Done |
+| Fleet | WebSocket real-time position | ✅ | ✅ | ✅ Done |
 | Fleet | Geofencing CRUD | ⬜ | ✅ | 🔴 BE Pending |
 | Fleet | Geofence breach alert | ⬜ | ⬜ | 🔴 Not Started |
-| Fleet | Vehicle clustering on map | ⬜ | ⬜ | 🔴 Not Started |
+| Fleet | Vehicle clustering on map | ⬜ | ✅ | 🟡 FE Done |
+| Dashboard | Live map + clustering | ✅ | ✅ | ✅ Done |
+| Dashboard | Live alert feed (battery SoC) | ✅ | ✅ | ✅ Done |
 
 ---
 
@@ -61,22 +63,30 @@
 #### Day 3 — 10 มิ.ย.
 **Focus: Live Map FE เชื่อม WebSocket**
 
-- [ ] `components/maps/FleetMap.tsx` — เชื่อม WebSocket แทน mock data
-  - [ ] useEffect → connect WS → update vehicle positions in state
-  - [ ] vehicle icons ขยับ real-time บน map
-- [ ] `app/(backoffice)/fleet/map/page.tsx` — ลบ mockVehicles
-- [ ] เพิ่ม vehicle clustering ด้วย `react-leaflet-cluster`
-  - [ ] `pnpm add react-leaflet-cluster`
-  - [ ] cluster vehicles ที่ zoom ออก → แสดงจำนวนใน cluster
-- [ ] สังเกต: icon สีต่างตาม status ยังคงทำงาน
+- [x] `components/maps/FleetMap.tsx` — เพิ่ม `MarkerClusterGroup` wrapper
+  - [x] vehicle icons ขยับ real-time บน map (position มาจาก WS)
+  - [x] icon สีต่างตาม status ยังคงทำงาน ✅
+- [x] `app/(backoffice)/fleet/map/page.tsx` — ลบ mockVehicles แล้ว
+  - [x] useEffect load initial vehicles จาก `/api/vehicles?limit=100`
+  - [x] useEffect connect WebSocket → merge position updates เข้า state
+  - [x] WS status indicator (🟢 Live / 🔴 Offline) ที่ sidebar header
+  - [x] vehicle count footer: `N / M vehicles`
+- [x] เพิ่ม vehicle clustering ด้วย `react-leaflet-cluster@4.1.3`
+  - [x] `pnpm add react-leaflet-cluster`
+  - [x] cluster vehicles ที่ zoom ออก → แสดงจำนวนใน cluster
+- [x] icon สีต่างตาม status ยังคงทำงาน
 
 #### Day 4 — 11 มิ.ย.
 **Focus: Dashboard Map เชื่อม real-time**
 
-- [ ] `components/maps/DashboardMap.tsx` — เชื่อม API `/api/vehicles/positions`
-  - [ ] poll ทุก 10 วินาที (ไม่ต้อง WS เพราะ dashboard ไม่ต้อง ultra real-time)
-- [ ] Dashboard summary cards เชื่อม real position data
-- [ ] Alert Feed — เพิ่ม low SoC alert (< 15%) จาก live positions
+- [x] `components/maps/DashboardMap.tsx` — เพิ่ม `MarkerClusterGroup` + `Marker` (แทน `CircleMarker`) พร้อม color-coded cluster icons และ filter chips เหมือน Fleet Map
+- [x] `components/maps/DashboardMapClient.tsx` — เชื่อม WebSocket, maintain live vehicle state, render row 3 ทั้งหมด (map + alert feed)
+  - [x] Live mini-stats ในหัว map card: Rented / Available / Charging count อัปเดต real-time
+  - [x] WS status indicator (🟢 Live / ⚫ Offline)
+- [x] Dashboard summary cards เชื่อม real position data — แสดง live rented/available/charging counts ใน map header
+- [x] Alert Feed — battery-low alerts (< 15% SoC) สร้างจาก live WS positions (ไม่ใช่ DB query)
+  - [x] Server page เอา `lowBatteryVehicles` query ออก — client คำนวณ live แทน
+  - [x] `staticAlerts` prop ส่งจาก server: overdue + payment_reminder + geofence_breach alerts
 
 #### Day 5 — 12 มิ.ย.
 **Focus: Geofencing BE**

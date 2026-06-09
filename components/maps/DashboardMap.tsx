@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
+import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTranslations } from 'next-intl'
 import type { Vehicle } from '@/lib/types'
@@ -9,12 +11,69 @@ import type { Vehicle } from '@/lib/types'
 type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair' | 'offline'
 
 const STATUS_COLORS: Record<VehicleStatus, string> = {
-  available: '#22c55e',
-  rented: '#3b82f6',
-  charging: '#06b6d4',
+  available:    '#22c55e',
+  rented:       '#3b82f6',
+  charging:     '#06b6d4',
   under_repair: '#f59e0b',
-  offline: '#94a3b8',
+  offline:      '#94a3b8',
 }
+
+// ─── Individual marker ────────────────────────────────────────────────────────
+
+function createVehicleIcon(status: string) {
+  const color = STATUS_COLORS[status as VehicleStatus] ?? '#94a3b8'
+  return L.divIcon({
+    className: `fleet-marker status-${status}`,
+    html: `<div style="background:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚗</div>`,
+    iconSize:   [24, 24],
+    iconAnchor: [12, 12],
+  })
+}
+
+// ─── Cluster icon ─────────────────────────────────────────────────────────────
+
+const CLUSTER_PRIORITY = ['offline', 'under_repair', 'rented', 'charging', 'available'] as const
+
+function clusterSize(count: number): number {
+  if (count >= 20) return 46
+  if (count >= 7)  return 38
+  return 30
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createClusterIcon(cluster: any): L.DivIcon {
+  const count: number = cluster.getChildCount()
+  const markers: L.Marker[] = cluster.getAllChildMarkers()
+  const statuses = markers.map((m) => {
+    const cls = (m.options?.icon as L.DivIcon | undefined)?.options?.className ?? ''
+    return cls.match(/status-(\w+)/)?.[1] ?? 'available'
+  })
+  const dominant = CLUSTER_PRIORITY.find(s => statuses.includes(s)) ?? 'available'
+  const color    = STATUS_COLORS[dominant]
+  const size     = clusterSize(count)
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background: ${color};
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: ${size >= 38 ? 13 : 11}px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${count}</div>`,
+    iconSize:   L.point(size, size),
+    iconAnchor: L.point(size / 2, size / 2),
+  })
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface DashboardMapProps {
   vehicles: Vehicle[]
@@ -25,11 +84,11 @@ export default function DashboardMap({ vehicles }: DashboardMapProps) {
   const [activeFilter, setActiveFilter] = useState<VehicleStatus | 'all'>('all')
 
   const STATUS_CONFIG: { key: VehicleStatus; label: string }[] = [
-    { key: 'available', label: t('available') },
-    { key: 'rented', label: t('rented') },
-    { key: 'charging', label: t('charging') },
+    { key: 'available',    label: t('available') },
+    { key: 'rented',       label: t('rented') },
+    { key: 'charging',     label: t('charging') },
     { key: 'under_repair', label: t('underRepair') },
-    { key: 'offline', label: t('offline') },
+    { key: 'offline',      label: t('offline') },
   ]
 
   const filtered = activeFilter === 'all'
@@ -51,8 +110,8 @@ export default function DashboardMap({ vehicles }: DashboardMapProps) {
           {t('all')} ({vehicles.length})
         </button>
         {STATUS_CONFIG.map(({ key, label }) => {
-          const count = vehicles.filter(v => v.status === key).length
-          if (count === 0) return null
+          const cnt = vehicles.filter(v => v.status === key).length
+          if (cnt === 0) return null
           return (
             <button
               key={key}
@@ -64,7 +123,7 @@ export default function DashboardMap({ vehicles }: DashboardMapProps) {
               }`}
               style={activeFilter === key ? { background: STATUS_COLORS[key], borderColor: STATUS_COLORS[key] } : undefined}
             >
-              {label} ({count})
+              {label} ({cnt})
             </button>
           )
         })}
@@ -90,25 +149,23 @@ export default function DashboardMap({ vehicles }: DashboardMapProps) {
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
-        {filtered.map(vehicle => (
-          <CircleMarker
-            key={vehicle.id}
-            center={[vehicle.lat, vehicle.lng]}
-            radius={8}
-            fillColor={STATUS_COLORS[vehicle.status as VehicleStatus] ?? '#94a3b8'}
-            color="white"
-            weight={1.5}
-            fillOpacity={0.9}
-          >
-            <Popup>
-              <div style={{ color: '#1e293b', fontSize: '12px' }}>
-                <strong>{vehicle.plate}</strong><br />
-                {vehicle.make} {vehicle.model}<br />
-                SoC: {vehicle.socPercent}%
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
+        <MarkerClusterGroup iconCreateFunction={createClusterIcon} chunkedLoading>
+          {filtered.map(vehicle => (
+            <Marker
+              key={vehicle.id}
+              position={[vehicle.lat, vehicle.lng]}
+              icon={createVehicleIcon(vehicle.status)}
+            >
+              <Popup>
+                <div style={{ color: '#1e293b', fontSize: '12px' }}>
+                  <strong>{vehicle.plate}</strong><br />
+                  {vehicle.make} {vehicle.model}<br />
+                  SoC: {vehicle.socPercent}%
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   )

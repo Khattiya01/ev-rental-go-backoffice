@@ -14,7 +14,10 @@
       "PowerShell(node --version)",
       "PowerShell(Grep -r \"env.local\" \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\node_modules\\\\.pnpm\\\\drizzle-kit@0.31.10\" 2>$null)",
       "PowerShell($content = Get-Content \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\planings\\\\EV-Rental-GO.postman_collection.json\" -Raw; try { $null = $content | ConvertFrom-Json; Write-Host \"✅ Collection JSON valid\" } catch { Write-Host \"❌ Invalid JSON: $_\" }; $env = Get-Content \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\planings\\\\EV-Rental-GO.postman_environment.json\" -Raw; try { $null = $env | ConvertFrom-Json; Write-Host \"✅ Environment JSON valid\" } catch { Write-Host \"❌ Invalid JSON: $_\" })",
-      "PowerShell($content = Get-Content \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\planings\\\\EV-Rental-GO.postman_collection.json\" -Raw; try { $null = $content | ConvertFrom-Json; \"JSON is valid\" } catch { \"JSON ERROR: $_\" })"
+      "PowerShell($content = Get-Content \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\planings\\\\EV-Rental-GO.postman_collection.json\" -Raw; try { $null = $content | ConvertFrom-Json; \"JSON is valid\" } catch { \"JSON ERROR: $_\" })",
+      "Bash(pnpm add *)",
+      "Bash(pnpm exec *)",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\vehicles\\[id]"
