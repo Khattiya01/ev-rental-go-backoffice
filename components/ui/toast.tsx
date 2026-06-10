@@ -11,14 +11,15 @@ interface Toast {
   id: string
   type: ToastType
   message: string
+  description?: string
 }
 
 interface ToastContextValue {
-  toast: (type: ToastType, message: string) => void
-  success: (message: string) => void
-  error: (message: string) => void
-  warning: (message: string) => void
-  info: (message: string) => void
+  toast: (type: ToastType, message: string, description?: string) => void
+  success: (message: string, description?: string) => void
+  error: (message: string, description?: string) => void
+  warning: (message: string, description?: string) => void
+  info: (message: string, description?: string) => void
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -70,16 +71,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  const toast = useCallback((type: ToastType, message: string) => {
+  const toast = useCallback((type: ToastType, message: string, description?: string) => {
     const id = Math.random().toString(36).slice(2)
-    setToasts(prev => [...prev, { id, type, message }])
+    setToasts(prev => [...prev, { id, type, message, description }])
     setTimeout(() => dismiss(id), DURATION_MS)
   }, [dismiss])
 
-  const success = useCallback((message: string) => toast('success', message), [toast])
-  const error   = useCallback((message: string) => toast('error', message),   [toast])
-  const warning = useCallback((message: string) => toast('warning', message), [toast])
-  const info    = useCallback((message: string) => toast('info', message),    [toast])
+  const success = useCallback((message: string, description?: string) => toast('success', message, description), [toast])
+  const error   = useCallback((message: string, description?: string) => toast('error',   message, description), [toast])
+  const warning = useCallback((message: string, description?: string) => toast('warning', message, description), [toast])
+  const info    = useCallback((message: string, description?: string) => toast('info',    message, description), [toast])
 
   return (
     <ToastContext.Provider value={{ toast, success, error, warning, info }}>
@@ -98,7 +99,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       `}</style>
 
       {/* Toast container — bottom-right */}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col-reverse gap-2 w-[340px] pointer-events-none">
+      <div className="fixed bottom-5 right-5 z-[10000] flex flex-col-reverse gap-2 w-[340px] pointer-events-none">
         {toasts.map(t => {
           const cfg = typeConfig[t.type]
           const Icon = cfg.icon
@@ -116,8 +117,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <Icon className={`w-5 h-5 ${cfg.iconColor}`} />
               </div>
 
-              {/* Message */}
-              <p className="flex-1 text-slate-800 text-sm font-medium leading-snug">{t.message}</p>
+              {/* Message + description */}
+              <div className="flex-1 min-w-0">
+                <p className="text-slate-800 text-sm font-medium leading-snug">{t.message}</p>
+                {t.description && (
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">{t.description}</p>
+                )}
+              </div>
 
               {/* Dismiss button */}
               <button

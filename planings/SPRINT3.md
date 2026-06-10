@@ -91,11 +91,14 @@
 #### Day 5 — 12 มิ.ย.
 **Focus: Geofencing BE**
 
-- [ ] `db/schema/geofence_zones.ts` — (id, name, coordinates JSONB, active, alert_recipients JSONB, created_by)
-- [ ] `app/api/geofences/route.ts` — GET list / POST create
-- [ ] `app/api/geofences/[id]/route.ts` — GET / PUT / DELETE
-- [ ] เชื่อม `fleet/geofencing/page.tsx` — zone list จาก DB จริง, toggle active ได้
-- [ ] save zone ที่วาดบน map → POST ไป API
+- [x] `db/schema/geofence_zones.ts` — (id, name, coordinates JSONB, active, alert_recipients, created_by) + `pnpm db:push` ✅
+- [x] `vehicles.geofence_zone_id` FK column — vehicle assigned to one zone, null = no geofence
+- [x] `app/api/geofences/route.ts` — GET list (with ?includeInactive=true) / POST create
+- [x] `app/api/geofences/[id]/route.ts` — GET / PATCH / DELETE (DELETE clears FK on vehicles first)
+- [x] `app/api/vehicles/[id]/route.ts` — PATCH รองรับ `geofenceZoneId` field
+- [x] `components/maps/GeofenceMap.tsx` — เพิ่ม Leaflet.Draw (polygon / rectangle / circle) + `onZoneDrawn` callback
+- [x] `fleet/geofencing/page.tsx` — เชื่อม API จริง: load zones, toggle active, delete, draw + save zone
+- [x] `pnpm add leaflet-draw @types/leaflet-draw`
 
 ### WEEK 2 (15–21 มิ.ย.)
 

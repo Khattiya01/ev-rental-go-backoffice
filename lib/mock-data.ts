@@ -49,9 +49,9 @@ export const mockAlerts: Alert[] = [
 ]
 
 export const mockGeofences: GeofenceZone[] = [
-  { id: '1', name: 'Bangkok Central Zone', coordinates: [[13.75, 100.49], [13.76, 100.52], [13.74, 100.53], [13.73, 100.50]], active: true },
-  { id: '2', name: 'Airport Hub Zone', coordinates: [[13.92, 100.60], [13.93, 100.62], [13.91, 100.63], [13.90, 100.61]], active: true },
-  { id: '3', name: 'Sukhumvit Zone', coordinates: [[13.74, 100.55], [13.76, 100.57], [13.75, 100.58], [13.73, 100.56]], active: false },
+  { id: '1', name: 'Bangkok Central Zone', coordinates: [[13.75, 100.49], [13.76, 100.52], [13.74, 100.53], [13.73, 100.50]], active: true, alertRecipients: 'admin_only', createdBy: null, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
+  { id: '2', name: 'Airport Hub Zone', coordinates: [[13.92, 100.60], [13.93, 100.62], [13.91, 100.63], [13.90, 100.61]], active: true, alertRecipients: 'admin_only', createdBy: null, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
+  { id: '3', name: 'Sukhumvit Zone', coordinates: [[13.74, 100.55], [13.76, 100.57], [13.75, 100.58], [13.73, 100.56]], active: false, alertRecipients: 'admin_only', createdBy: null, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
 ]
 
 export const mockAdminUsers: AdminUser[] = [

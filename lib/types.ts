@@ -109,6 +109,10 @@ export interface GeofenceZone {
   name: string
   coordinates: [number, number][]
   active: boolean
+  alertRecipients: string
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface AdminUser {

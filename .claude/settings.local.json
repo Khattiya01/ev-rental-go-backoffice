@@ -17,10 +17,16 @@
       "PowerShell($content = Get-Content \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\planings\\\\EV-Rental-GO.postman_collection.json\" -Raw; try { $null = $content | ConvertFrom-Json; \"JSON is valid\" } catch { \"JSON ERROR: $_\" })",
       "Bash(pnpm add *)",
       "Bash(pnpm exec *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(mkdir -p \"c:\\\\Projects\\\\EV_Rental_GO\\\\ev-rental-go-backoffice\\\\app\\\\api\\\\geofences\\\\[id]\")",
+      "Bash(pnpm db:push)",
+      "Bash(node -e \"const r = require\\('./node_modules/react-leaflet/dist/index.js'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.toLowerCase\\(\\).includes\\('zoom'\\)\\)\\)\")",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm tsc *)"
     ],
     "additionalDirectories": [
-      "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\vehicles\\[id]"
+      "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\vehicles\\[id]",
+      "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\geofences"
     ]
   }
 }

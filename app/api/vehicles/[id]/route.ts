@@ -67,6 +67,7 @@ export async function PATCH(
     location?: string | null
     condition?: string | null
     nextServiceDate?: string | null
+    geofenceZoneId?: string | null
   } = {}
 
   if (body.plate !== undefined) {
@@ -145,6 +146,13 @@ export async function PATCH(
       }
       fields[field] = val as string | null
     }
+  }
+
+  if (body.geofenceZoneId !== undefined) {
+    if (body.geofenceZoneId !== null && typeof body.geofenceZoneId !== 'string') {
+      return NextResponse.json({ error: 'geofenceZoneId must be a UUID string or null' }, { status: 400 })
+    }
+    fields.geofenceZoneId = body.geofenceZoneId as string | null
   }
 
   if (body.images !== undefined) {

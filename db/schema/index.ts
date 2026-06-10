@@ -1,4 +1,5 @@
 export * from './users'
+export * from './geofence_zones'
 export * from './vehicles'
 export * from './customers'
 export * from './contracts'
