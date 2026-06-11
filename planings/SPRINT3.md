@@ -21,8 +21,8 @@
 |---|---|---|---|---|
 | Fleet | Live GPS Map (Redis read) | ⬜ | ✅ | 🔴 BE Pending |
 | Fleet | WebSocket real-time position | ✅ | ✅ | ✅ Done |
-| Fleet | Geofencing CRUD | ⬜ | ✅ | 🔴 BE Pending |
-| Fleet | Geofence breach alert | ⬜ | ⬜ | 🔴 Not Started |
+| Fleet | Geofencing CRUD | ✅ | ✅ | ✅ Done |
+| Fleet | Geofence breach alert | ✅ | ✅ | ✅ Done |
 | Fleet | Vehicle clustering on map | ⬜ | ✅ | 🟡 FE Done |
 | Dashboard | Live map + clustering | ✅ | ✅ | ✅ Done |
 | Dashboard | Live alert feed (battery SoC) | ✅ | ✅ | ✅ Done |
@@ -105,22 +105,31 @@
 #### Day 6 — 15 มิ.ย.
 **Focus: Geofence Breach Detection**
 
-- [ ] `lib/geofence-checker.ts` — point-in-polygon algorithm
-  - [ ] รับ vehicle position + active geofence list
-  - [ ] return zones ที่ vehicle อยู่นอกขอบเขต
-- [ ] ใน WebSocket broadcaster → เรียก geofence checker ทุก position update
-  - [ ] ถ้า breach → สร้าง alert record ลง DB
-  - [ ] push alert ไปยัง connected dashboard clients ด้วย WS
-- [ ] `app/api/alerts/route.ts` — GET alerts รวม geofence breach alerts
+- [x] `lib/geofence-checker.ts` — point-in-polygon algorithm (Ray Casting)
+  - [x] รับ vehicle position + active geofence list
+  - [x] return zones ที่ vehicle อยู่นอกขอบเขต
+- [x] ใน WebSocket broadcaster → เรียก geofence checker ทุก position update
+  - [x] ถ้า breach → สร้าง alert record ลง DB (cooldown 5 นาทีต่อ vehicle)
+  - [x] push alert ไปยัง connected dashboard clients ด้วย WS (`{ type: 'alert', data: {...} }`)
+- [x] `app/api/alerts/route.ts` — GET alerts รวม geofence breach alerts
+- [x] **Bonus:** Vehicle zone assignment UI — SectionCard + modal ใน Vehicle Detail page
+- [x] **Bonus:** Vehicle Edit Form — Geofence Zone dropdown
+- [x] **Bonus:** GET `/api/vehicles/[id]` — left join zone name
 
 #### Day 7–8 — 16–17 มิ.ย.
 **Focus: Geofence Map Drawing UX**
 
-- [ ] เชื่อม Leaflet.Draw หรือ manual polygon tool กับ save flow จริง
-  - [ ] เมื่อ user วาด polygon เสร็จ → pre-fill zone name form
-  - [ ] กด Save → POST `/api/geofences` → zone ปรากฏบน map ทันที
-- [ ] Alert recipient config — เลือก admin users จาก DB (dropdown)
-- [ ] ทดสอบ: สร้าง zone → ย้าย simulated vehicle ออกนอก zone → เห็น alert
+- [x] เชื่อม Leaflet.Draw หรือ manual polygon tool กับ save flow จริง
+  - [x] เมื่อ user วาด polygon เสร็จ → pre-fill zone name form (form แสดงหลัง draw ทันที)
+  - [x] กด Save → POST `/api/geofences` → zone ปรากฏบน map ทันที (loadZones() หลัง save)
+- [x] Alert recipient config — เลือก admin users จาก DB (checkbox multi-select)
+  - [x] `app/api/users/directory/route.ts` — minimal endpoint ไม่ต้อง super_admin
+  - [x] `db/schema/geofence_zones.ts` — เปลี่ยน `alertRecipients` จาก `varchar(50)` เป็น `json.$type<string[]>()`
+  - [x] Migration: `ALTER TABLE geofence_zones DROP COLUMN / ADD COLUMN alert_recipients json DEFAULT '[]'`
+- [x] **Bonus:** Real-time breach alert ใน Dashboard — handle `type: 'alert'` WS message ใน DashboardMapClient
+- [x] **Bonus:** Zone name ใน FleetMap + DashboardMap popup
+- [x] **Bonus:** `GET /api/vehicles` list — left join geofenceZoneName
+- [ ] ทดสอบ: สร้าง zone → ย้าย simulated vehicle ออกนอก zone → เห็น alert (manual test)
 
 #### Day 9–10 — 18–19 มิ.ย.
 **Focus: Performance + Edge Cases**

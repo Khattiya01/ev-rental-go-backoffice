@@ -5,8 +5,6 @@ import { geofenceZones, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 
-const VALID_RECIPIENTS = ['admin_only', 'admin_fleet', 'all'] as const
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -45,7 +43,7 @@ export async function PATCH(
     name?: string
     coordinates?: [number, number][]
     active?: boolean
-    alertRecipients?: string
+    alertRecipients?: string[]
     updatedAt?: Date
   } = {}
 
@@ -71,10 +69,10 @@ export async function PATCH(
   }
 
   if (body.alertRecipients !== undefined) {
-    if (typeof body.alertRecipients !== 'string' || !(VALID_RECIPIENTS as readonly string[]).includes(body.alertRecipients)) {
-      return NextResponse.json({ error: `alertRecipients must be one of: ${VALID_RECIPIENTS.join(', ')}` }, { status: 400 })
+    if (!Array.isArray(body.alertRecipients) || (body.alertRecipients as unknown[]).some(x => typeof x !== 'string')) {
+      return NextResponse.json({ error: 'alertRecipients must be an array of user ID strings' }, { status: 400 })
     }
-    fields.alertRecipients = body.alertRecipients
+    fields.alertRecipients = body.alertRecipients as string[]
   }
 
   if (Object.keys(fields).length === 0) {

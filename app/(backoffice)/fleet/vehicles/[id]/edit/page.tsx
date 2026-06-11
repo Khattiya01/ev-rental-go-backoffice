@@ -18,7 +18,7 @@ export default function EditVehiclePage({ params }: { params: Promise<{ id: stri
       const { id } = await params
       setLoading(true)
       try {
-        const res = await fetch(`/api/vehicles/${id}`)
+        const res = await fetch(`/api/vehicles/${id}`, { cache: 'no-store' })
         if (res.status === 404) { setNotFound(true); return }
         if (!res.ok) return
         setVehicle(await res.json() as Vehicle)

@@ -22,7 +22,8 @@
       "Bash(pnpm db:push)",
       "Bash(node -e \"const r = require\\('./node_modules/react-leaflet/dist/index.js'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.toLowerCase\\(\\).includes\\('zoom'\\)\\)\\)\")",
       "Bash(pnpm typecheck *)",
-      "Bash(pnpm tsc *)"
+      "Bash(pnpm tsc *)",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
       "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\vehicles\\[id]",

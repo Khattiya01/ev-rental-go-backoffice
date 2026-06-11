@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { lt, eq, desc } from 'drizzle-orm'
+import { lt, eq, desc, and } from 'drizzle-orm'
 import { db } from '@/db'
-import { vehicles, invoices } from '@/db/schema'
+import { vehicles, invoices, alerts } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 import type { Alert } from '@/lib/types'
@@ -12,7 +12,7 @@ export async function GET(): Promise<NextResponse> {
   const denied = await requirePermission(currentUser, 'reports', 'canRead')
   if (denied) return denied
 
-  const [lowBatteryVehicles, overdueInvoices] = await Promise.all([
+  const [lowBatteryVehicles, overdueInvoices, breachAlerts] = await Promise.all([
     db
       .select({ id: vehicles.id, plate: vehicles.plate, socPercent: vehicles.socPercent })
       .from(vehicles)
@@ -25,9 +25,15 @@ export async function GET(): Promise<NextResponse> {
       .where(eq(invoices.status, 'overdue'))
       .orderBy(desc(invoices.daysOverdue))
       .limit(5),
+    db
+      .select()
+      .from(alerts)
+      .where(and(eq(alerts.type, 'geofence_breach'), eq(alerts.resolved, false)))
+      .orderBy(desc(alerts.createdAt))
+      .limit(10),
   ])
 
-  const alerts: Alert[] = [
+  const result: Alert[] = [
     ...lowBatteryVehicles.map(v => ({
       id: `battery-${v.id}`,
       type: 'battery_low' as const,
@@ -42,7 +48,15 @@ export async function GET(): Promise<NextResponse> {
       severity: 'warning' as const,
       createdAt: 'Just now',
     })),
+    ...breachAlerts.map(a => ({
+      id: a.id,
+      type: 'geofence_breach' as const,
+      message: a.message,
+      severity: a.severity,
+      createdAt: a.createdAt.toISOString(),
+      href: `/fleet/vehicles/${a.entityId}`,
+    })),
   ]
 
-  return NextResponse.json({ data: alerts })
+  return NextResponse.json({ data: result })
 }

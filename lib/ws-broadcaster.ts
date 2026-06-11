@@ -1,8 +1,12 @@
 import Redis from 'ioredis'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { vehicles } from '@/db/schema'
+import { eq } from 'drizzle-orm'
+import { vehicles, geofenceZones, alerts as alertsSchema } from '@/db/schema'
+import { pointInPolygon } from '@/lib/geofence-checker'
 import type { WebSocket } from 'ws'
+
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 
 interface VehiclePosition {
   vehicleId: string
@@ -23,15 +27,38 @@ interface RedisPositionPayload {
   updated_at: string
 }
 
-const BROADCAST_INTERVAL_MS = 5_000
+interface VehicleZoneData {
+  zoneId: string
+  zoneName: string
+  coordinates: [number, number][]
+}
 
-const clients = new Set<WebSocket>()
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const BROADCAST_INTERVAL_MS  = 5_000
+const ZONE_REFRESH_INTERVAL_MS = 60_000
+const BREACH_COOLDOWN_MS     = 5 * 60 * 1000   // 5 min between alerts per vehicle
+
+// ─── Module state ─────────────────────────────────────────────────────────────
+
+const clients       = new Set<WebSocket>()
 const lastPositions = new Map<string, VehiclePosition>()
-const lastCompare = new Map<string, string>()
-let broadcastTimer: ReturnType<typeof setInterval> | null = null
+const lastCompare   = new Map<string, string>()
+
+// Geofence cache — refreshed every 60 s
+const vehicleZoneCache  = new Map<string, VehicleZoneData>()  // vehicleId → zone
+const vehiclePlateCache = new Map<string, string>()            // vehicleId → plate
+
+// Breach cooldown — prevents alert spam
+const lastBreachAlert = new Map<string, number>()  // vehicleId → epoch ms
+
+let broadcastTimer:    ReturnType<typeof setInterval> | null = null
+let zoneRefreshTimer:  ReturnType<typeof setInterval> | null = null
 
 let _redis: Redis | null = null
 let _db: ReturnType<typeof drizzle> | null = null
+
+// ─── Singletons ───────────────────────────────────────────────────────────────
 
 function getRedis(): Redis {
   if (!_redis) {
@@ -45,11 +72,13 @@ function getRedis(): Redis {
 function getDb() {
   if (!_db) {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set')
-    const client = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 })
-    _db = drizzle(client, { schema: { vehicles } })
+    const client = postgres(process.env.DATABASE_URL, { prepare: false, max: 3 })
+    _db = drizzle(client, { schema: { vehicles, geofenceZones, alertsSchema } })
   }
   return _db
 }
+
+// ─── GPS positions ────────────────────────────────────────────────────────────
 
 async function fetchAllPositions(): Promise<VehiclePosition[]> {
   const db = getDb()
@@ -130,6 +159,105 @@ async function fetchAllPositions(): Promise<VehiclePosition[]> {
   return positions
 }
 
+// ─── Geofence data refresh ────────────────────────────────────────────────────
+
+async function refreshGeofenceData(): Promise<void> {
+  try {
+    const db = getDb()
+
+    // Vehicles that have an active zone assigned
+    const zoneRows = await db
+      .select({
+        vehicleId: vehicles.id,
+        plate:     vehicles.plate,
+        zoneId:    geofenceZones.id,
+        zoneName:  geofenceZones.name,
+        coords:    geofenceZones.coordinates,
+      })
+      .from(vehicles)
+      .innerJoin(geofenceZones, eq(vehicles.geofenceZoneId, geofenceZones.id))
+      .where(eq(geofenceZones.active, true))
+
+    // All vehicle plates (for alert messages)
+    const plateRows = await db
+      .select({ id: vehicles.id, plate: vehicles.plate })
+      .from(vehicles)
+
+    vehicleZoneCache.clear()
+    vehiclePlateCache.clear()
+
+    for (const row of zoneRows) {
+      vehicleZoneCache.set(row.vehicleId, {
+        zoneId: row.zoneId,
+        zoneName: row.zoneName,
+        coordinates: row.coords,
+      })
+    }
+    for (const row of plateRows) {
+      vehiclePlateCache.set(row.id, row.plate)
+    }
+  } catch (err) {
+    console.error('[WS Broadcaster] refreshGeofenceData error:', err)
+  }
+}
+
+// ─── Breach detection ─────────────────────────────────────────────────────────
+
+async function checkBreaches(updates: VehiclePosition[]): Promise<void> {
+  if (vehicleZoneCache.size === 0) return
+
+  const db = getDb()
+  const now = Date.now()
+
+  for (const pos of updates) {
+    const zone = vehicleZoneCache.get(pos.vehicleId)
+    if (!zone) continue
+
+    const inZone = pointInPolygon(pos.lat, pos.lng, zone.coordinates)
+    if (inZone) continue
+
+    // Outside zone — check cooldown
+    const lastBreach = lastBreachAlert.get(pos.vehicleId) ?? 0
+    if (now - lastBreach < BREACH_COOLDOWN_MS) continue
+
+    lastBreachAlert.set(pos.vehicleId, now)
+    const plate = vehiclePlateCache.get(pos.vehicleId) ?? pos.vehicleId
+
+    try {
+      const [alert] = await db
+        .insert(alertsSchema)
+        .values({
+          type:     'geofence_breach',
+          severity: 'warning',
+          message:  `Vehicle ${plate} exited geofence zone "${zone.zoneName}"`,
+          entityId: pos.vehicleId,
+        })
+        .returning()
+
+      broadcast({
+        type: 'alert',
+        data: {
+          id:        alert.id,
+          type:      'geofence_breach',
+          severity:  'warning',
+          message:   alert.message,
+          vehicleId: pos.vehicleId,
+          plate,
+          zoneName:  zone.zoneName,
+          createdAt: alert.createdAt.toISOString(),
+          href:      `/fleet/vehicles/${pos.vehicleId}`,
+        },
+      })
+
+      console.log(`[WS Broadcaster] Breach: ${plate} left "${zone.zoneName}"`)
+    } catch (err) {
+      console.error('[WS Broadcaster] breach alert insert error:', err)
+    }
+  }
+}
+
+// ─── Broadcast helpers ────────────────────────────────────────────────────────
+
 function compareKey(pos: VehiclePosition): string {
   return JSON.stringify({ lat: pos.lat, lng: pos.lng, soc: pos.soc, speed: pos.speed, status: pos.status })
 }
@@ -143,9 +271,11 @@ function broadcast(payload: unknown) {
   }
 }
 
-async function tick() {
-  if (clients.size === 0) return
+// ─── Main tick ────────────────────────────────────────────────────────────────
 
+async function tick() {
+  // Always run — breach detection must not depend on WS clients being connected.
+  // Only skip the broadcast step when nobody is listening.
   let positions: VehiclePosition[]
   try {
     positions = await fetchAllPositions()
@@ -166,13 +296,15 @@ async function tick() {
   }
 
   if (updates.length > 0) {
-    broadcast({ type: 'positions', data: updates })
+    if (clients.size > 0) broadcast({ type: 'positions', data: updates })
+    await checkBreaches(updates)
   }
 }
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export function addClient(ws: WebSocket): void {
   clients.add(ws)
-  // Send current snapshot immediately so client doesn't wait up to 5 seconds
   if (lastPositions.size > 0) {
     const snapshot = Array.from(lastPositions.values())
     ws.send(JSON.stringify({ type: 'positions', data: snapshot }))
@@ -185,10 +317,18 @@ export function removeClient(ws: WebSocket): void {
 
 export function startBroadcaster(): void {
   if (broadcastTimer !== null) return
-  // Initial tick to populate snapshot before first client connects
+
+  // Initial data load
   tick().catch((err) => console.error('[WS Broadcaster] initial tick error:', err))
+  refreshGeofenceData().catch((err) => console.error('[WS Broadcaster] initial zone refresh error:', err))
+
   broadcastTimer = setInterval(() => {
     tick().catch((err) => console.error('[WS Broadcaster] tick error:', err))
   }, BROADCAST_INTERVAL_MS)
-  console.log('[WS Broadcaster] Started — broadcasting every', BROADCAST_INTERVAL_MS / 1000, 's')
+
+  zoneRefreshTimer = setInterval(() => {
+    refreshGeofenceData().catch((err) => console.error('[WS Broadcaster] zone refresh error:', err))
+  }, ZONE_REFRESH_INTERVAL_MS)
+
+  console.log('[WS Broadcaster] Started — broadcasting every', BROADCAST_INTERVAL_MS / 1000, 's, zone refresh every', ZONE_REFRESH_INTERVAL_MS / 1000, 's')
 }

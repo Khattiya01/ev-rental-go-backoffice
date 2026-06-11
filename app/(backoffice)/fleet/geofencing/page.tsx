@@ -12,10 +12,12 @@ const GeofenceMap = dynamic(() => import('@/components/maps/GeofenceMap'), { ssr
 
 type Mode = 'browse' | 'create' | 'edit'
 
-const RECIPIENT_LABELS: Record<string, string> = {
-  admin_only:  'Admin only',
-  admin_fleet: 'Admin + Fleet Manager',
-  all:         'All Staff',
+interface AdminUser { id: string; name: string; role: string }
+
+const ROLE_BADGE: Record<string, string> = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  viewer: 'Viewer',
 }
 
 export default function GeofencingPage() {
@@ -26,10 +28,13 @@ export default function GeofencingPage() {
   const [mode, setMode] = useState<Mode>('browse')
   const [editingZone, setEditingZone] = useState<GeofenceZone | null>(null)
 
+  // Admin users for recipient picker
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
+
   // Form state
   const [drawnCoords, setDrawnCoords] = useState<[number, number][] | null>(null)
   const [zoneName, setZoneName] = useState('')
-  const [alertRecipients, setAlertRecipients] = useState('admin_only')
+  const [alertRecipients, setAlertRecipients] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [clearKey, setClearKey] = useState(0)
@@ -49,6 +54,13 @@ export default function GeofencingPage() {
 
   useEffect(() => { loadZones() }, [loadZones])
 
+  useEffect(() => {
+    fetch('/api/users/directory')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: AdminUser[]) => setAdminUsers(rows ?? []))
+      .catch(() => {/* non-critical */})
+  }, [])
+
   // ─── Mode transitions ──────────────────────────────────────────────────────
 
   const enterCreate = () => {
@@ -56,7 +68,7 @@ export default function GeofencingPage() {
     setEditingZone(null)
     setDrawnCoords(null)
     setZoneName('')
-    setAlertRecipients('admin_only')
+    setAlertRecipients([])
     setSaveError('')
     setClearKey(k => k + 1)
   }
@@ -66,7 +78,7 @@ export default function GeofencingPage() {
     setEditingZone(zone)
     setDrawnCoords(zone.coordinates)
     setZoneName(zone.name)
-    setAlertRecipients(zone.alertRecipients ?? 'admin_only')
+    setAlertRecipients(Array.isArray(zone.alertRecipients) ? zone.alertRecipients : [])
     setSaveError('')
     setClearKey(k => k + 1)
   }
@@ -218,7 +230,9 @@ export default function GeofencingPage() {
                     <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5" style={{ background: color }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-700 truncate">{zone.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{RECIPIENT_LABELS[zone.alertRecipients] ?? zone.alertRecipients}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {zone.alertRecipients.length === 0 ? 'All admins notified' : `${zone.alertRecipients.length} recipient${zone.alertRecipients.length !== 1 ? 's' : ''}`}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => handleToggleActive(zone)} title="Deactivate" className="relative w-8 h-4 rounded-full transition-colors bg-blue-500">
@@ -251,7 +265,9 @@ export default function GeofencingPage() {
                     <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5" style={{ background: '#cbd5e1', opacity: 0.6 }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-400 truncate">{zone.name}</p>
-                      <p className="text-[10px] text-slate-300 truncate">{RECIPIENT_LABELS[zone.alertRecipients] ?? zone.alertRecipients}</p>
+                      <p className="text-[10px] text-slate-300 truncate">
+                        {zone.alertRecipients.length === 0 ? 'All admins notified' : `${zone.alertRecipients.length} recipient${zone.alertRecipients.length !== 1 ? 's' : ''}`}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => handleToggleActive(zone)} title="Activate" className="relative w-8 h-4 rounded-full transition-colors bg-slate-200">
@@ -342,16 +358,48 @@ export default function GeofencingPage() {
               />
             </div>
             <div>
-              <label className="block text-slate-500 text-xs mb-1">Alert on Exit</label>
-              <select
-                value={alertRecipients}
-                onChange={e => setAlertRecipients(e.target.value)}
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-indigo-400"
-              >
-                <option value="admin_only">Admin only</option>
-                <option value="admin_fleet">Admin + Fleet Manager</option>
-                <option value="all">All Staff</option>
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-slate-500 text-xs">Alert Recipients on Breach</label>
+                {alertRecipients.length > 0 && (
+                  <button
+                    onClick={() => setAlertRecipients([])}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    Clear (notify all)
+                  </button>
+                )}
+              </div>
+              {adminUsers.length === 0 ? (
+                <p className="text-slate-400 text-xs italic">Leave empty to notify all admins</p>
+              ) : (
+                <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                  {adminUsers.map(user => {
+                    const checked = alertRecipients.includes(user.id)
+                    return (
+                      <label
+                        key={user.id}
+                        className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors ${checked ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-slate-50'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setAlertRecipients(prev =>
+                            checked ? prev.filter(id => id !== user.id) : [...prev, user.id]
+                          )}
+                          className="accent-indigo-500 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-400">{ROLE_BADGE[user.role] ?? user.role}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400 mt-1.5">
+                {alertRecipients.length === 0 ? 'All admins will be notified' : `${alertRecipients.length} user${alertRecipients.length !== 1 ? 's' : ''} selected`}
+              </p>
             </div>
           </div>
         </div>

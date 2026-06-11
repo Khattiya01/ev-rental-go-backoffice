@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import type { Vehicle, VehicleStatus } from '@/lib/types'
+import type { Vehicle, VehicleStatus, GeofenceZone } from '@/lib/types'
+import { pointInPolygon } from '@/lib/geofence-checker'
 
 const FleetMap = dynamic(() => import('@/components/maps/FleetMap'), { ssr: false })
 
@@ -17,21 +18,22 @@ interface WsPosition {
 }
 
 const statusDotColor: Record<string, string> = {
-  available: 'bg-green-500',
-  rented: 'bg-blue-500',
-  charging: 'bg-cyan-500',
+  available:    'bg-green-500',
+  rented:       'bg-blue-500',
+  charging:     'bg-cyan-500',
   under_repair: 'bg-amber-500',
-  offline: 'bg-slate-500',
+  offline:      'bg-slate-500',
 }
 
 export default function FleetMapPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [wsConnected, setWsConnected] = useState(false)
-  const [search, setSearch] = useState('')
+  const [vehicles,     setVehicles]     = useState<Vehicle[]>([])
+  const [zones,        setZones]        = useState<GeofenceZone[]>([])
+  const [wsConnected,  setWsConnected]  = useState(false)
+  const [search,       setSearch]       = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [batteryFilter, setBatteryFilter] = useState('')
+  const [batteryFilter,setBatteryFilter]= useState('')
 
-  // Load initial vehicle list from DB
+  // Load initial vehicle list
   useEffect(() => {
     fetch('/api/vehicles?limit=100')
       .then(r => r.json())
@@ -39,42 +41,58 @@ export default function FleetMapPage() {
       .catch(console.error)
   }, [])
 
-  // WebSocket — real-time position updates
+  // Load active geofence zones (for client-side breach computation)
+  useEffect(() => {
+    fetch('/api/geofences?limit=200')
+      .then(r => r.json())
+      .then(({ data }: { data: GeofenceZone[] }) => setZones((data ?? []).filter(z => z.active)))
+      .catch(console.error)
+  }, [])
+
+  // WebSocket — real-time position + alert updates
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const ws = new WebSocket(`${protocol}//${window.location.host}/api/fleet/ws`)
 
-    ws.onopen = () => setWsConnected(true)
+    ws.onopen  = () => setWsConnected(true)
     ws.onclose = () => setWsConnected(false)
     ws.onerror = () => setWsConnected(false)
 
     ws.onmessage = (event: MessageEvent<string>) => {
-      let msg: { type: string; data: WsPosition[] }
-      try {
-        msg = JSON.parse(event.data)
-      } catch {
-        return
-      }
-      if (msg.type !== 'positions') return
+      let msg: { type: string; data: unknown }
+      try { msg = JSON.parse(event.data) } catch { return }
 
-      setVehicles(prev => {
-        const updates = new Map(msg.data.map(p => [p.vehicleId, p]))
-        return prev.map(v => {
-          const pos = updates.get(v.id)
-          if (!pos) return v
-          return {
-            ...v,
-            lat: pos.lat,
-            lng: pos.lng,
-            socPercent: pos.soc,
-            status: pos.status as VehicleStatus,
-          }
+      if (msg.type === 'positions') {
+        const positions = msg.data as WsPosition[]
+        setVehicles(prev => {
+          const updates = new Map(positions.map(p => [p.vehicleId, p]))
+          return prev.map(v => {
+            const pos = updates.get(v.id)
+            if (!pos) return v
+            return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
+          })
         })
-      })
+      }
     }
 
     return () => ws.close()
   }, [])
+
+  // Compute which vehicles are outside their assigned zone
+  const breachSet = useMemo<Set<string>>(() => {
+    if (zones.length === 0) return new Set()
+    const zoneMap = new Map(zones.map(z => [z.id, z]))
+    const breached = new Set<string>()
+    for (const v of vehicles) {
+      if (!v.geofenceZoneId) continue
+      const zone = zoneMap.get(v.geofenceZoneId)
+      if (!zone) continue
+      if (!pointInPolygon(v.lat, v.lng, zone.coordinates)) {
+        breached.add(v.id)
+      }
+    }
+    return breached
+  }, [vehicles, zones])
 
   const filtered = vehicles.filter(v => {
     const matchSearch =
@@ -84,11 +102,13 @@ export default function FleetMapPage() {
     const matchStatus = !statusFilter || v.status === statusFilter
     const matchBattery =
       !batteryFilter ||
-      (batteryFilter === 'low' && v.socPercent < 20) ||
+      (batteryFilter === 'low'    && v.socPercent < 20) ||
       (batteryFilter === 'medium' && v.socPercent >= 20 && v.socPercent < 60) ||
-      (batteryFilter === 'high' && v.socPercent >= 60)
+      (batteryFilter === 'high'   && v.socPercent >= 60)
     return matchSearch && matchStatus && matchBattery
   })
+
+  const breachCount = vehicles.filter(v => breachSet.has(v.id)).length
 
   return (
     <div className="flex gap-0 h-[calc(100vh-8rem)] -m-6">
@@ -96,12 +116,17 @@ export default function FleetMapPage() {
       <div className="w-80 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-slate-800 font-semibold text-sm">Live Fleet Filter &amp; List</h2>
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`}
-              />
-              <span className="text-xs text-slate-500">{wsConnected ? 'Live' : 'Offline'}</span>
+            <h2 className="text-slate-800 font-semibold text-sm">Live Fleet</h2>
+            <div className="flex items-center gap-2">
+              {breachCount > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 animate-pulse">
+                  ⚠ {breachCount}
+                </span>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+                <span className="text-xs text-slate-500">{wsConnected ? 'Live' : 'Offline'}</span>
+              </div>
             </div>
           </div>
           <input
@@ -140,35 +165,44 @@ export default function FleetMapPage() {
           ) : filtered.length === 0 ? (
             <p className="text-xs text-slate-400 text-center mt-6">No vehicles match filters</p>
           ) : (
-            filtered.map(vehicle => (
-              <div
-                key={vehicle.id}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
-              >
+            filtered.map(vehicle => {
+              const isBreached = breachSet.has(vehicle.id)
+              return (
                 <div
-                  className={`w-3 h-3 rounded-full flex-shrink-0 ${statusDotColor[vehicle.status] ?? 'bg-slate-400'}`}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-700 text-sm font-medium truncate">
-                    {vehicle.make} {vehicle.model} ({vehicle.plate})
-                  </p>
-                  <p className="text-slate-400 text-xs">SoC: {vehicle.socPercent}%</p>
+                  key={vehicle.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${isBreached ? 'bg-red-50 border border-red-100' : ''}`}
+                >
+                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${statusDotColor[vehicle.status] ?? 'bg-slate-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-700 text-sm font-medium truncate">
+                      {vehicle.make} {vehicle.model} ({vehicle.plate})
+                    </p>
+                    <p className="text-slate-400 text-xs">
+                      SoC: {vehicle.socPercent}%
+                      {isBreached && (
+                        <span className="ml-2 text-red-500 font-semibold">⚠ Outside zone</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
 
         <div className="p-3 border-t border-slate-200">
           <p className="text-xs text-slate-400 text-center">
             {filtered.length} / {vehicles.length} vehicles
+            {breachCount > 0 && (
+              <span className="ml-2 text-red-500 font-medium">· {breachCount} outside zone</span>
+            )}
           </p>
         </div>
       </div>
 
       {/* Map */}
       <div className="flex-1 relative">
-        <FleetMap vehicles={filtered} />
+        <FleetMap vehicles={filtered} breachSet={breachSet} />
       </div>
     </div>
   )

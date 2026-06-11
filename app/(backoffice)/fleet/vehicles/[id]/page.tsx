@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { Vehicle, Contract } from '@/lib/types'
+import type { Vehicle, Contract, GeofenceZone } from '@/lib/types'
 import Badge from '@/components/ui/badge'
 import Modal from '@/components/ui/modal'
-import { FileText, Pencil } from 'lucide-react'
+import { FileText, Pencil, Locate } from 'lucide-react'
 import Link from 'next/link'
 import { useCanWrite } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
@@ -14,6 +14,7 @@ import SectionCard from '@/components/ui/section-card'
 import { useToast } from '@/components/ui/toast'
 import PaginationFooter from '@/components/ui/pagination-footer'
 import EmptyState from '@/components/ui/empty-state'
+import { zoneColor } from '@/lib/geofence-utils'
 
 type Tab = 'general' | 'telematics' | 'history' | 'remote'
 
@@ -49,13 +50,64 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   const [selectedImage, setSelectedImage] = useState(0)
   const toast = useToast()
 
+  // Zone assignment
+  const [zoneModalOpen, setZoneModalOpen] = useState(false)
+  const [availableZones, setAvailableZones] = useState<GeofenceZone[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
+  const [zoneSaving, setZoneSaving] = useState(false)
+  const [zonesLoading, setZonesLoading] = useState(false)
+
+  const openZoneModal = async () => {
+    setSelectedZoneId(vehicle?.geofenceZoneId ?? null)
+    setZoneModalOpen(true)
+    setZonesLoading(true)
+    try {
+      const res = await fetch('/api/geofences')
+      if (res.ok) {
+        const { data } = await res.json() as { data: GeofenceZone[] }
+        setAvailableZones((data ?? []).filter(z => z.active))
+      }
+    } finally {
+      setZonesLoading(false)
+    }
+  }
+
+  const saveZone = async () => {
+    if (!vehicle) return
+    setZoneSaving(true)
+    try {
+      const res = await fetch(`/api/vehicles/${vehicle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ geofenceZoneId: selectedZoneId }),
+      })
+      if (res.ok) {
+        // Re-fetch with no-store to get confirmed DB state (includes geofenceZoneName from join)
+        const freshRes = await fetch(`/api/vehicles/${vehicle.id}`, { cache: 'no-store' })
+        if (freshRes.ok) {
+          const freshData = await freshRes.json() as Vehicle
+          setVehicle(freshData)
+        } else {
+          const zoneName = availableZones.find(z => z.id === selectedZoneId)?.name ?? null
+          setVehicle(prev => prev ? { ...prev, geofenceZoneId: selectedZoneId, geofenceZoneName: zoneName } : prev)
+        }
+        setZoneModalOpen(false)
+        toast.success(t('zoneModal.toastSuccess'), vehicle.plate)
+      } else {
+        toast.error(t('zoneModal.toastError'))
+      }
+    } finally {
+      setZoneSaving(false)
+    }
+  }
+
   useEffect(() => {
     async function load() {
       const { id } = await params
       setLoading(true)
       setNotFound(false)
       try {
-        const res = await fetch(`/api/vehicles/${id}`)
+        const res = await fetch(`/api/vehicles/${id}`, { cache: 'no-store' })
         if (res.status === 404) {
           setNotFound(true)
           return
@@ -230,6 +282,34 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                   <dd><Badge variant={vehicle.status} /></dd>
                 </div>
               </dl>
+            </SectionCard>
+
+            {/* Geofence Zone */}
+            <SectionCard title={t('info.geofenceZone')}>
+              <div className="flex items-center justify-between gap-3">
+                {vehicle.geofenceZoneName ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-3 h-3 rounded-sm shrink-0"
+                      style={{ background: zoneColor(vehicle.geofenceZoneId!) }}
+                    />
+                    <span className="text-slate-700 text-sm font-medium truncate">{vehicle.geofenceZoneName}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Locate size={14} />
+                    <span className="text-sm">{t('info.noZoneAssigned')}</span>
+                  </div>
+                )}
+                {canWrite && (
+                  <button
+                    onClick={openZoneModal}
+                    className="shrink-0 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    {vehicle.geofenceZoneName ? t('info.changeZone') : t('info.assignZone')}
+                  </button>
+                )}
+              </div>
             </SectionCard>
           </div>
         </div>
@@ -543,6 +623,79 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
           placeholder={t('remote.passwordPlaceholder')}
           className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-green-500"
         />
+      </Modal>
+
+      {/* Zone Assignment Modal */}
+      <Modal
+        isOpen={zoneModalOpen}
+        onClose={() => setZoneModalOpen(false)}
+        title={t('zoneModal.title')}
+        description={t('zoneModal.description')}
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setZoneModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            >
+              {t('zoneModal.cancel')}
+            </button>
+            <button
+              onClick={saveZone}
+              disabled={zoneSaving}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {zoneSaving ? t('zoneModal.saving') : t('zoneModal.save')}
+            </button>
+          </>
+        }
+      >
+        {zonesLoading ? (
+          <div className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {/* None option */}
+            <label className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${selectedZoneId === null ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50'}`}>
+              <input
+                type="radio"
+                name="zone"
+                checked={selectedZoneId === null}
+                onChange={() => setSelectedZoneId(null)}
+                className="accent-blue-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-slate-700">{t('zoneModal.none')}</p>
+                <p className="text-xs text-slate-400">{t('zoneModal.noneDesc')}</p>
+              </div>
+            </label>
+
+            {availableZones.length === 0 && (
+              <p className="text-slate-400 text-sm text-center py-4">{t('zoneModal.noZones')}</p>
+            )}
+
+            {availableZones.map(zone => (
+              <label
+                key={zone.id}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${selectedZoneId === zone.id ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50'}`}
+              >
+                <input
+                  type="radio"
+                  name="zone"
+                  checked={selectedZoneId === zone.id}
+                  onChange={() => setSelectedZoneId(zone.id)}
+                  className="accent-blue-500"
+                />
+                <span
+                  className="w-3 h-3 rounded-sm shrink-0"
+                  style={{ background: zoneColor(zone.id) }}
+                />
+                <p className="text-sm font-medium text-slate-700 flex-1 truncate">{zone.name}</p>
+              </label>
+            ))}
+          </div>
+        )}
       </Modal>
 
       {/* IoT Reset Modal */}

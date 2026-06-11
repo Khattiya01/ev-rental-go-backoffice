@@ -5,8 +5,6 @@ import { geofenceZones } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 
-const VALID_RECIPIENTS = ['admin_only', 'admin_fleet', 'all'] as const
-
 export async function GET(request: Request): Promise<NextResponse> {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -49,9 +47,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  const alertRecipients = typeof body.alertRecipients === 'string' && (VALID_RECIPIENTS as readonly string[]).includes(body.alertRecipients)
-    ? body.alertRecipients
-    : 'admin_only'
+  const alertRecipients: string[] = Array.isArray(body.alertRecipients) &&
+    (body.alertRecipients as unknown[]).every(x => typeof x === 'string')
+    ? (body.alertRecipients as string[])
+    : []
 
   try {
     const [inserted] = await db

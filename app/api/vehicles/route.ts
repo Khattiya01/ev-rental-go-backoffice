@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { eq, ilike, or, and, count, desc } from 'drizzle-orm'
+import { eq, ilike, or, and, count, desc, getTableColumns } from 'drizzle-orm'
 import { db } from '@/db'
-import { vehicles } from '@/db/schema'
+import { vehicles, geofenceZones } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 import { isDuplicateKeyError } from '@/lib/db-errors'
@@ -37,13 +37,19 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const [{ total }] = await db.select({ total: count() }).from(vehicles).where(where)
 
-  const data = await db
-    .select()
+  const rawData = await db
+    .select({
+      ...getTableColumns(vehicles),
+      geofenceZoneName: geofenceZones.name,
+    })
     .from(vehicles)
+    .leftJoin(geofenceZones, eq(vehicles.geofenceZoneId, geofenceZones.id))
     .where(where)
     .orderBy(desc(vehicles.createdAt))
     .offset((page - 1) * limit)
     .limit(limit)
+
+  const data = rawData.map(r => ({ ...r, geofenceZoneName: r.geofenceZoneName ?? null }))
 
   return NextResponse.json({ data, total, page, limit })
 }

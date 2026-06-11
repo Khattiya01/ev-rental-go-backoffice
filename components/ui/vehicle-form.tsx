@@ -5,7 +5,8 @@ import { Save, Loader2 } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import type { Vehicle, VehicleStatus } from '@/lib/types'
+import { useState, useEffect } from 'react'
+import type { Vehicle, VehicleStatus, GeofenceZone } from '@/lib/types'
 import MultiImageUploader from '@/components/ui/multi-image-uploader'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
@@ -28,6 +29,7 @@ const vehicleSchema = z.object({
   condition: z.string(),
   location: z.string(),
   nextServiceDate: z.string(),
+  geofenceZoneId: z.string().optional(),  // '' = none, UUID = assigned
 })
 
 type VehicleFormData = z.infer<typeof vehicleSchema>
@@ -42,6 +44,14 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
   const t = useTranslations('vehicleForm')
   const td = useTranslations('vehicles')
   const { success, error: toastError } = useToast()
+  const [zones, setZones] = useState<GeofenceZone[]>([])
+
+  useEffect(() => {
+    fetch('/api/geofences')
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then(({ data }: { data: GeofenceZone[] }) => setZones((data ?? []).filter(z => z.active)))
+      .catch(() => {/* non-critical */})
+  }, [])
 
   const STATUS_LABELS: Record<VehicleStatus, string> = {
     available: td('status.available'),
@@ -72,6 +82,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
       condition: initialData?.condition ?? 'Good',
       location: initialData?.location ?? '',
       nextServiceDate: initialData?.nextServiceDate ?? '',
+      geofenceZoneId: initialData?.geofenceZoneId ?? '',
     },
   })
 
@@ -94,6 +105,7 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
       condition: data.condition || null,
       location: data.location || null,
       nextServiceDate: data.nextServiceDate || null,
+      ...(mode === 'edit' ? { geofenceZoneId: data.geofenceZoneId || null } : {}),
     }
 
     try {
@@ -303,6 +315,37 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
                 className={inputClass}
               />
             </div>
+          </div>
+        </SectionCard>
+
+        {/* Geofencing */}
+        <SectionCard className="p-6 space-y-5">
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wide">{t('sectionGeofencing')}</h2>
+          <div>
+            <label htmlFor="geofenceZoneId" className={labelClass}>{t('geofenceZoneLabel')}</label>
+            {/* Controller (not register) so value= prop is set on every render.
+                Without it, react-hook-form sets the DOM value only at mount —
+                before zones load — so the saved zone never appears selected. */}
+            <Controller
+              name="geofenceZoneId"
+              control={control}
+              render={({ field }) => (
+                <select
+                  id="geofenceZoneId"
+                  {...field}
+                  value={field.value ?? ''}
+                  className={inputClass}
+                >
+                  <option value="">{t('geofenceZoneNone')}</option>
+                  {zones.map(z => (
+                    <option key={z.id} value={z.id}>{z.name}</option>
+                  ))}
+                </select>
+              )}
+            />
+            <p className="text-slate-400 text-xs mt-1">
+              {t('geofenceZoneHint')}
+            </p>
           </div>
         </SectionCard>
 

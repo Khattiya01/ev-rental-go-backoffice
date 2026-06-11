@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { getTableColumns } from 'drizzle-orm'
 import { db } from '@/db'
-import { contracts, vehicles } from '@/db/schema'
+import { contracts, vehicles, geofenceZones } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 import { isDuplicateKeyError } from '@/lib/db-errors'
@@ -20,19 +21,27 @@ export async function GET(
 
   const { id } = await params
 
-  let rows: (typeof vehicles.$inferSelect)[]
+  let rows: { vehicle: typeof vehicles.$inferSelect; geofenceZoneName: string | null }[]
   try {
-    rows = await db.select().from(vehicles).where(eq(vehicles.id, id)).limit(1)
+    rows = await db
+      .select({
+        vehicle: getTableColumns(vehicles),
+        geofenceZoneName: geofenceZones.name,
+      })
+      .from(vehicles)
+      .leftJoin(geofenceZones, eq(vehicles.geofenceZoneId, geofenceZones.id))
+      .where(eq(vehicles.id, id))
+      .limit(1)
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 
-  const vehicle = rows[0]
-  if (!vehicle) {
+  const row = rows[0]
+  if (!row) {
     return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
   }
 
-  return NextResponse.json(vehicle)
+  return NextResponse.json({ ...row.vehicle, geofenceZoneName: row.geofenceZoneName ?? null })
 }
 
 export async function PATCH(

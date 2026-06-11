@@ -110,6 +110,8 @@ async function getDashboardData() {
   const mapVehicles: Vehicle[] = allVehicles.map(v => ({
     ...v,
     images: v.images ?? [],
+    geofenceZoneId: v.geofenceZoneId ?? null,
+    geofenceZoneName: null,  // not needed for map display
   }))
 
   return {

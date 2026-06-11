@@ -260,7 +260,23 @@
       "odometer": "Odometer",
       "condition": "Condition",
       "location": "Location",
-      "nextService": "Next Service"
+      "nextService": "Next Service",
+      "geofenceZone": "Geofence Zone",
+      "noZoneAssigned": "No zone assigned",
+      "assignZone": "Assign",
+      "changeZone": "Change"
+    },
+    "zoneModal": {
+      "title": "Assign Geofence Zone",
+      "description": "Select a zone to monitor this vehicle. An alert fires when the vehicle exits the boundary.",
+      "none": "None",
+      "noneDesc": "No geofence monitoring",
+      "noZones": "No active zones. Create one in Fleet → Geofencing.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "toastSuccess": "Geofence zone updated",
+      "toastError": "Failed to update zone"
     },
     "telematics": {
       "batteryLevel": "Battery Level",
@@ -367,6 +383,10 @@
     "locationLabel": "Home Location",
     "locationPlaceholder": "e.g. Lat Phrao Depot",
     "nextServiceLabel": "Next Service Date",
+    "sectionGeofencing": "Geofencing",
+    "geofenceZoneLabel": "Geofence Zone",
+    "geofenceZoneNone": "None (no geofence monitoring)",
+    "geofenceZoneHint": "Alert is triggered when vehicle exits the selected zone boundary.",
     "cancel": "Cancel",
     "saving": "Saving\u2026",
     "addVehicle": "Add Vehicle",

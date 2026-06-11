@@ -31,6 +31,8 @@ export interface Vehicle {
   nextServiceDate: string | null
   mileage: number
   motorCutoffActive: boolean
+  geofenceZoneId: string | null
+  geofenceZoneName: string | null
 }
 
 export interface Customer {
@@ -109,7 +111,7 @@ export interface GeofenceZone {
   name: string
   coordinates: [number, number][]
   active: boolean
-  alertRecipients: string
+  alertRecipients: string[]
   createdBy: string | null
   createdAt: string
   updatedAt: string

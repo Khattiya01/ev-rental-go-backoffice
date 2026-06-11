@@ -260,7 +260,23 @@
       "odometer": "เลขไมล์",
       "condition": "สภาพ",
       "location": "ตำแหน่ง",
-      "nextService": "นัดเซอร์วิสครั้งหน้า"
+      "nextService": "นัดเซอร์วิสครั้งหน้า",
+      "geofenceZone": "โซน Geofence",
+      "noZoneAssigned": "ยังไม่ได้กำหนดโซน",
+      "assignZone": "กำหนดโซน",
+      "changeZone": "เปลี่ยนโซน"
+    },
+    "zoneModal": {
+      "title": "กำหนด Geofence Zone",
+      "description": "เลือกโซนเพื่อติดตามรถคันนี้ ระบบจะแจ้งเตือนเมื่อรถออกนอกขอบเขต",
+      "none": "ไม่กำหนด",
+      "noneDesc": "ไม่มีการติดตาม Geofence",
+      "noZones": "ไม่มีโซนที่เปิดใช้งาน สร้างได้ที่ Fleet → Geofencing",
+      "cancel": "ยกเลิก",
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก…",
+      "toastSuccess": "อัปเดต Geofence Zone แล้ว",
+      "toastError": "ไม่สามารถอัปเดต Geofence Zone ได้"
     },
     "telematics": {
       "batteryLevel": "ระดับแบตเตอรี่",
@@ -367,6 +383,10 @@
     "locationLabel": "ตำแหน่งประจำ",
     "locationPlaceholder": "เช่น คลังลาดพร้าว",
     "nextServiceLabel": "วันเซอร์วิสครั้งต่อไป",
+    "sectionGeofencing": "Geofencing",
+    "geofenceZoneLabel": "โซน Geofence",
+    "geofenceZoneNone": "ไม่กำหนด (ไม่ติดตาม Geofence)",
+    "geofenceZoneHint": "ระบบจะแจ้งเตือนเมื่อรถออกนอกขอบเขตโซนที่เลือก",
     "cancel": "ยกเลิก",
     "saving": "กำลังบันทึก...",
     "addVehicle": "เพิ่มรถ",

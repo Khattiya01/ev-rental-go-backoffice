@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic'
 import { useState, useEffect, useMemo } from 'react'
 import AlertFeed from '@/components/dashboard/alert-feed'
 import { useTranslations } from 'next-intl'
-import type { Vehicle, VehicleStatus, Alert } from '@/lib/types'
+import type { Vehicle, VehicleStatus, Alert, GeofenceZone } from '@/lib/types'
+import { pointInPolygon } from '@/lib/geofence-checker'
 
 const DashboardMap = dynamic(() => import('@/components/maps/DashboardMap'), { ssr: false })
 
@@ -25,8 +26,18 @@ interface DashboardMapClientProps {
 
 export default function DashboardMapClient({ initialVehicles, staticAlerts }: DashboardMapClientProps) {
   const t = useTranslations('dashboard')
-  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles)
+  const [vehicles,    setVehicles]    = useState<Vehicle[]>(initialVehicles)
+  const [zones,       setZones]       = useState<GeofenceZone[]>([])
   const [wsConnected, setWsConnected] = useState(false)
+  const [wsAlerts,    setWsAlerts]    = useState<Alert[]>([])
+
+  // Load active geofence zones for client-side breach computation
+  useEffect(() => {
+    fetch('/api/geofences?limit=200')
+      .then(r => r.json())
+      .then(({ data }: { data: GeofenceZone[] }) => setZones((data ?? []).filter(z => z.active)))
+      .catch(() => {/* non-critical */})
+  }, [])
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -37,22 +48,57 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
     ws.onerror = () => setWsConnected(false)
 
     ws.onmessage = (event: MessageEvent<string>) => {
-      let msg: { type: string; data: WsPosition[] }
+      let msg: { type: string; data: unknown }
       try { msg = JSON.parse(event.data) } catch { return }
-      if (msg.type !== 'positions') return
 
-      setVehicles(prev => {
-        const updates = new Map(msg.data.map(p => [p.vehicleId, p]))
-        return prev.map(v => {
-          const pos = updates.get(v.id)
-          if (!pos) return v
-          return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
+      if (msg.type === 'positions') {
+        const positions = msg.data as WsPosition[]
+        setVehicles(prev => {
+          const updates = new Map(positions.map(p => [p.vehicleId, p]))
+          return prev.map(v => {
+            const pos = updates.get(v.id)
+            if (!pos) return v
+            return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
+          })
         })
-      })
+      }
+
+      if (msg.type === 'alert') {
+        const d = msg.data as { id: string; type: string; severity: string; message: string; createdAt: string; href?: string }
+        const incoming: Alert = {
+          id: d.id,
+          type: d.type as Alert['type'],
+          severity: d.severity as Alert['severity'],
+          message: d.message,
+          createdAt: new Date(d.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+          href: d.href,
+        }
+        setWsAlerts(prev => {
+          // Deduplicate by id — alert may already be in staticAlerts if loaded on page refresh
+          if (prev.some(a => a.id === incoming.id)) return prev
+          return [incoming, ...prev].slice(0, 20)
+        })
+      }
     }
 
     return () => ws.close()
   }, [])
+
+  // Compute which vehicles are outside their assigned zone
+  const breachSet = useMemo<Set<string>>(() => {
+    if (zones.length === 0) return new Set()
+    const zoneMap = new Map(zones.map(z => [z.id, z]))
+    const breached = new Set<string>()
+    for (const v of vehicles) {
+      if (!v.geofenceZoneId) continue
+      const zone = zoneMap.get(v.geofenceZoneId)
+      if (!zone) continue
+      if (!pointInPolygon(v.lat, v.lng, zone.coordinates)) {
+        breached.add(v.id)
+      }
+    }
+    return breached
+  }, [vehicles, zones])
 
   // Live battery alerts — regenerated each time vehicles state updates
   const liveBatteryAlerts: Alert[] = useMemo(
@@ -71,11 +117,15 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
 
   const allAlerts: Alert[] = useMemo(() => {
     const SEV = { critical: 0, warning: 1, info: 2 } as const
+    // wsAlerts deduplicated against staticAlerts by id
+    const staticIds = new Set(staticAlerts.map(a => a.id))
+    const freshWsAlerts = wsAlerts.filter(a => !staticIds.has(a.id))
     return [
       ...liveBatteryAlerts,
+      ...freshWsAlerts,
       ...staticAlerts.filter(a => a.type !== 'battery_low'),
     ].sort((a, b) => SEV[a.severity] - SEV[b.severity])
-  }, [liveBatteryAlerts, staticAlerts])
+  }, [liveBatteryAlerts, staticAlerts, wsAlerts])
 
   const criticalCount = allAlerts.filter(a => a.severity === 'critical').length
   const warningCount  = allAlerts.filter(a => a.severity === 'warning').length
@@ -111,7 +161,7 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
           </div>
         </div>
         <div className="h-80 rounded-xl overflow-hidden">
-          <DashboardMap vehicles={vehicles} />
+          <DashboardMap vehicles={vehicles} breachSet={breachSet} />
         </div>
       </div>
 
