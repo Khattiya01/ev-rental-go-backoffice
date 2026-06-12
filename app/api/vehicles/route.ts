@@ -20,6 +20,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   const statusParam = searchParams.get('status') ?? undefined
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)))
+  // `?all=1` returns the whole fleet in one response (used by the live map, which
+  // needs every vehicle, not a 100-row page). Capped for safety; target scale ≤ 100.
+  const all = searchParams.get('all') === '1'
+  const ALL_SAFETY_MAX = 1000
 
   const status = statusParam && (VALID_STATUSES as string[]).includes(statusParam)
     ? (statusParam as VehicleStatus)
@@ -37,7 +41,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const [{ total }] = await db.select({ total: count() }).from(vehicles).where(where)
 
-  const rawData = await db
+  const baseQuery = db
     .select({
       ...getTableColumns(vehicles),
       geofenceZoneName: geofenceZones.name,
@@ -46,12 +50,14 @@ export async function GET(request: Request): Promise<NextResponse> {
     .leftJoin(geofenceZones, eq(vehicles.geofenceZoneId, geofenceZones.id))
     .where(where)
     .orderBy(desc(vehicles.createdAt))
-    .offset((page - 1) * limit)
-    .limit(limit)
+    .$dynamic()
+
+  if (!all) baseQuery.offset((page - 1) * limit)
+  const rawData = await baseQuery.limit(all ? ALL_SAFETY_MAX : limit)
 
   const data = rawData.map(r => ({ ...r, geofenceZoneName: r.geofenceZoneName ?? null }))
 
-  return NextResponse.json({ data, total, page, limit })
+  return NextResponse.json({ data, total, page: all ? 1 : page, limit: all ? data.length : limit })
 }
 
 export async function POST(request: Request): Promise<NextResponse> {

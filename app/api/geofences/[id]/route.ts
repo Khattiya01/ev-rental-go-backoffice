@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { geofenceZones, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -102,10 +102,11 @@ export async function DELETE(
 
   const { id } = await params
 
-  // Clear FK on any vehicles assigned to this zone first
+  // Clear FK on any vehicles assigned to this zone first (bump version so
+  // edit-form optimistic locks see the change).
   await db
     .update(vehicles)
-    .set({ geofenceZoneId: null })
+    .set({ geofenceZoneId: null, version: sql`${vehicles.version} + 1` })
     .where(eq(vehicles.geofenceZoneId, id))
 
   const rows = await db

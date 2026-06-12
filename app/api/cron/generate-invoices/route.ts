@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, invoices } from '@/db/schema'
 
@@ -159,7 +159,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       const invoiceNo = `INV-${String(nextNo).padStart(4, '0')}`
       const dueDate   = buildMonthlyDueDate(contract.startDate, monthlyTargetYear, monthlyTargetMonth)
 
-      await db.insert(invoices).values({
+      // onConflictDoNothing guards against a concurrent / repeated run racing past
+      // the read-then-skip check above. Arbiter matches the partial monthly index.
+      const insertedRows = await db.insert(invoices).values({
         invoiceNo,
         contractId:  contract.id,
         customerId:  contract.customerId,
@@ -172,7 +174,12 @@ export async function POST(request: Request): Promise<NextResponse> {
         status:      'pending',
         periodYear:  monthlyTargetYear,
         periodMonth: monthlyTargetMonth,
-      })
+      }).onConflictDoNothing({
+        target: [invoices.contractId, invoices.periodYear, invoices.periodMonth],
+        where: sql`${invoices.periodDay} is null and ${invoices.periodYear} is not null`,
+      }).returning({ id: invoices.id })
+
+      if (insertedRows.length === 0) { skipped++; continue }
 
       generatedList.push({ invoiceNo, contractNo: contract.contractNo, customerName: contract.customerName, amount: contract.monthlyRate, dueDate, billingType: 'monthly' })
       nextNo++
@@ -190,7 +197,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const invoiceNo = `INV-${String(nextNo).padStart(4, '0')}`
 
-    await db.insert(invoices).values({
+    // Arbiter matches the partial daily index — race-safe duplicate prevention.
+    const insertedRows = await db.insert(invoices).values({
       invoiceNo,
       contractId:  contract.id,
       customerId:  contract.customerId,
@@ -204,7 +212,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       periodYear:  todayYear,
       periodMonth: todayMonth,
       periodDay:   todayDay,
-    })
+    }).onConflictDoNothing({
+      target: [invoices.contractId, invoices.periodYear, invoices.periodMonth, invoices.periodDay],
+      where: sql`${invoices.periodDay} is not null`,
+    }).returning({ id: invoices.id })
+
+    if (insertedRows.length === 0) { skipped++; continue }
 
     generatedList.push({ invoiceNo, contractNo: contract.contractNo, customerName: contract.customerName, amount: contract.dailyRate, dueDate: todayDueDate, billingType: 'daily' })
     nextNo++

@@ -388,6 +388,8 @@ export default function ContractForm({ mode, initialData }: ContractFormProps) {
             monthlyRate:   parseFloat(data.monthlyRate)   || 0,
             depositAmount: parseFloat(data.depositAmount) || 0,
             documentUrl:   data.documentUrl || '',
+            // Optimistic lock — server returns 409 if another admin saved first.
+            expectedVersion: initialData!.version,
           }),
         })
         if (res.ok) {

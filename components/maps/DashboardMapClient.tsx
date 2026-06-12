@@ -1,11 +1,12 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import AlertFeed from '@/components/dashboard/alert-feed'
 import { useTranslations } from 'next-intl'
 import type { Vehicle, VehicleStatus, Alert, GeofenceZone } from '@/lib/types'
 import { pointInPolygon } from '@/lib/geofence-checker'
+import { useFleetSocket, type FleetSocketMessage } from '@/lib/use-fleet-socket'
 
 const DashboardMap = dynamic(() => import('@/components/maps/DashboardMap'), { ssr: false })
 
@@ -28,7 +29,6 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
   const t = useTranslations('dashboard')
   const [vehicles,    setVehicles]    = useState<Vehicle[]>(initialVehicles)
   const [zones,       setZones]       = useState<GeofenceZone[]>([])
-  const [wsConnected, setWsConnected] = useState(false)
   const [wsAlerts,    setWsAlerts]    = useState<Alert[]>([])
 
   // Load active geofence zones for client-side breach computation
@@ -39,50 +39,39 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
       .catch(() => {/* non-critical */})
   }, [])
 
-  useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/fleet/ws`)
-
-    ws.onopen  = () => setWsConnected(true)
-    ws.onclose = () => setWsConnected(false)
-    ws.onerror = () => setWsConnected(false)
-
-    ws.onmessage = (event: MessageEvent<string>) => {
-      let msg: { type: string; data: unknown }
-      try { msg = JSON.parse(event.data) } catch { return }
-
-      if (msg.type === 'positions') {
-        const positions = msg.data as WsPosition[]
-        setVehicles(prev => {
-          const updates = new Map(positions.map(p => [p.vehicleId, p]))
-          return prev.map(v => {
-            const pos = updates.get(v.id)
-            if (!pos) return v
-            return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
-          })
+  // WebSocket — real-time position + alert updates (auto-reconnects on drop)
+  const handleMessage = useCallback((msg: FleetSocketMessage) => {
+    if (msg.type === 'positions') {
+      const positions = msg.data as WsPosition[]
+      setVehicles(prev => {
+        const updates = new Map(positions.map(p => [p.vehicleId, p]))
+        return prev.map(v => {
+          const pos = updates.get(v.id)
+          if (!pos) return v
+          return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
         })
-      }
-
-      if (msg.type === 'alert') {
-        const d = msg.data as { id: string; type: string; severity: string; message: string; createdAt: string; href?: string }
-        const incoming: Alert = {
-          id: d.id,
-          type: d.type as Alert['type'],
-          severity: d.severity as Alert['severity'],
-          message: d.message,
-          createdAt: new Date(d.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
-          href: d.href,
-        }
-        setWsAlerts(prev => {
-          // Deduplicate by id — alert may already be in staticAlerts if loaded on page refresh
-          if (prev.some(a => a.id === incoming.id)) return prev
-          return [incoming, ...prev].slice(0, 20)
-        })
-      }
+      })
     }
 
-    return () => ws.close()
+    if (msg.type === 'alert') {
+      const d = msg.data as { id: string; type: string; severity: string; message: string; createdAt: string; href?: string }
+      const incoming: Alert = {
+        id: d.id,
+        type: d.type as Alert['type'],
+        severity: d.severity as Alert['severity'],
+        message: d.message,
+        createdAt: new Date(d.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        href: d.href,
+      }
+      setWsAlerts(prev => {
+        // Deduplicate by id — alert may already be in staticAlerts if loaded on page refresh
+        if (prev.some(a => a.id === incoming.id)) return prev
+        return [incoming, ...prev].slice(0, 20)
+      })
+    }
   }, [])
+
+  const { connected: wsConnected } = useFleetSocket(handleMessage)
 
   // Compute which vehicles are outside their assigned zone
   const breachSet = useMemo<Set<string>>(() => {

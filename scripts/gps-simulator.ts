@@ -30,6 +30,10 @@ async function main() {
   const positions = new Map<string, Position>()
 
   for (const v of rows) {
+    // Offline vehicles have a non-responding IoT device — they publish no GPS.
+    // Their Redis key is left to expire so readers fall back to the last known
+    // DB position and render the marker greyed out.
+    if (v.status === 'offline') continue
     positions.set(v.id, {
       lat: v.lat,
       lng: v.lng,
@@ -39,7 +43,8 @@ async function main() {
     })
   }
 
-  console.log(`[GPS-SIM] Started — simulating ${positions.size} vehicles. Press Ctrl+C to stop.`)
+  const offlineCount = rows.length - positions.size
+  console.log(`[GPS-SIM] Started — simulating ${positions.size} vehicles (${offlineCount} offline, no GPS). Press Ctrl+C to stop.`)
 
   if (positions.size === 0) {
     console.warn('[GPS-SIM] No vehicles in DB. Run `pnpm db:seed` first.')

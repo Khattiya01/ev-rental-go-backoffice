@@ -105,7 +105,11 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
       condition: data.condition || null,
       location: data.location || null,
       nextServiceDate: data.nextServiceDate || null,
-      ...(mode === 'edit' ? { geofenceZoneId: data.geofenceZoneId || null } : {}),
+      ...(mode === 'edit' ? {
+        geofenceZoneId: data.geofenceZoneId || null,
+        // Optimistic lock — reject the save if another admin edited this vehicle first.
+        expectedVersion: initialData!.version,
+      } : {}),
     }
 
     try {
@@ -123,7 +127,9 @@ export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
         router.push('/fleet/vehicles')
         router.refresh()
       } else {
-        const responseData = await res.json() as { error?: string }
+        // 409 version_conflict (another admin saved first) surfaces here too — the
+        // server returns a clear "reload and retry" message in `error`.
+        const responseData = await res.json() as { error?: string; code?: string }
         const msg = responseData?.error ?? (mode === 'add' ? t('toast.createError') : t('toast.updateError'))
         setError('root', { message: msg })
         toastError(msg)

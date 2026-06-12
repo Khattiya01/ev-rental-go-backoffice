@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -38,7 +38,8 @@ export async function PATCH(
   try {
     const rows = await db
       .update(vehicles)
-      .set({ status: status as VehicleStatus })
+      // Bump version so an open edit form's optimistic lock detects this change.
+      .set({ status: status as VehicleStatus, version: sql`${vehicles.version} + 1` })
       .where(eq(vehicles.id, id))
       .returning()
 

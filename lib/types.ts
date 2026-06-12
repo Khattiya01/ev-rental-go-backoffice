@@ -33,6 +33,7 @@ export interface Vehicle {
   motorCutoffActive: boolean
   geofenceZoneId: string | null
   geofenceZoneName: string | null
+  version: number   // optimistic-lock counter — send as `expectedVersion` on PATCH
 }
 
 export interface Customer {
@@ -76,6 +77,7 @@ export interface Contract {
   documentUrl?: string | null
   autoReminder: boolean
   createdAt: string
+  version: number   // optimistic-lock counter — send as `expectedVersion` on PATCH
 }
 
 export interface Invoice {

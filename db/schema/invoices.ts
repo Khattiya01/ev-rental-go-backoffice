@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, real, integer, timestamp, pgEnum, uniqueIndex } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { customers } from './customers'
 import { contracts } from './contracts'
 
@@ -26,11 +27,19 @@ export const invoices = pgTable('invoices', {
   periodDay: integer('period_day'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => [
-  // Monthly dedup: one invoice per (contract, year, month) when periodDay is NULL.
-  // Daily dedup:   one invoice per (contract, year, month, day) when periodDay is set.
-  // PostgreSQL does not enforce uniqueness across NULL values, so both cases are
-  // independently protected. Manual / one-time invoices (all NULLs) are unaffected.
-  uniqueIndex('uq_invoice_contract_period').on(t.contractId, t.periodYear, t.periodMonth, t.periodDay),
+  // Cron-generated invoices are deduped by period so a concurrent / repeated
+  // generate-invoices run can't create duplicates (paired with onConflictDoNothing).
+  // Both indexes are partial on `periodYear IS NOT NULL`, which is only set by the
+  // cron — manual / one-time invoices leave the period columns NULL and are excluded,
+  // so they can still repeat freely for the same contract.
+  //   Monthly: one per (contract, year, month) when periodDay IS NULL
+  uniqueIndex('uq_invoice_contract_month')
+    .on(t.contractId, t.periodYear, t.periodMonth)
+    .where(sql`${t.periodDay} is null and ${t.periodYear} is not null`),
+  //   Daily: one per (contract, year, month, day) when periodDay IS NOT NULL
+  uniqueIndex('uq_invoice_contract_day')
+    .on(t.contractId, t.periodYear, t.periodMonth, t.periodDay)
+    .where(sql`${t.periodDay} is not null`),
 ])
 
 export type Invoice = typeof invoices.$inferSelect

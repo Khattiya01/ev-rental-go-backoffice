@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { db } from '@/db'
 import { users, vehicles, auditLogs } from '@/db/schema'
@@ -69,11 +69,12 @@ export async function POST(
     return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
   }
 
-  // Update motorCutoffActive state in DB
+  // Update motorCutoffActive state in DB (bump version so edit-form optimistic
+  // locks see the change).
   if (action === 'cutoff') {
-    await db.update(vehicles).set({ motorCutoffActive: true }).where(eq(vehicles.id, id))
+    await db.update(vehicles).set({ motorCutoffActive: true, version: sql`${vehicles.version} + 1` }).where(eq(vehicles.id, id))
   } else if (action === 'restore') {
-    await db.update(vehicles).set({ motorCutoffActive: false }).where(eq(vehicles.id, id))
+    await db.update(vehicles).set({ motorCutoffActive: false, version: sql`${vehicles.version} + 1` }).where(eq(vehicles.id, id))
   }
 
   // Log to audit_log

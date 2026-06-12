@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, real, timestamp, pgEnum, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, real, integer, timestamp, pgEnum, boolean } from 'drizzle-orm/pg-core'
 import { customers } from './customers'
 import { vehicles } from './vehicles'
 
@@ -20,6 +20,8 @@ export const contracts = pgTable('contracts', {
   depositAmount: real('deposit_amount').notNull(),
   documentUrl: varchar('document_url', { length: 500 }),
   autoReminder: boolean('auto_reminder').notNull().default(false),
+  // Optimistic-lock counter — see vehicles.version.
+  version: integer('version').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

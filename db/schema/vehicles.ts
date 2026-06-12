@@ -24,6 +24,9 @@ export const vehicles = pgTable('vehicles', {
   nextServiceDate: varchar('next_service_date', { length: 50 }),
   motorCutoffActive: boolean('motor_cutoff_active').notNull().default(false),
   geofenceZoneId: uuid('geofence_zone_id').references(() => geofenceZones.id, { onDelete: 'set null' }),
+  // Optimistic-lock counter — bumped by PATCH. Clients may send `expectedVersion`
+  // to be rejected with 409 when another admin edited the row in the meantime.
+  version: integer('version').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

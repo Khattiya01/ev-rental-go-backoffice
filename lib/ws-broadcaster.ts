@@ -63,7 +63,14 @@ let _db: ReturnType<typeof drizzle> | null = null
 function getRedis(): Redis {
   if (!_redis) {
     if (!process.env.REDIS_URL) throw new Error('REDIS_URL is not set')
-    _redis = new Redis(process.env.REDIS_URL)
+    _redis = new Redis(process.env.REDIS_URL, {
+      // Fail fast — a downed Redis must not stall the broadcast tick. fetchAllPositions
+      // catches the rejection and falls back to last-known DB positions instead.
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      connectTimeout: 3_000,
+      retryStrategy: (times) => Math.min(times * 200, 2_000),
+    })
     _redis.on('error', (err) => console.error('[WS Broadcaster] Redis error:', err))
   }
   return _redis

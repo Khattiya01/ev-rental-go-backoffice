@@ -299,27 +299,6 @@ export default function PermissionsPage() {
           </div>
         </div>
 
-        {/* Always super_admin — outside the matrix */}
-        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3.5 text-sm">
-          <Lock size={15} className="text-blue-400 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-semibold text-blue-700 mb-2">
-              หน้าที่ล็อคไว้เฉพาะ Super Admin เสมอ — ไม่สามารถแก้ไขผ่าน Matrix ได้
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { path: '/settings/users',       label: 'จัดการผู้ใช้งานระบบ' },
-                { path: '/settings/permissions', label: 'Role Permissions Matrix (หน้านี้)' },
-              ].map(p => (
-                <span key={p.path} className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 rounded-lg px-2.5 py-1 text-xs">
-                  <Lock size={10} />
-                  <span className="font-mono">{p.path}</span>
-                  <span className="text-blue-500">— {p.label}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
         </>
       ) : null}
     </div>

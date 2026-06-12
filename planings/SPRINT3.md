@@ -129,16 +129,43 @@
 - [x] **Bonus:** Real-time breach alert ใน Dashboard — handle `type: 'alert'` WS message ใน DashboardMapClient
 - [x] **Bonus:** Zone name ใน FleetMap + DashboardMap popup
 - [x] **Bonus:** `GET /api/vehicles` list — left join geofenceZoneName
-- [ ] ทดสอบ: สร้าง zone → ย้าย simulated vehicle ออกนอก zone → เห็น alert (manual test)
+- [x] ทดสอบ: สร้าง zone → ย้าย simulated vehicle ออกนอก zone → เห็น alert (manual test)
 
 #### Day 9–10 — 18–19 มิ.ย.
 **Focus: Performance + Edge Cases**
 
-- [ ] Redis connection error → graceful fallback (ไม่ crash server)
-- [ ] WebSocket reconnect logic ฝั่ง client (ถ้า connection หลุด)
-- [ ] Vehicle ที่ `offline` status → ไม่ส่ง GPS update → map icon แสดง greyed out
-- [ ] Geofence zone ที่ inactive → ไม่ check breach
-- [ ] ทดสอบ concurrent WebSocket connections (หลาย admin เปิด map พร้อมกัน)
+- [x] Redis connection error → graceful fallback (ไม่ crash server)
+  - [x] DB fallback มีอยู่แล้วใน `positions/route.ts` + `ws-broadcaster.ts` (try/catch → last-known DB position)
+  - [x] **เพิ่ม fail-fast options** ใน `lib/redis.ts` + broadcaster: `maxRetriesPerRequest: 1`, `enableOfflineQueue: false`, `connectTimeout: 3s` — กัน request ค้างรอ socket ที่ตายแล้ว (เดิม ioredis จะ buffer command ไว้ → request hang)
+- [x] WebSocket reconnect logic ฝั่ง client (ถ้า connection หลุด)
+  - [x] `lib/use-fleet-socket.ts` — shared hook: exponential backoff (1s→2s→4s … cap 30s), auto-reconnect, 4001 Unauthorized = terminal (ไม่ retry)
+  - [x] `fleet/map/page.tsx` + `DashboardMapClient.tsx` — refactor มาใช้ hook (ลบ WS logic ที่ซ้ำกัน 2 จุด)
+- [x] Vehicle ที่ `offline` status → ไม่ส่ง GPS update → map icon แสดง greyed out
+  - [x] `scripts/gps-simulator.ts` — ข้าม vehicle offline (ไม่เขียน Redis → key หมดอายุ → fallback DB)
+  - [x] `FleetMap.tsx` + `DashboardMap.tsx` — marker offline ใส่ `opacity:0.45 + grayscale(0.7)`
+- [x] Geofence zone ที่ inactive → ไม่ check breach (ทำแล้วตั้งแต่ Day 5–6: server filter `active=true`, client filter `z.active`)
+- [ ] ทดสอบ concurrent WebSocket connections (หลาย admin เปิด map พร้อมกัน) — รองรับโดย design (broadcaster ใช้ `Set<WebSocket>`); ต้อง manual test ตอน demo
+
+> 🔎 **Edge cases เพิ่มเติมที่ตรวจพบ (นอกเหนือจาก checklist เดิม)** — แยกเป็น quick-win (ทำได้เลย) และ backlog (Day 11 / Sprint 4):
+>
+> **Real-time / Map (Sprint 3)**
+> - **Redis key ที่ไม่มี / JSON เสีย** — จัดการแล้ว: `fetchAllPositions` validate `isFinite(lat/lng)` + try/catch ต่อ vehicle
+> - **Vehicle ใหม่ที่เพิ่งเพิ่ม** — initial list มาจาก `/api/vehicles?limit=100`; ถ้ามีรถ > 100 จะ load ไม่ครบ (⚠️ backlog: เพิ่ม limit หรือ pagination ฝั่ง map)
+> - **Geofence polygon < 3 จุด** — `pointInPolygon` คืน false แล้ว (กัน NaN)
+> - **WS auth race** — ถ้า session หมดอายุระหว่างเปิด map: server close 4001 → hook หยุด reconnect (ไม่ loop กระหน่ำ server) ✅
+> - **breach cooldown** — 5 นาที/คัน กัน alert spam ✅ (Day 6)
+> - **Marker ค้างตำแหน่งเดิม** — ถ้า Redis key หมดอายุแต่ DB ยังมี last position → marker จะแสดงตำแหน่งเก่า (offline ก็ grey แล้ว); รถที่ online แต่ IoT หลุดชั่วคราว = แสดงตำแหน่งล่าสุดจน key กลับมา (acceptable)
+>
+> **General (Sprint 1–2 pages) — backlog → ✅ ปิดแล้ว (Day 9–10)**
+> - [x] **Map ดึงรถไม่ครบถ้าเกิน 100 คัน** — เพิ่ม `?all=1` ใน `GET /api/vehicles` (bypass pagination, cap 1000); `fleet/map/page.tsx` ดึง `?all=1`
+> - [x] **Cron `generate-invoices` race-safe** — เดิม unique index เป็น NULL-distinct → monthly invoice (periodDay NULL) ซ้ำได้ถ้า cron รันซ้อน. แก้เป็น **partial unique index 2 ตัว** (monthly / daily, scope `periodYear IS NOT NULL` เพื่อไม่กระทบ manual invoice) + `onConflictDoNothing` ทั้ง 2 insert
+> - [x] **Optimistic lock** — เพิ่ม `version` column ใน `vehicles` + `contracts`; PATCH รับ `expectedVersion` → ถ้า version ไม่ตรง = 409 `version_conflict` (ข้อความไทยบอกให้โหลดใหม่). **Backward-compatible** (ไม่ส่ง = ทำงานเหมือนเดิม)
+>   - FE: `vehicle-form.tsx` + `contract-form.tsx` ส่ง `expectedVersion` จาก `initialData.version` ตอน edit; ข้อความ 409 แสดงผ่าน ErrorAlert + toast
+>   - `lib/types.ts` — เพิ่ม `version` ใน `Vehicle` + `Contract` interface
+>   - **ครอบคลุมทุก write path แล้ว** — ทุก route ที่ update vehicle bump `version`: PATCH `[id]`, `[id]/status`, `[id]/remote` (cutoff/restore), contract create (→rented), contract complete (→available), geofence delete (clear FK). ดังนั้น quick action บนหน้า detail จะทำให้ edit form ที่เปิดค้างไว้เจอ 409 อย่างถูกต้อง
+> - [x] **File upload size/type cap** — มีอยู่แล้วใน `lib/storage.ts` (10 MB + MIME allowlist jpg/png/webp/gif/pdf); ทั้ง `/api/upload` และ `/api/public/upload` ใช้ตัวเดียวกัน ✅ ไม่ต้องแก้
+>
+> ⚠️ **ต้องรัน migration ก่อน deploy:** `pnpm db:push` — สร้าง `vehicles.version`, `contracts.version`, และเปลี่ยน invoices unique index (drop `uq_invoice_contract_period` เดิม → สร้าง `uq_invoice_contract_month` + `uq_invoice_contract_day`). ถ้ามี monthly invoice ซ้ำอยู่แล้วใน DB ต้องลบก่อน ไม่งั้น partial unique index จะสร้างไม่ได้
 
 #### Day 11 — 20 มิ.ย.
 **Focus: Integration + Final Polish**
@@ -166,6 +193,9 @@ lib/
   redis.ts              ← NEW — Redis client singleton
   ws-broadcaster.ts     ← NEW — WebSocket broadcast manager
   geofence-checker.ts   ← NEW — point-in-polygon
+
+lib/
+  use-fleet-socket.ts   ← NEW (Day 9–10) — client WS hook w/ auto-reconnect
 
 scripts/
   gps-simulator.ts      ← NEW — simulate GPS movement (dev only)

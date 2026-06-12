@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import type { Vehicle, VehicleStatus, GeofenceZone } from '@/lib/types'
 import { pointInPolygon } from '@/lib/geofence-checker'
+import { useFleetSocket, type FleetSocketMessage } from '@/lib/use-fleet-socket'
 
 const FleetMap = dynamic(() => import('@/components/maps/FleetMap'), { ssr: false })
 
@@ -28,14 +29,13 @@ const statusDotColor: Record<string, string> = {
 export default function FleetMapPage() {
   const [vehicles,     setVehicles]     = useState<Vehicle[]>([])
   const [zones,        setZones]        = useState<GeofenceZone[]>([])
-  const [wsConnected,  setWsConnected]  = useState(false)
   const [search,       setSearch]       = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [batteryFilter,setBatteryFilter]= useState('')
 
-  // Load initial vehicle list
+  // Load the full fleet (map shows every vehicle, not a paginated slice)
   useEffect(() => {
-    fetch('/api/vehicles?limit=100')
+    fetch('/api/vehicles?all=1')
       .then(r => r.json())
       .then(({ data }: { data: Vehicle[] }) => setVehicles(data ?? []))
       .catch(console.error)
@@ -49,34 +49,22 @@ export default function FleetMapPage() {
       .catch(console.error)
   }, [])
 
-  // WebSocket — real-time position + alert updates
-  useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/fleet/ws`)
-
-    ws.onopen  = () => setWsConnected(true)
-    ws.onclose = () => setWsConnected(false)
-    ws.onerror = () => setWsConnected(false)
-
-    ws.onmessage = (event: MessageEvent<string>) => {
-      let msg: { type: string; data: unknown }
-      try { msg = JSON.parse(event.data) } catch { return }
-
-      if (msg.type === 'positions') {
-        const positions = msg.data as WsPosition[]
-        setVehicles(prev => {
-          const updates = new Map(positions.map(p => [p.vehicleId, p]))
-          return prev.map(v => {
-            const pos = updates.get(v.id)
-            if (!pos) return v
-            return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
-          })
+  // WebSocket — real-time position updates (auto-reconnects on drop)
+  const handleMessage = useCallback((msg: FleetSocketMessage) => {
+    if (msg.type === 'positions') {
+      const positions = msg.data as WsPosition[]
+      setVehicles(prev => {
+        const updates = new Map(positions.map(p => [p.vehicleId, p]))
+        return prev.map(v => {
+          const pos = updates.get(v.id)
+          if (!pos) return v
+          return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
         })
-      }
+      })
     }
-
-    return () => ws.close()
   }, [])
+
+  const { connected: wsConnected } = useFleetSocket(handleMessage)
 
   // Compute which vehicles are outside their assigned zone
   const breachSet = useMemo<Set<string>>(() => {

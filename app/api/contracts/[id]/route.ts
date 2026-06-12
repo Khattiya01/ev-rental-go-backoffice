@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, vehicles } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
@@ -86,19 +86,38 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
   }
 
+  // Optional optimistic-lock guard — clients may send the `version` they last read.
+  const expectedVersion = typeof raw.expectedVersion === 'number' ? raw.expectedVersion : undefined
+  const whereClause = expectedVersion !== undefined
+    ? and(eq(contracts.id, id), eq(contracts.version, expectedVersion))
+    : eq(contracts.id, id)
+
   const updated = await db.transaction(async (tx) => {
     const [updatedContract] = await tx
-      .update(contracts).set(fields).where(eq(contracts.id, id)).returning()
+      .update(contracts)
+      .set({ ...fields, version: sql`${contracts.version} + 1` })
+      .where(whereClause)
+      .returning()
+
+    // No row matched despite `existing` being present above → version conflict.
+    if (!updatedContract) return null
 
     // When completing a contract, free the vehicle back to available
     if (fields.status === 'completed' && existing.vehicleId) {
       await tx.update(vehicles)
-        .set({ status: 'available' })
+        .set({ status: 'available', version: sql`${vehicles.version} + 1` })
         .where(eq(vehicles.id, existing.vehicleId))
     }
 
     return updatedContract
   })
+
+  if (!updated) {
+    return NextResponse.json(
+      { error: 'สัญญานี้ถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง', code: 'version_conflict' },
+      { status: 409 },
+    )
+  }
 
   return NextResponse.json(updated)
 }

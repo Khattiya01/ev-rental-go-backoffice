@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { getTableColumns } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, vehicles, geofenceZones } from '@/db/schema'
@@ -180,14 +180,31 @@ export async function PATCH(
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }
 
+  // Optional optimistic-lock guard — clients may send the `version` they last read.
+  const expectedVersion = typeof body.expectedVersion === 'number' ? body.expectedVersion : undefined
+  const whereClause = expectedVersion !== undefined
+    ? and(eq(vehicles.id, id), eq(vehicles.version, expectedVersion))
+    : eq(vehicles.id, id)
+
   try {
     const rows = await db
       .update(vehicles)
-      .set(fields)
-      .where(eq(vehicles.id, id))
+      .set({ ...fields, version: sql`${vehicles.version} + 1` })
+      .where(whereClause)
       .returning()
 
     if (rows.length === 0) {
+      // No row matched. With a version guard, that's either a stale write (row
+      // exists but version moved) or a missing row — distinguish the two.
+      if (expectedVersion !== undefined) {
+        const [exists] = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.id, id)).limit(1)
+        if (exists) {
+          return NextResponse.json(
+            { error: 'รถคันนี้ถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง', code: 'version_conflict' },
+            { status: 409 },
+          )
+        }
+      }
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
     }
 

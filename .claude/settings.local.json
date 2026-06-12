@@ -23,7 +23,10 @@
       "Bash(node -e \"const r = require\\('./node_modules/react-leaflet/dist/index.js'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.toLowerCase\\(\\).includes\\('zoom'\\)\\)\\)\")",
       "Bash(pnpm typecheck *)",
       "Bash(pnpm tsc *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(grep -n 'version\\\\|export type Vehicle\\\\|export interface Vehicle\\\\|export type Contract\\\\|export interface Contract\\\\|$inferSelect' lib/types.ts)"
     ],
     "additionalDirectories": [
       "c:\\Projects\\EV_Rental_GO\\ev-rental-go-backoffice\\app\\api\\vehicles\\[id]",

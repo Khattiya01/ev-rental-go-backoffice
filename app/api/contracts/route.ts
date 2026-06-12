@@ -148,7 +148,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       ...(typeof raw.documentUrl === 'string' && raw.documentUrl ? { documentUrl: raw.documentUrl } : {}),
     }).returning()
 
-    await tx.update(vehicles).set({ status: 'rented' }).where(eq(vehicles.id, vehicleId))
+    await tx.update(vehicles).set({ status: 'rented', version: sql`${vehicles.version} + 1` }).where(eq(vehicles.id, vehicleId))
 
     return newContract
   })

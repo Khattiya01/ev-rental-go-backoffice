@@ -37,9 +37,13 @@ function createVehicleIcon(status: string, isBreach: boolean) {
     })
   }
 
+  // Offline vehicles (non-responding IoT device, no live GPS) render dimmed.
+  const offline = status === 'offline'
+  const dim = offline ? 'opacity:0.45;filter:grayscale(0.7);' : ''
+
   return L.divIcon({
     className: `fleet-marker status-${status}`,
-    html: `<div style="background:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.4)">🚗</div>`,
+    html: `<div style="${dim}background:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.4)">🚗</div>`,
     iconSize:   [28, 28],
     iconAnchor: [14, 14],
   })
