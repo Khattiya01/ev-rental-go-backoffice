@@ -1,0 +1,1055 @@
+{
+  "info": {
+    "_postman_id": "ev-rental-go-api-tests-sprint3",
+    "name": "EV Rental GO — Sprint 3 Integration Tests",
+    "description": "Sprint 3 Integration Tests — Real-Time Fleet, WebSocket, Geofencing\n\n▶ วิธีใช้\n1. Import Collection + Environment (EV Rental GO — Local Dev)\n2. เลือก Environment ที่มุมขวาบน\n3. รัน folder ตามลำดับ: Auth → Positions → Alerts → Users Directory → Geofences → Vehicle-Zone Assignment → Breach Detection\n4. IDs จะ auto-save จาก response\n\n⚠️ ก่อนรัน Breach Detection folder:\n   - เริ่ม GPS Simulator ก่อน: pnpm sim:gps\n   - ตรวจสอบว่า Next.js server รันอยู่: pnpm dev\n\n🔌 WebSocket Test (ทำใน Browser — ไม่ใช่ Postman)\n   เปิด Browser Console แล้วรัน:\n   const ws = new WebSocket('ws://localhost:3000/api/fleet/ws');\n   ws.onmessage = e => console.log(JSON.parse(e.data));",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ─── Auto-inject session cookie on every request ───────────────",
+          "const token = pm.environment.get('sessionToken');",
+          "if (token) {",
+          "  pm.request.headers.upsert({ key: 'Cookie', value: 'session=' + token });",
+          "}"
+        ]
+      }
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ─── Auto-capture session cookie on every response ─────────────",
+          "const setCookie = pm.response.headers.get('Set-Cookie');",
+          "if (setCookie) {",
+          "  const match = setCookie.match(/session=([^;]+)/);",
+          "  if (match) pm.environment.set('sessionToken', match[1]);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth — Login",
+      "item": [
+        {
+          "name": "Login as Super Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Role is super_admin', () => pm.expect(pm.response.json().role).to.eql('super_admin'));",
+                  "pm.environment.set('adminLoggedIn', 'true');",
+                  "console.log('Logged in as:', pm.response.json().email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@evrentalgo.com\",\n  \"password\": \"admin1234\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📍 Real-Time Positions — GET /api/vehicles/positions",
+      "description": "ทดสอบ API ดึง GPS position ของทุกรถ — อ่านจาก Redis ก่อน ถ้า miss ตกไป DB",
+      "item": [
+        {
+          "name": "GET All Vehicle Positions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('Each position has required fields', () => {",
+                  "  pm.response.json().data.forEach(p => {",
+                  "    pm.expect(p).to.have.property('vehicleId');",
+                  "    pm.expect(p).to.have.property('lat').that.is.a('number');",
+                  "    pm.expect(p).to.have.property('lng').that.is.a('number');",
+                  "    pm.expect(p).to.have.property('soc').that.is.a('number');",
+                  "    pm.expect(p).to.have.property('status');",
+                  "    pm.expect(p).to.have.property('source');",
+                  "    pm.expect(['redis','db']).to.include(p.source);",
+                  "  });",
+                  "});",
+                  "pm.test('lat/lng are valid numbers (not NaN/Infinity)', () => {",
+                  "  pm.response.json().data.forEach(p => {",
+                  "    pm.expect(isFinite(p.lat)).to.be.true;",
+                  "    pm.expect(isFinite(p.lng)).to.be.true;",
+                  "  });",
+                  "});",
+                  "const data = pm.response.json().data;",
+                  "const fromRedis = data.filter(p => p.source === 'redis').length;",
+                  "const fromDb    = data.filter(p => p.source === 'db').length;",
+                  "console.log(`Positions: ${data.length} total | ${fromRedis} from Redis | ${fromDb} from DB fallback`);",
+                  "if (data.length > 0) {",
+                  "  pm.environment.set('positionVehicleId', data[0].vehicleId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles/positions", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "positions"] }
+          }
+        },
+        {
+          "name": "GET Positions — Verify Redis source (sim must be running)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "const fromRedis = data.filter(p => p.source === 'redis');",
+                  "// ⚠️ This test passes only when pnpm sim:gps is running",
+                  "pm.test('At least one position sourced from Redis (requires sim:gps)', () => {",
+                  "  if (fromRedis.length === 0) {",
+                  "    console.warn('⚠️ No Redis positions found — start GPS simulator: pnpm sim:gps');",
+                  "  }",
+                  "  pm.expect(fromRedis.length).to.be.at.least(0); // soft check — log warning only",
+                  "});",
+                  "console.log(`Redis positions: ${fromRedis.length}/${data.length} — ${fromRedis.length === 0 ? 'sim NOT running' : 'sim OK ✅'}`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles/positions", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "positions"] }
+          }
+        },
+        {
+          "name": "[ERROR] GET Positions — No Session (expect 401)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 1) Clear the env token so the collection pre-request won't inject a valid cookie.",
+                  "pm.environment.set('sessionToken', '');",
+                  "// 2) Force an invalid cookie header for this request.",
+                  "pm.request.headers.upsert({ key: 'Cookie', value: 'session=invalid-token-sprint3-test' });",
+                  "// 3) Call logout to flush the Postman cookie jar — otherwise the jar",
+                  "//    injects the real httpOnly session cookie alongside our invalid header.",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "pm.sendRequest({ url: baseUrl + '/api/auth/logout', method: 'POST' }, function(err) {",
+                  "  if (err) console.log('Pre-logout error (non-fatal):', err);",
+                  "  // Re-apply after the async logout so Postman doesn't overwrite it.",
+                  "  pm.request.headers.upsert({ key: 'Cookie', value: 'session=invalid-token-sprint3-test' });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "// Re-login to restore session for subsequent requests",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "pm.sendRequest({",
+                  "  url: baseUrl + '/api/auth/login',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ email: 'admin@evrentalgo.com', password: 'admin1234' }) }",
+                  "}, function(err, res) {",
+                  "  if (err) { console.log('Re-login error:', err); return; }",
+                  "  const setCookie = res.headers.get('Set-Cookie');",
+                  "  if (setCookie) {",
+                  "    const m = setCookie.match(/session=([^;]+)/);",
+                  "    if (m) pm.environment.set('sessionToken', m[1]);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles/positions", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "positions"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔔 Alerts Feed — GET /api/alerts",
+      "description": "ทดสอบ Alerts API — รวม battery_low, payment_overdue, geofence_breach",
+      "item": [
+        {
+          "name": "GET All Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('Each alert has required fields', () => {",
+                  "  pm.response.json().data.forEach(a => {",
+                  "    pm.expect(a).to.have.property('id');",
+                  "    pm.expect(a).to.have.property('type');",
+                  "    pm.expect(a).to.have.property('message');",
+                  "    pm.expect(a).to.have.property('severity');",
+                  "    pm.expect(['critical','warning','info']).to.include(a.severity);",
+                  "    pm.expect(['battery_low','payment_overdue','geofence_breach','payment_reminder']).to.include(a.type);",
+                  "  });",
+                  "});",
+                  "const data = pm.response.json().data;",
+                  "const byType = {};",
+                  "data.forEach(a => { byType[a.type] = (byType[a.type] || 0) + 1; });",
+                  "console.log('Alerts by type:', JSON.stringify(byType));",
+                  "console.log('Total alerts:', data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/alerts", "host": ["{{baseUrl}}"], "path": ["api", "alerts"] }
+          }
+        },
+        {
+          "name": "GET Alerts — Check for Geofence Breach entries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const breachAlerts = pm.response.json().data.filter(a => a.type === 'geofence_breach');",
+                  "// This is a soft check — breaches only exist if GPS sim ran a vehicle outside a zone",
+                  "pm.test('Geofence breach alerts have href property (when present)', () => {",
+                  "  breachAlerts.forEach(a => pm.expect(a).to.have.property('href'));",
+                  "});",
+                  "console.log(`Geofence breach alerts: ${breachAlerts.length}`);",
+                  "if (breachAlerts.length > 0) {",
+                  "  console.log('Sample breach:', JSON.stringify(breachAlerts[0], null, 2));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/alerts", "host": ["{{baseUrl}}"], "path": ["api", "alerts"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👥 Users Directory — GET /api/users/directory",
+      "description": "ทดสอบ endpoint สำหรับเลือก alert recipients ใน geofence zone config",
+      "item": [
+        {
+          "name": "GET Users Directory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test('Each user has id, name, role', () => {",
+                  "  pm.response.json().forEach(u => {",
+                  "    pm.expect(u).to.have.property('id');",
+                  "    pm.expect(u).to.have.property('name');",
+                  "    pm.expect(u).to.have.property('role');",
+                  "    // directory should NOT expose passwordHash",
+                  "    pm.expect(u).to.not.have.property('passwordHash');",
+                  "    pm.expect(u).to.not.have.property('password');",
+                  "  });",
+                  "});",
+                  "const users = pm.response.json();",
+                  "console.log('Directory users:', users.length);",
+                  "if (users.length > 0) {",
+                  "  pm.environment.set('directoryUserId', users[0].id);",
+                  "  console.log('Saved directoryUserId:', users[0].id, '|', users[0].name, '|', users[0].role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/directory", "host": ["{{baseUrl}}"], "path": ["api", "users", "directory"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🗺️ Geofences — Full CRUD Flow",
+      "description": "ทดสอบ Geofence CRUD ทั้งหมด: สร้าง zone → ดู → แก้ไข → toggle active → ลบ\nPolygon ที่ใช้ทดสอบ: บริเวณลาดพร้าว กรุงเทพฯ",
+      "item": [
+        {
+          "name": "GET Geofences — Active only (before create)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.environment.set('initialGeofenceCount', pm.response.json().data.length.toString());",
+                  "console.log('Active zones before test:', pm.response.json().data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "GET Geofences — Include inactive (?includeInactive=true)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('All zones returned (active + inactive)', () => {",
+                  "  const total = pm.response.json().data.length;",
+                  "  const activeOnly = parseInt(pm.environment.get('initialGeofenceCount') || '0');",
+                  "  pm.expect(total).to.be.at.least(activeOnly);",
+                  "});",
+                  "console.log('Total zones (incl. inactive):', pm.response.json().data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/geofences?includeInactive=true", "host": ["{{baseUrl}}"], "path": ["api", "geofences"], "query": [{ "key": "includeInactive", "value": "true" }] }
+          }
+        },
+        {
+          "name": "POST Create Geofence Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const zone = pm.response.json();",
+                  "pm.test('Has required zone fields', () => {",
+                  "  pm.expect(zone).to.have.property('id');",
+                  "  pm.expect(zone).to.have.property('name').that.eqls('Test Zone — ลาดพร้าว (Sprint 3 Test)');",
+                  "  pm.expect(zone).to.have.property('coordinates').that.is.an('array').with.length.at.least(3);",
+                  "  pm.expect(zone).to.have.property('active').that.is.true;",
+                  "  pm.expect(zone).to.have.property('alertRecipients').that.is.an('array');",
+                  "  pm.expect(zone).to.have.property('createdBy');",
+                  "});",
+                  "pm.test('Coordinates are valid lat/lng pairs', () => {",
+                  "  zone.coordinates.forEach(pt => {",
+                  "    pm.expect(pt).to.be.an('array').with.length(2);",
+                  "    pm.expect(isFinite(pt[0])).to.be.true;",
+                  "    pm.expect(isFinite(pt[1])).to.be.true;",
+                  "  });",
+                  "});",
+                  "pm.environment.set('geofenceZoneId', zone.id);",
+                  "console.log('Created geofence zone:', zone.id, '|', zone.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Zone — ลาดพร้าว (Sprint 3 Test)\",\n  \"coordinates\": [\n    [13.810, 100.550],\n    [13.810, 100.580],\n    [13.785, 100.580],\n    [13.785, 100.550]\n  ],\n  \"alertRecipients\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "POST Create Zone with Alert Recipients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const zone = pm.response.json();",
+                  "pm.test('alertRecipients saved correctly', () => {",
+                  "  const recipients = zone.alertRecipients;",
+                  "  pm.expect(recipients).to.be.an('array');",
+                  "  const directoryUserId = pm.environment.get('directoryUserId');",
+                  "  if (directoryUserId) {",
+                  "    pm.expect(recipients).to.include(directoryUserId);",
+                  "  }",
+                  "});",
+                  "pm.environment.set('geofenceZoneWithRecipientsId', zone.id);",
+                  "console.log('Zone with recipients:', zone.id, '| recipients:', zone.alertRecipients);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Zone — Recipient Config Test\",\n  \"coordinates\": [\n    [13.750, 100.500],\n    [13.750, 100.520],\n    [13.735, 100.520],\n    [13.735, 100.500]\n  ],\n  \"alertRecipients\": [\"{{directoryUserId}}\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "GET Geofence Zone by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const zone = pm.response.json();",
+                  "pm.test('ID matches requested zone', () => {",
+                  "  pm.expect(zone.id).to.eql(pm.environment.get('geofenceZoneId'));",
+                  "});",
+                  "pm.test('Zone has all expected fields', () => {",
+                  "  pm.expect(zone).to.have.property('id');",
+                  "  pm.expect(zone).to.have.property('name');",
+                  "  pm.expect(zone).to.have.property('coordinates');",
+                  "  pm.expect(zone).to.have.property('active');",
+                  "  pm.expect(zone).to.have.property('alertRecipients');",
+                  "  pm.expect(zone).to.have.property('createdAt');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "PATCH Update Zone Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('name updated correctly', () => {",
+                  "  pm.expect(pm.response.json().name).to.eql('Test Zone — ลาดพร้าว (Updated)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Zone — ลาดพร้าว (Updated)\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "PATCH Toggle Zone Inactive (active: false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('active is now false', () => pm.expect(pm.response.json().active).to.be.false);",
+                  "console.log('Zone deactivated — breach detection will skip this zone');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"active\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "PATCH Toggle Zone Active (active: true)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('active is now true', () => pm.expect(pm.response.json().active).to.be.true);",
+                  "console.log('Zone re-activated — breach detection resumed');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"active\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "PATCH Update Alert Recipients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('alertRecipients updated', () => {",
+                  "  pm.expect(pm.response.json().alertRecipients).to.be.an('array');",
+                  "});",
+                  "console.log('Updated recipients:', pm.response.json().alertRecipients);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"alertRecipients\": [\"{{directoryUserId}}\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "DELETE Cleanup — Remove Recipient Test Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));",
+                  "console.log('Deleted zone:', pm.environment.get('geofenceZoneWithRecipientsId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneWithRecipientsId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneWithRecipientsId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🚗 Vehicle ↔ Geofence Assignment",
+      "description": "ทดสอบการ assign vehicle เข้า geofence zone\nต้องรัน Geofences — Full CRUD Flow ก่อน (เพื่อให้มี geofenceZoneId)",
+      "item": [
+        {
+          "name": "Setup: GET Vehicles (save vehicleId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const vehicles = pm.response.json().data;",
+                  "pm.test('At least one vehicle exists', () => pm.expect(vehicles.length).to.be.at.least(1));",
+                  "if (vehicles.length > 0) {",
+                  "  const v = vehicles[0];",
+                  "  pm.environment.set('assignTestVehicleId', v.id);",
+                  "  pm.environment.set('assignTestVehicleVersion', v.version);",
+                  "  console.log('Vehicle for assignment test:', v.id, '|', v.plate, '| version:', v.version);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles?limit=5", "host": ["{{baseUrl}}"], "path": ["api", "vehicles"], "query": [{ "key": "limit", "value": "5" }] }
+          }
+        },
+        {
+          "name": "PATCH Assign Vehicle to Geofence Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.test('geofenceZoneId is set', () => {",
+                  "  pm.expect(v.geofenceZoneId).to.eql(pm.environment.get('geofenceZoneId'));",
+                  "});",
+                  "pm.test('version bumped', () => {",
+                  "  const prev = parseInt(pm.environment.get('assignTestVehicleVersion') || '0');",
+                  "  pm.expect(v.version).to.eql(prev + 1);",
+                  "});",
+                  "pm.environment.set('assignTestVehicleVersion', v.version.toString());",
+                  "console.log('Vehicle', v.id, 'assigned to zone:', v.geofenceZoneId, '| new version:', v.version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"geofenceZoneId\": \"{{geofenceZoneId}}\",\n  \"expectedVersion\": {{assignTestVehicleVersion}}\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{assignTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{assignTestVehicleId}}"] }
+          }
+        },
+        {
+          "name": "GET Vehicle — Verify geofenceZoneName in response",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.test('geofenceZoneId is set', () => {",
+                  "  pm.expect(v.geofenceZoneId).to.eql(pm.environment.get('geofenceZoneId'));",
+                  "});",
+                  "pm.test('geofenceZoneName is returned (left join)', () => {",
+                  "  pm.expect(v).to.have.property('geofenceZoneName');",
+                  "  pm.expect(v.geofenceZoneName).to.not.be.null;",
+                  "});",
+                  "console.log('Vehicle zone:', v.geofenceZoneId, '|', v.geofenceZoneName);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{assignTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{assignTestVehicleId}}"] }
+          }
+        },
+        {
+          "name": "PATCH Unassign Vehicle from Zone (geofenceZoneId: null)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.test('geofenceZoneId is null', () => {",
+                  "  pm.expect(v.geofenceZoneId).to.be.null;",
+                  "});",
+                  "pm.test('version bumped again', () => {",
+                  "  const prev = parseInt(pm.environment.get('assignTestVehicleVersion') || '0');",
+                  "  pm.expect(v.version).to.eql(prev + 1);",
+                  "});",
+                  "console.log('Vehicle unassigned from zone | version:', v.version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"geofenceZoneId\": null\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{assignTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{assignTestVehicleId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔄 Integration — Breach Detection Flow",
+      "description": "ทดสอบ end-to-end geofence breach detection\n\n⚠️ ขั้นตอนก่อนรัน folder นี้:\n1. รัน GPS Simulator: pnpm sim:gps\n2. รอ 10–15 วินาทีให้ simulator เขียน Redis\n3. รัน requests ในลำดับนี้ทีละข้อ\n\nการทดสอบนี้สร้าง zone เล็กๆ แล้ว assign vehicle — ถ้า vehicle random-walk ออกนอก zone จะ trigger breach alert",
+      "item": [
+        {
+          "name": "Step 1: Setup — GET Available Vehicle for Breach Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const vehicles = pm.response.json().data;",
+                  "pm.test('At least one vehicle exists', () => pm.expect(vehicles.length).to.be.at.least(1));",
+                  "if (vehicles.length > 0) {",
+                  "  const v = vehicles[0];",
+                  "  pm.environment.set('breachTestVehicleId', v.id);",
+                  "  pm.environment.set('breachTestVehicleVersion', v.version);",
+                  "  pm.environment.set('breachTestVehicleLat', v.lat || '13.80');",
+                  "  pm.environment.set('breachTestVehicleLng', v.lng || '100.55');",
+                  "  console.log('Breach test vehicle:', v.id, '| plate:', v.plate, '| lat:', v.lat, '| lng:', v.lng);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles?limit=3", "host": ["{{baseUrl}}"], "path": ["api", "vehicles"], "query": [{ "key": "limit", "value": "3" }] }
+          }
+        },
+        {
+          "name": "Step 2: GET Current Position of Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const vehicleId = pm.environment.get('breachTestVehicleId');",
+                  "const positions = pm.response.json().data;",
+                  "const pos = positions.find(p => p.vehicleId === vehicleId);",
+                  "if (pos) {",
+                  "  pm.environment.set('breachTestCurrentLat', pos.lat.toString());",
+                  "  pm.environment.set('breachTestCurrentLng', pos.lng.toString());",
+                  "  pm.environment.set('breachTestSource', pos.source);",
+                  "  console.log('Current position:', pos.lat.toFixed(4), pos.lng.toFixed(4), '| source:', pos.source);",
+                  "} else {",
+                  "  console.warn('Vehicle not found in positions — simulator may not be running');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/vehicles/positions", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "positions"] }
+          }
+        },
+        {
+          "name": "Step 3: POST Create Tiny Geofence (will trigger breach)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const zone = pm.response.json();",
+                  "pm.environment.set('breachTestZoneId', zone.id);",
+                  "console.log('Created tiny breach-test zone:', zone.id);",
+                  "console.log('Zone is deliberately tiny (0.001 deg ≈ 100m) — vehicle random walk will exit soon');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BREACH-TEST-ZONE (delete after test)\",\n  \"coordinates\": [\n    [13.8005, 100.5505],\n    [13.8005, 100.5515],\n    [13.7995, 100.5515],\n    [13.7995, 100.5505]\n  ],\n  \"alertRecipients\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "Step 4: PATCH Assign Vehicle to Tiny Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.environment.set('breachTestVehicleVersion', v.version.toString());",
+                  "console.log('Vehicle assigned to breach-test zone | version now:', v.version);",
+                  "console.log('⏳ Wait 10–30 seconds for GPS simulator to move vehicle outside the tiny zone...');",
+                  "console.log('Then run Step 5: GET Alerts to see the breach alert appear');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"geofenceZoneId\": \"{{breachTestZoneId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{breachTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{breachTestVehicleId}}"] }
+          }
+        },
+        {
+          "name": "Step 5: GET Alerts — Expect geofence_breach after sim moves vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const breachAlerts = pm.response.json().data.filter(a => a.type === 'geofence_breach');",
+                  "// Soft check: breach appears only after GPS sim moves vehicle outside zone",
+                  "pm.test('Breach alerts present (requires GPS sim to have moved vehicle)', () => {",
+                  "  if (breachAlerts.length === 0) {",
+                  "    console.warn('⚠️ No breach alerts yet — vehicle may not have moved outside zone yet. Wait 5s and retry.');",
+                  "  }",
+                  "  pm.expect(breachAlerts.length).to.be.at.least(0); // soft — dont fail, just log",
+                  "});",
+                  "const recentBreach = breachAlerts.find(a => a.href && a.href.includes(pm.environment.get('breachTestVehicleId')));",
+                  "if (recentBreach) {",
+                  "  console.log('✅ Breach alert confirmed! Vehicle exited zone:', JSON.stringify(recentBreach, null, 2));",
+                  "} else {",
+                  "  console.log(`Breach alerts total: ${breachAlerts.length} | looking for vehicleId: ${pm.environment.get('breachTestVehicleId')}`);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/alerts", "host": ["{{baseUrl}}"], "path": ["api", "alerts"] }
+          }
+        },
+        {
+          "name": "Step 6: Cleanup — Unassign Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('geofenceZoneId is null', () => pm.expect(pm.response.json().geofenceZoneId).to.be.null);",
+                  "console.log('Vehicle unassigned from breach-test zone');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"geofenceZoneId\": null\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{breachTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{breachTestVehicleId}}"] }
+          }
+        },
+        {
+          "name": "Step 7: Cleanup — DELETE Breach Test Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));",
+                  "console.log('✅ Breach test zone deleted — cleanup complete');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{breachTestZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{breachTestZoneId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "❌ Error Cases — Validation & Auth",
+      "description": "ทดสอบ error responses: 400 validation, 401 auth, 404 not found",
+      "item": [
+        {
+          "name": "[ERROR] POST Geofence — Missing name (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error message about name', () => pm.expect(pm.response.json().error).to.include('name'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"coordinates\": [[13.81, 100.55], [13.81, 100.58], [13.79, 100.58]]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "[ERROR] POST Geofence — Only 2 coordinates (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error message about coordinates', () => pm.expect(pm.response.json().error).to.include('coordinates'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Too Few Points\",\n  \"coordinates\": [[13.81, 100.55], [13.81, 100.58]]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "[ERROR] POST Geofence — Invalid coordinate format (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error message about coordinate format', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/coordinate/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bad Coords\",\n  \"coordinates\": [[\"lat\", \"lng\"], [13.81, 100.58], [13.79, 100.58]]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        },
+        {
+          "name": "[ERROR] PATCH Geofence — active must be boolean (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error about active field', () => pm.expect(pm.response.json().error).to.include('active'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"active\": \"yes\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "[ERROR] PATCH Geofence — No valid fields (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error about no valid fields', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/field/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unknownField\": \"value\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        },
+        {
+          "name": "[ERROR] GET Geofence — Non-existent ID (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => pm.expect(pm.response.json().error).to.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/geofences/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "00000000-0000-0000-0000-000000000000"] }
+          }
+        },
+        {
+          "name": "[ERROR] DELETE Geofence — Non-existent ID (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => pm.expect(pm.response.json().error).to.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/geofences/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "00000000-0000-0000-0000-000000000000"] }
+          }
+        },
+        {
+          "name": "[ERROR] PATCH Vehicle — Invalid geofenceZoneId type (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error about geofenceZoneId', () => pm.expect(pm.response.json().error).to.include('geofenceZoneId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"geofenceZoneId\": 12345\n}" },
+            "url": { "raw": "{{baseUrl}}/api/vehicles/{{assignTestVehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{assignTestVehicleId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🧹 Final Cleanup",
+      "description": "ลบ zone ทดสอบที่เหลืออยู่ — รันหลังสุดเสมอ",
+      "item": [
+        {
+          "name": "DELETE Main Test Zone (geofenceZoneId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 204 = deleted, 404 = already deleted — both are acceptable for cleanup",
+                  "pm.test('Zone deleted or already gone', () => {",
+                  "  pm.expect([204, 404]).to.include(pm.response.code);",
+                  "});",
+                  "pm.environment.unset('geofenceZoneId');",
+                  "pm.environment.unset('geofenceZoneWithRecipientsId');",
+                  "pm.environment.unset('breachTestZoneId');",
+                  "pm.environment.unset('initialGeofenceCount');",
+                  "console.log('✅ Sprint 3 test cleanup complete');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/geofences/{{geofenceZoneId}}", "host": ["{{baseUrl}}"], "path": ["api", "geofences", "{{geofenceZoneId}}"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

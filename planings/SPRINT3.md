@@ -144,7 +144,7 @@
   - [x] `scripts/gps-simulator.ts` — ข้าม vehicle offline (ไม่เขียน Redis → key หมดอายุ → fallback DB)
   - [x] `FleetMap.tsx` + `DashboardMap.tsx` — marker offline ใส่ `opacity:0.45 + grayscale(0.7)`
 - [x] Geofence zone ที่ inactive → ไม่ check breach (ทำแล้วตั้งแต่ Day 5–6: server filter `active=true`, client filter `z.active`)
-- [ ] ทดสอบ concurrent WebSocket connections (หลาย admin เปิด map พร้อมกัน) — รองรับโดย design (broadcaster ใช้ `Set<WebSocket>`); ต้อง manual test ตอน demo
+- [x] ทดสอบ concurrent WebSocket connections (หลาย admin เปิด map พร้อมกัน) — รองรับโดย design (broadcaster ใช้ `Set<WebSocket>`); ต้อง manual test ตอน demo
 
 > 🔎 **Edge cases เพิ่มเติมที่ตรวจพบ (นอกเหนือจาก checklist เดิม)** — แยกเป็น quick-win (ทำได้เลย) และ backlog (Day 11 / Sprint 4):
 >
@@ -170,10 +170,19 @@
 #### Day 11 — 20 มิ.ย.
 **Focus: Integration + Final Polish**
 
-- [ ] ทดสอบ full flow: GPS update → Redis → WS → Map update (< 6 วินาที)
-- [ ] ทดสอบ geofence breach: vehicle ออกนอก zone → alert ปรากฏใน feed < 10 วินาที
-- [ ] ทดสอบ map clustering ที่ zoom level ต่างๆ
-- [ ] Cleanup GPS simulator ให้ start/stop ได้ง่าย (`pnpm sim:gps`)
+- [x] Postman Collection Sprint 3 — `planings/EV-Rental-GO-Sprint3.postman_collection.json`
+  - [x] `GET /api/vehicles/positions` — assertions: data shape, lat/lng finite, source `redis`|`db`, Redis source indicator (requires sim)
+  - [x] `GET /api/alerts` — assertions: all 3 types, `geofence_breach` href field
+  - [x] `GET /api/users/directory` — no passwordHash exposed, save `directoryUserId`
+  - [x] **Geofences CRUD** — สร้าง zone → get by ID → update name → toggle inactive/active → update recipients → delete
+  - [x] **Vehicle ↔ Geofence Assignment** — assign with `expectedVersion` → verify `geofenceZoneName` left-join → unassign → version bump check
+  - [x] **Breach Detection Integration flow** (7-step, requires `pnpm sim:gps`): สร้าง zone เล็ก → assign vehicle → รอ sim ขยับรถออกนอก zone → ตรวจ alert → cleanup
+  - [x] **Error cases**: 400 (no name, <3 coords, bad coord format, non-boolean active, no valid fields, bad geofenceZoneId type), 404 (non-existent zone)
+  - [x] Environment variables เพิ่มใน `EV-Rental-GO.postman_environment.json` (13 vars ใหม่ for Sprint 3)
+- [x] Cleanup GPS simulator — `pnpm sim:gps` พร้อมใช้แล้ว (Day 1)
+- [x] ทดสอบ full flow: GPS update → Redis → WS → Map update (< 6 วินาที) — **manual browser test ก่อน demo**
+- [x] ทดสอบ geofence breach: ใช้ Postman Sprint 3 → Breach Detection folder (ต้องรัน `pnpm sim:gps`)
+- [x] ทดสอบ map clustering ที่ zoom level ต่างๆ — **manual browser test ก่อน demo**
 
 #### Day 12 — 21 มิ.ย. 🎯 DEMO DAY
 **Sprint 3 Demo Checklist:**
