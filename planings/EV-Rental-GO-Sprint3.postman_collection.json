@@ -18,6 +18,7 @@
           "}"
         ]
       }
+    },
     {
       "listen": "test",
       "script": {
