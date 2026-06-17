@@ -80,40 +80,48 @@ vehicle/{vehicle_id}/data   ← ข้อมูลหลัก (GPS + Battery + 
 
 ```
 key:   vehicle:pos:{vehicle_id}
-value: { lat, lng, speed, heading, soc, temperature, status, updated_at }
+value: { lat, lng, speed, soc, status, updated_at }
 TTL:   300 วินาที (5 นาที) — ถ้าหมด = vehicle offline
 ```
 
+> ตัด `heading`/`temperature` ออกจาก Redis value — Next.js (`app/api/vehicles/positions/route.ts`) ไม่อ่าน 2 ฟิลด์นี้และไม่มี feature ใช้ตอนนี้ (YAGNI)
+> `heading` ยังอยู่ใน MQTT payload ได้ตามปกติ แต่ Gateway ไม่ต้อง cache ลง Redis — ถ้าจะใช้จริง (เช่น vehicle bearing icon บนแผนที่) ค่อยเพิ่มตอนมี feature
+> `temperature` persist ลง `telemetry_history` ตรงได้เลย ไม่ต้องผ่าน Redis
+> Sprint 3 GPS Simulator (`scripts/gps-simulator.ts`) อัปเดตให้ใช้ TTL 300s ตรงกับ Gateway แล้ว (เดิมใช้ 30s เพื่อ demo offline detection เร็ว — ตอนนี้ sync ให้ behavior เหมือน production 100%)
+
 ---
 
-## 🗄️ DB Schema ที่ต้องเพิ่มใน Next.js Repo (ทำก่อน Sprint 4 เริ่ม)
+## 🗄️ DB Schema — `telemetry_history` (มีอยู่แล้วจาก Sprint ก่อน)
 
-> ⚠️ **Gap จาก Sprint 2** — Sprint 2 Day 2 query TimescaleDB แต่ table ยังไม่มีใน `db/schema/`
-> ต้องเพิ่มใน **Next.js repo** เพราะ Drizzle ORM manage schema ที่นั่น
+> ⚠️ **อัปเดต:** ตอนเขียนแพลนนี้ครั้งแรกคิดว่า table ยังไม่มี แต่เช็คโค้ดจริงแล้วพบว่า `db/schema/telemetry_history.ts` **มีอยู่แล้ว** ใน Next.js repo (ไม่ใช่งานสร้างใหม่ของ Day 1) — Gateway ต้อง **ใช้ schema เดิมนี้** ไม่ใช่ schema ที่ร่างไว้ก่อนหน้า (มี `speed`/`heading`/`odometer`/`bigserial id` ซึ่งไม่ตรงกับของจริง)
 
-### `db/schema/telemetry_history.ts` (ใน Next.js repo)
+### `db/schema/telemetry_history.ts` (ของจริงในปัจจุบัน — แก้แล้วเพื่อให้เป็น hypertable ได้)
 
 ```ts
-// TimescaleDB hypertable — partition by timestamp
-// สร้าง hypertable ด้วย: SELECT create_hypertable('telemetry_history', 'timestamp');
-
 export const telemetryHistory = pgTable('telemetry_history', {
-  id:           bigserial('id'),
-  vehicleId:    uuid('vehicle_id').notNull().references(() => vehicles.id),
-  lat:          doublePrecision('lat').notNull(),
-  lng:          doublePrecision('lng').notNull(),
-  speed:        doublePrecision('speed').notNull().default(0),
-  heading:      integer('heading').default(0),
-  soc:          doublePrecision('soc').notNull(),
-  temperature:  doublePrecision('temperature'),
-  odometer:     integer('odometer'),
+  id: uuid('id').notNull().defaultRandom(),
+  vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
+  socPercent: integer('soc_percent').notNull(),
+  temperature: doublePrecision('temperature'),
   chargeCycles: integer('charge_cycles'),
-  timestamp:    timestamp('timestamp', { withTimezone: true }).notNull(),
-})
+  deepDischargeCount: integer('deep_discharge_count'),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+}, t => [
+  primaryKey({ columns: [t.id, t.recordedAt] }), // TimescaleDB requires partition column in the PK
+  index('idx_telemetry_vehicle_recorded').on(t.vehicleId, t.recordedAt),
+])
 ```
 
-> Sprint 2 Telematics API ใช้ table นี้ query SoC graph + charge cycles
-> IoT Gateway INSERT ลง table นี้ทุก message
+> **เปลี่ยนจาก schema เดิม 2 จุด (ทำไปแล้ว, verified):**
+> 1. `id` เปลี่ยนจาก single `primaryKey()` → composite `primaryKey(id, recordedAt)` เพราะ TimescaleDB ปฏิเสธ `create_hypertable` ถ้า unique/PK index ไม่รวม partitioning column — เพิ่ม index แยกบน `(vehicleId, recordedAt)` แทน เพื่อให้ query pattern ของ Telematics API (`WHERE vehicleId = X ORDER BY recordedAt DESC`) ยังเร็วเหมือนเดิม
+> 2. `recordedAt` เปลี่ยนจาก `timestamp` (naive) → `timestamp(withTimezone: true)` เพราะ Postgres เตือน "does not follow best practices" — naive timestamp เสี่ยง bug เรื่อง timezone เมื่อรับ ISO8601 UTC จาก MQTT payload แล้ว compare/group กับ `now()` ที่ฝั่ง server (Thailand UTC+7)
+>
+> Sprint 2 Telematics API ใช้ table นี้ query SoC graph + charge cycles (ฟิลด์ที่มีอยู่ครอบคลุมพอแล้ว — ไม่ต้องเพิ่ม `speed`/`heading`/`odometer` เพราะไม่มี feature ไหนใช้ ดูรายละเอียดที่หน้า Telematics tab ใน AGENTS.md) — ใช้งานจริงแล้วที่ `app/api/vehicles/[id]/telematics/route.ts` (ไม่ใช่ pending แล้ว)
+> Gateway Day 5 INSERT แมป field จาก MQTT payload → column ตามนี้: `soc → socPercent`, `timestamp → recordedAt`; ส่วน `speed`/`heading`/`odometer` ใน payload ใช้แค่ sync ไป `vehicles` table (ดู Day 6) ไม่ persist ลง `telemetry_history`
+> `deepDischargeCount` ยังไม่มี source data จาก MQTT payload ปัจจุบัน — เก็บเป็น `null` ไปก่อน (ฟิลด์เผื่ออนาคต ไม่ใช่ blocker)
+> **Hypertable สร้างและ verify แล้ว** (dev DB): `timescale/timescaledb:latest-pg16` ผ่าน `CREATE EXTENSION timescaledb` + `SELECT create_hypertable('telemetry_history', 'recorded_at')` — ดู docker-compose.yml
 
 ---
 
@@ -124,15 +132,15 @@ export const telemetryHistory = pgTable('telemetry_history', {
 #### Day 1 — 22 มิ.ย.
 **Focus: Project Setup + MQTT Contract**
 
-- [ ] สร้าง repo ใหม่ `ev-rental-iot-gateway`
-- [ ] `pnpm init` + ติดตั้ง dependencies:
+- [x] สร้าง repo ใหม่ `ev-rental-iot-gateway` — ที่ `C:\Projects\EV_Rental_GO\ev-rental-iot-gateway`, git init แล้ว (ยังไม่ commit)
+- [x] `pnpm init` + ติดตั้ง dependencies (รวม `node-cron` ตาม Dependencies section ด้านล่างด้วย):
   ```
-  pnpm add express mqtt ioredis pg dotenv zod
-  pnpm add -D typescript @types/express @types/node ts-node nodemon
+  pnpm add express mqtt ioredis pg dotenv zod node-cron
+  pnpm add -D typescript @types/express @types/node @types/pg ts-node nodemon
   ```
-- [ ] `tsconfig.json` — strict mode, target ES2022
-- [ ] `src/index.ts` — Express app entry point
-- [ ] `.env.example`:
+- [x] `tsconfig.json` — strict mode, target ES2022 (เพิ่ม `moduleResolution: "Node10"` + `ignoreDeprecations: "6.0"` เพราะ TS เวอร์ชันที่ลงมาใหม่กว่าที่คาด)
+- [x] `src/index.ts` — Express app entry point, build + run ทดสอบผ่านจริงแล้ว
+- [x] `.env.example` — ครบตาม spec (เพิ่ม `TELEMETRY_BATCH_SIZE`/`TELEMETRY_BATCH_INTERVAL_MS` ตาม Environment Variables section ด้วย):
   ```env
   MQTT_URL=mqtt://localhost:1883
   MQTT_USERNAME=iot_gateway
@@ -142,7 +150,9 @@ export const telemetryHistory = pgTable('telemetry_history', {
   OFFLINE_TIMEOUT_SECONDS=300
   PORT=3001
   ```
-- [ ] เพิ่ม `db/schema/telemetry_history.ts` ใน **Next.js repo** + run migration
+- [x] ตรวจสอบ `db/schema/telemetry_history.ts` ใน **Next.js repo** — มีอยู่แล้วจาก Sprint ก่อน, แก้ schema (composite PK + index) เพื่อให้เป็น hypertable ได้ + push แล้ว
+- [x] hypertable — `docker-compose.yml` เปลี่ยน postgres image เป็น `timescale/timescaledb:latest-pg16`, สร้าง extension + `create_hypertable` แล้ว และ verify ผ่าน `timescaledb_information.hypertables`
+- [x] ติดตั้ง Mosquitto local สำหรับ dev — เพิ่ม service `mosquitto` ใน `docker-compose.yml` (image `eclipse-mosquitto:2`, config ที่ `mosquitto/mosquitto.conf`, `allow_anonymous true` สำหรับ dev เท่านั้น — production ใช้ ACL/auth จริงตาม Day 8)
 
 #### Day 2 — 23 มิ.ย.
 **Focus: MQTT Subscriber**
@@ -342,12 +352,15 @@ PORT=3001
 
 ## ⚠️ Gap Fix ที่ต้องทำก่อน Sprint 4 เริ่ม (ใน Next.js Repo)
 
-| งาน | ทำใน | เหตุผล |
-|---|---|---|
-| เพิ่ม `db/schema/telemetry_history.ts` | Next.js repo | Sprint 2 Day 2 Telematics API query table นี้ แต่ยังไม่มี |
-| run `pnpm db:push` | Next.js repo | สร้าง table ใน PostgreSQL |
-| run `SELECT create_hypertable(...)` | PostgreSQL | เปิด TimescaleDB compression |
-| Sprint 2 Day 2 telematics API อ่าน table จริง | Next.js repo | ตอนนี้ยัง pending อยู่ |
+| งาน | ทำใน | เหตุผล | สถานะ |
+|---|---|---|---|
+| `db/schema/telemetry_history.ts` | Next.js repo | Sprint 2 Day 2 Telematics API query table นี้ | ✅ มีอยู่แล้ว, แก้ schema (composite PK + index) ให้เป็น hypertable ได้ |
+| `postgres:16-alpine` ไม่มี TimescaleDB extension | `docker-compose.yml` | dev DB เป็น vanilla Postgres มาตลอด ไม่ใช่ TimescaleDB | ✅ เปลี่ยน image เป็น `timescale/timescaledb:latest-pg16` แล้ว |
+| run `SELECT create_hypertable(...)` | PostgreSQL | เปิด TimescaleDB partitioning | ✅ สร้างและ verify แล้ว |
+| Sync Redis TTL ระหว่าง GPS Simulator กับ Gateway contract | Next.js repo (`scripts/gps-simulator.ts`) | เดิม simulator ใช้ 30s ขัดกับ contract 300s | ✅ แก้เป็น 300s แล้ว |
+| ตัด `heading`/`temperature` ออกจาก Redis value contract | SPRINT4.md | Next.js ไม่อ่าน 2 ฟิลด์นี้ ไม่มี feature ใช้ | ✅ แก้แพลนแล้ว |
+| ติดตั้ง Mosquitto local dev | `docker-compose.yml` | ต้องมีก่อนเริ่ม Day 2 MQTT Subscriber | ✅ เพิ่ม service แล้ว, anonymous mode สำหรับ dev |
+| Sprint 2 Day 2 telematics API อ่าน table จริง | Next.js repo | เคยคิดว่ายัง pending | ✅ จริงๆใช้งานแล้วที่ `app/api/vehicles/[id]/telematics/route.ts` |
 
 ---
 

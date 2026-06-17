@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: ev_rental_go_db
     restart: unless-stopped
     environment:
@@ -19,5 +19,16 @@ services:
     ports:
       - "6379:6379"
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: ev_rental_go_mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+
 volumes:
   postgres_data:
+  mosquitto_data:

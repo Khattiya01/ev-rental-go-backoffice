@@ -83,7 +83,7 @@ async function main() {
         updated_at: new Date().toISOString(),
       }
 
-      redis.set(`vehicle:pos:${vehicleId}`, JSON.stringify(payload), 'EX', 30)
+      redis.set(`vehicle:pos:${vehicleId}`, JSON.stringify(payload), 'EX', 300)
     }
 
     console.log(`[GPS-SIM] ${new Date().toLocaleTimeString()} — updated ${positions.size} vehicles`)
