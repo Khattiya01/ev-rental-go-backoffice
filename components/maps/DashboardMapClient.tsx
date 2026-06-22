@@ -30,6 +30,7 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
   const [vehicles,    setVehicles]    = useState<Vehicle[]>(initialVehicles)
   const [zones,       setZones]       = useState<GeofenceZone[]>([])
   const [wsAlerts,    setWsAlerts]    = useState<Alert[]>([])
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
 
   // Load active geofence zones for client-side breach computation
   useEffect(() => {
@@ -89,32 +90,21 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
     return breached
   }, [vehicles, zones])
 
-  // Live battery alerts — regenerated each time vehicles state updates
-  const liveBatteryAlerts: Alert[] = useMemo(
-    () => vehicles
-      .filter(v => v.socPercent < 15)
-      .map(v => ({
-        id: `battery-${v.id}`,
-        type:      'battery_low' as const,
-        message:   `Battery Low (${v.socPercent}%) — ${v.plate}`,
-        severity:  'critical'   as const,
-        createdAt: wsConnected ? 'Live' : 'Just now',
-        href: `/fleet/vehicles/${v.id}`,
-      })),
-    [vehicles, wsConnected]
-  )
-
+  // Battery alerts come from the alerts table (written by the IoT Gateway with
+  // proper warning/critical tiers + debounce) — same source as geofence/payment alerts below.
   const allAlerts: Alert[] = useMemo(() => {
     const SEV = { critical: 0, warning: 1, info: 2 } as const
     // wsAlerts deduplicated against staticAlerts by id
     const staticIds = new Set(staticAlerts.map(a => a.id))
     const freshWsAlerts = wsAlerts.filter(a => !staticIds.has(a.id))
-    return [
-      ...liveBatteryAlerts,
-      ...freshWsAlerts,
-      ...staticAlerts.filter(a => a.type !== 'battery_low'),
-    ].sort((a, b) => SEV[a.severity] - SEV[b.severity])
-  }, [liveBatteryAlerts, staticAlerts, wsAlerts])
+    return [...freshWsAlerts, ...staticAlerts]
+      .filter(a => !resolvedIds.has(a.id))
+      .sort((a, b) => SEV[a.severity] - SEV[b.severity])
+  }, [staticAlerts, wsAlerts, resolvedIds])
+
+  const handleResolve = useCallback((id: string) => {
+    setResolvedIds(prev => new Set(prev).add(id))
+  }, [])
 
   const criticalCount = allAlerts.filter(a => a.severity === 'critical').length
   const warningCount  = allAlerts.filter(a => a.severity === 'warning').length
@@ -176,7 +166,7 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
         {allAlerts.length === 0 ? (
           <p className="text-slate-400 text-sm text-center py-8">{t('noAlerts')}</p>
         ) : (
-          <AlertFeed alerts={allAlerts} />
+          <AlertFeed alerts={allAlerts} onResolve={handleResolve} />
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,27 +23,13 @@ import { useCanWrite, useCanDelete } from '@/lib/user-context'
 // ─── Constants ────────────────────────────────────────────────
 const PAGE_SIZE = 20
 
-const BILLING_TYPE_LABEL: Record<BillingType, string> = {
-  daily: 'รายวัน',
-  monthly: 'รายเดือน',
-  one_time: 'ครั้งเดียว',
-}
 const BILLING_TYPE_COLOR: Record<BillingType, string> = {
   daily: 'bg-sky-100 text-sky-700 border-sky-200',
   monthly: 'bg-violet-100 text-violet-700 border-violet-200',
   one_time: 'bg-amber-100 text-amber-700 border-amber-200',
 }
-const STATUS_LABEL: Record<InvoiceStatus, string> = {
-  paid: 'ชำระแล้ว', pending: 'รอชำระ', overdue: 'เกินกำหนด',
-}
 
 type FilterTab = 'all' | InvoiceStatus
-const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: 'ทั้งหมด' },
-  { key: 'pending', label: 'รอชำระ' },
-  { key: 'overdue', label: 'เกินกำหนด' },
-  { key: 'paid', label: 'ชำระแล้ว' },
-]
 
 // ─── Helpers ──────────────────────────────────────────────────
 function fmt(amount: number) {
@@ -50,6 +37,7 @@ function fmt(amount: number) {
 }
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
+  const t = useTranslations('invoices.status')
   const styles: Record<InvoiceStatus, string> = {
     paid: 'bg-green-100 text-green-700 border-green-200',
     pending: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -60,7 +48,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
       {status === 'paid' && <CheckCircle2 size={11} />}
       {status === 'pending' && <Clock size={11} />}
       {status === 'overdue' && <AlertTriangle size={11} />}
-      {STATUS_LABEL[status]}
+      {t(status)}
     </span>
   )
 }
@@ -93,6 +81,7 @@ function CustomerPicker({
   value: { id: string; name: string; phone: string } | null
   onChange: (v: { id: string; name: string; phone: string } | null) => void
 }) {
+  const t = useTranslations('invoices.form')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Customer[]>([])
   const [open, setOpen] = useState(false)
@@ -147,16 +136,16 @@ function CustomerPicker({
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          placeholder="ค้นหาชื่อลูกค้า..."
+          placeholder={t('customerSearchPlaceholder')}
           className={`${inputCls} pl-9`}
         />
       </div>
       {open && (query.trim() || results.length > 0) && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden">
           {searching ? (
-            <p className="px-4 py-3 text-xs text-slate-400">กำลังค้นหา...</p>
+            <p className="px-4 py-3 text-xs text-slate-400">{t('searching')}</p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-slate-400">ไม่พบลูกค้า</p>
+            <p className="px-4 py-3 text-xs text-slate-400">{t('noCustomers')}</p>
           ) : results.map(c => (
             <button
               key={c.id}
@@ -189,6 +178,7 @@ function VehiclePicker({
   value: { id: string; plate: string; make: string; model: string } | null
   onChange: (v: { id: string; plate: string; make: string; model: string } | null) => void
 }) {
+  const t = useTranslations('invoices.form')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Vehicle[]>([])
   const [open, setOpen] = useState(false)
@@ -225,8 +215,8 @@ function VehiclePicker({
     offline: 'bg-slate-50 text-slate-400 border-slate-200',
   }
   const STATUS_LABEL: Record<string, string> = {
-    available: 'ว่าง', rented: 'กำลังเช่า', charging: 'ชาร์จ',
-    under_repair: 'ซ่อม', offline: 'ออฟไลน์',
+    available: t('vehicleStatus.available'), rented: t('vehicleStatus.rented'), charging: t('vehicleStatus.charging'),
+    under_repair: t('vehicleStatus.under_repair'), offline: t('vehicleStatus.offline'),
   }
 
   if (value) {
@@ -255,7 +245,7 @@ function VehiclePicker({
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          placeholder="ค้นหาทะเบียน / รุ่นรถ..."
+          placeholder={t('vehicleSearchPlaceholder')}
           className={`${inputCls} pl-9`}
         />
         {searching && <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
@@ -263,9 +253,9 @@ function VehiclePicker({
       {open && (query.trim() || results.length > 0) && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden">
           {searching ? (
-            <p className="px-4 py-3 text-xs text-slate-400">กำลังค้นหา...</p>
+            <p className="px-4 py-3 text-xs text-slate-400">{t('searching')}</p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-slate-400">ไม่พบรถ</p>
+            <p className="px-4 py-3 text-xs text-slate-400">{t('noVehicles')}</p>
           ) : results.map(v => (
             <button
               key={v.id}
@@ -292,24 +282,26 @@ function VehiclePicker({
 }
 
 // ─── Form modal schema (Create / Edit) ───────────────────────
-const invoiceSchema = z.object({
-  customerId: z.string().nullable(),
-  customerName: z.string().min(1, 'กรุณาเลือกลูกค้า'),
-  customerPhone: z.string(),
-  vehicleId: z.string().nullable(),
-  vehiclePlate: z.string(),
-  vehicleMake: z.string(),
-  vehicleModel: z.string(),
-  description: z.string(),
-  billingType: z.enum(['daily', 'monthly', 'one_time']),
-  amount: z.string().refine(v => {
-    const n = parseFloat(v)
-    return !isNaN(n) && n > 0
-  }, { message: 'กรุณากรอกจำนวนเงินที่ถูกต้อง (> 0)' }),
-  dueDate: z.string().min(1, 'กรุณาระบุวันครบกำหนด'),
-})
+function makeInvoiceSchema(t: (key: string) => string) {
+  return z.object({
+    customerId: z.string().nullable(),
+    customerName: z.string().min(1, t('validation.customerRequired')),
+    customerPhone: z.string(),
+    vehicleId: z.string().nullable(),
+    vehiclePlate: z.string(),
+    vehicleMake: z.string(),
+    vehicleModel: z.string(),
+    description: z.string(),
+    billingType: z.enum(['daily', 'monthly', 'one_time']),
+    amount: z.string().refine(v => {
+      const n = parseFloat(v)
+      return !isNaN(n) && n > 0
+    }, { message: t('validation.amountInvalid') }),
+    dueDate: z.string().min(1, t('validation.dueDateRequired')),
+  })
+}
 
-type InvoiceFormData = z.infer<typeof invoiceSchema>
+type InvoiceFormData = z.infer<ReturnType<typeof makeInvoiceSchema>>
 
 function InvoiceFormModal({
   invoice, onClose, onSaved,
@@ -318,7 +310,10 @@ function InvoiceFormModal({
   onClose: () => void
   onSaved: (inv: Invoice) => void
 }) {
+  const t = useTranslations('invoices.form')
+  const tBilling = useTranslations('invoices.billingType')
   const { success, error: toastError } = useToast()
+  const invoiceSchema = makeInvoiceSchema(t)
 
   const {
     register,
@@ -404,16 +399,16 @@ function InvoiceFormModal({
 
       if (res.ok) {
         const saved = await res.json() as Invoice
-        success(invoice ? 'แก้ไข Invoice เรียบร้อย' : `สร้าง Invoice ${saved.invoiceNo} เรียบร้อย`)
+        success(invoice ? t('toast.editSuccess') : t('toast.createSuccess', { invoiceNo: saved.invoiceNo }))
         onSaved(saved)
       } else {
         const errData = await res.json() as { error?: string }
-        const msg = errData.error ?? 'เกิดข้อผิดพลาด'
+        const msg = errData.error ?? t('toast.genericError')
         setError('root', { message: msg })
         toastError(msg)
       }
     } catch {
-      const msg = 'เกิดข้อผิดพลาด กรุณาลองใหม่'
+      const msg = t('toast.retryError')
       setError('root', { message: msg })
       toastError(msg)
     }
@@ -434,7 +429,7 @@ function InvoiceFormModal({
               <FileText size={15} className="text-blue-600" />
             </div>
             <h3 className="font-semibold text-slate-800">
-              {invoice ? `แก้ไข ${invoice.invoiceNo}` : 'สร้าง Invoice ใหม่'}
+              {invoice ? t('editTitle', { invoiceNo: invoice.invoiceNo }) : t('createTitle')}
             </h3>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
@@ -461,37 +456,37 @@ function InvoiceFormModal({
 
           {/* Customer picker */}
           <div>
-            <label className={labelCls}>ลูกค้า <span className="text-red-500">*</span></label>
+            <label className={labelCls}>{t('customerLabel')} <span className="text-red-500">*</span></label>
             <CustomerPicker value={selectedCustomer} onChange={handleCustomerSelect} />
             {errors.customerName && <p className={fieldErrCls}>{errors.customerName.message}</p>}
           </div>
 
           {/* Vehicle picker */}
           <div>
-            <label className={labelCls}>ทะเบียนรถ</label>
+            <label className={labelCls}>{t('vehicleLabel')}</label>
             <VehiclePicker value={selectedVehicle} onChange={handleVehicleSelect} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>ประเภทการชำระ <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('billingTypeLabel')} <span className="text-red-500">*</span></label>
               <select {...register('billingType')} className={inputCls}>
-                <option value="monthly">รายเดือน</option>
-                <option value="daily">รายวัน</option>
-                <option value="one_time">ครั้งเดียว</option>
+                <option value="monthly">{tBilling('monthly')}</option>
+                <option value="daily">{tBilling('daily')}</option>
+                <option value="one_time">{tBilling('one_time')}</option>
               </select>
             </div>
             <div className="col-span-2">
-              <label className={labelCls}>รายละเอียด</label>
+              <label className={labelCls}>{t('descriptionLabel')}</label>
               <input
                 type="text"
-                placeholder="เช่น ค่าเช่าเดือน พ.ค. 69"
+                placeholder={t('descriptionPlaceholder')}
                 {...register('description')}
                 className={inputCls}
               />
             </div>
             <div>
-              <label className={labelCls}>จำนวนเงิน (฿) <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('amountLabel')} <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 placeholder="8000"
@@ -502,7 +497,7 @@ function InvoiceFormModal({
               {errors.amount && <p className={fieldErrCls}>{errors.amount.message}</p>}
             </div>
             <div>
-              <label className={labelCls}>วันครบกำหนด <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('dueDateLabel')} <span className="text-red-500">*</span></label>
               <input
                 type="date"
                 {...register('dueDate')}
@@ -516,7 +511,7 @@ function InvoiceFormModal({
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
           <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">
-            ยกเลิก
+            {t('cancel')}
           </button>
           <button
             form="invoice-form"
@@ -524,7 +519,7 @@ function InvoiceFormModal({
             disabled={isSubmitting}
             className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-semibold transition-colors"
           >
-            {isSubmitting ? 'กำลังบันทึก...' : invoice ? 'บันทึกการแก้ไข' : 'สร้าง Invoice'}
+            {isSubmitting ? t('saving') : invoice ? t('save') : t('create')}
           </button>
         </div>
       </div>
@@ -540,6 +535,7 @@ function DeleteModal({
   onClose: () => void
   onDeleted: (id: string) => void
 }) {
+  const t = useTranslations('invoices.delete')
   const { success, error: toastError } = useToast()
   const [deleting, setDeleting] = useState(false)
 
@@ -548,14 +544,14 @@ function DeleteModal({
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`, { method: 'DELETE' })
       if (res.status === 204) {
-        success(`ลบ ${invoice.invoiceNo} เรียบร้อย`)
+        success(t('deleteSuccess', { invoiceNo: invoice.invoiceNo }))
         onDeleted(invoice.id)
       } else {
         const data = await res.json() as { error?: string }
-        toastError(data.error ?? 'เกิดข้อผิดพลาด')
+        toastError(data.error ?? t('genericError'))
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('retryError'))
     } finally {
       setDeleting(false)
     }
@@ -569,20 +565,20 @@ function DeleteModal({
             <Trash2 size={18} className="text-red-500" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800">ลบ Invoice</h3>
+            <h3 className="font-semibold text-slate-800">{t('title')}</h3>
             <p className="text-slate-500 text-sm">{invoice.invoiceNo} — {invoice.customerName}</p>
           </div>
         </div>
         <p className="text-slate-500 text-sm">
-          ยืนยันการลบ Invoice นี้? ดำเนินการนี้ไม่สามารถย้อนกลับได้
+          {t('confirmText')}
         </p>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">
-            ยกเลิก
+            {t('cancel')}
           </button>
           <button onClick={handleDelete} disabled={deleting}
             className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition-colors">
-            {deleting ? 'กำลังลบ...' : 'ยืนยันลบ'}
+            {deleting ? t('deleting') : t('confirm')}
           </button>
         </div>
       </div>
@@ -600,6 +596,8 @@ interface Summary {
 
 // ─── Main page ────────────────────────────────────────────────
 export default function InvoicesPage() {
+  const t = useTranslations('invoices')
+  const tBilling = useTranslations('invoices.billingType')
   const { error: toastError } = useToast()
   const canWrite  = useCanWrite('billing')
   const canDelete = useCanDelete('billing')
@@ -625,7 +623,7 @@ export default function InvoicesPage() {
       if (s) params.set('search', s)
       if (f !== 'all') params.set('status', f)
       const res = await fetch(`/api/invoices?${params}`)
-      if (!res.ok) { toastError('โหลดข้อมูลไม่สำเร็จ'); return }
+      if (!res.ok) { toastError(t('loadError')); return }
       const json = await res.json() as { data: Invoice[]; total: number; summary: Summary }
       setInvoiceList(json.data ?? [])
       setTotal(json.total ?? 0)
@@ -633,7 +631,7 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false)
     }
-  }, [toastError])
+  }, [toastError, t])
 
   useEffect(() => {
     const t = setTimeout(() => void doFetch(search, filter, page), 300)
@@ -654,38 +652,43 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="ใบแจ้งหนี้ & การชำระเงิน" subtitle="จัดการ Invoice และติดตามการชำระค่าเช่า">
+      <PageHeader title={t('title')} subtitle={t('subtitle')}>
         {canWrite && (
           <button
             onClick={() => setCreateOpen(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
           >
             <Plus size={16} />
-            สร้าง Invoice
+            {t('createButton')}
           </button>
         )}
       </PageHeader>
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4">
-        <SummaryCard icon={Banknote} label="เก็บได้รวม" value={`฿${fmt(summary.paidThisMonth)}`}
+        <SummaryCard icon={Banknote} label={t('cards.collected')} value={`฿${fmt(summary.paidThisMonth)}`}
           iconClass="bg-green-100 text-green-600" valueClass="text-green-700" />
-        <SummaryCard icon={Clock} label="รอชำระ" value={`${summary.pendingCount} ใบ`}
-          sub="รอการชำระเงิน"
+        <SummaryCard icon={Clock} label={t('cards.pending')} value={t('unit', { count: summary.pendingCount })}
+          sub={t('cards.pendingSub')}
           iconClass="bg-amber-100 text-amber-600" valueClass="text-amber-700" />
-        <SummaryCard icon={AlertTriangle} label="เกินกำหนด" value={`${summary.overdueCount} ใบ`}
-          sub="ต้องติดตามด่วน"
+        <SummaryCard icon={AlertTriangle} label={t('cards.overdue')} value={t('unit', { count: summary.overdueCount })}
+          sub={t('cards.overdueSub')}
           iconClass="bg-red-100 text-red-600" valueClass="text-red-700" />
-        <SummaryCard icon={Receipt} label="ยอดค้างรวม" value={`฿${fmt(summary.totalOutstanding)}`}
-          sub="pending + overdue"
+        <SummaryCard icon={Receipt} label={t('cards.outstanding')} value={`฿${fmt(summary.totalOutstanding)}`}
+          sub={t('cards.outstandingSub')}
           iconClass="bg-slate-100 text-slate-500" valueClass="text-slate-800" />
       </div>
 
       <SearchFilterBar
         search={search}
         onSearchChange={v => { setSearch(v); setPage(1) }}
-        placeholder="ค้นหาชื่อลูกค้า, เลข Invoice, ทะเบียน..."
-        filterOptions={FILTER_TABS.map(t => ({ value: t.key, label: t.label }))}
+        placeholder={t('searchPlaceholder')}
+        filterOptions={[
+          { value: 'all', label: t('filters.all') },
+          { value: 'pending', label: t('filters.pending') },
+          { value: 'overdue', label: t('filters.overdue') },
+          { value: 'paid', label: t('filters.paid') },
+        ]}
         activeFilter={filter}
         onFilterChange={v => { setFilter(v as FilterTab); setPage(1) }}
       />
@@ -695,8 +698,11 @@ export default function InvoicesPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-200">
-              {['Invoice #', 'ลูกค้า', 'ทะเบียน', 'ประเภท', 'จำนวนเงิน', 'ครบกำหนด', 'สถานะ', ''].map(h => (
-                <th key={h} className="text-left text-slate-400 text-xs font-semibold px-4 py-3.5 uppercase tracking-wider">
+              {[
+                t('columns.invoiceNo'), t('columns.customer'), t('columns.plate'), t('columns.type'),
+                t('columns.amount'), t('columns.dueDate'), t('columns.status'), '',
+              ].map((h, i) => (
+                <th key={i} className="text-left text-slate-400 text-xs font-semibold px-4 py-3.5 uppercase tracking-wider">
                   {h}
                 </th>
               ))}
@@ -716,7 +722,7 @@ export default function InvoicesPage() {
             ) : invoiceList.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center">
-                  <EmptyState icon={Receipt} title="ยังไม่มี Invoice" subtitle={'กดปุ่ม "สร้าง Invoice" เพื่อเพิ่มรายการแรก'} />
+                  <EmptyState icon={Receipt} title={t('empty')} subtitle={t('emptyHint')} />
                 </td>
               </tr>
             ) : (
@@ -746,7 +752,7 @@ export default function InvoicesPage() {
                   {/* Billing type */}
                   <td className="px-4 py-3.5">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[inv.billingType]}`}>
-                      {BILLING_TYPE_LABEL[inv.billingType]}
+                      {tBilling(inv.billingType)}
                     </span>
                   </td>
 
@@ -763,7 +769,7 @@ export default function InvoicesPage() {
                       {inv.dueDate}
                     </span>
                     {inv.status === 'overdue' && inv.daysOverdue && inv.daysOverdue > 0 && (
-                      <p className="text-red-400 text-xs">เกิน {inv.daysOverdue} วัน</p>
+                      <p className="text-red-400 text-xs">{t('overdueDays', { days: inv.daysOverdue })}</p>
                     )}
                   </td>
 
@@ -780,12 +786,12 @@ export default function InvoicesPage() {
                   {/* Actions */}
                   <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      <ActionButton variant="view" href={`/billing/invoices/${inv.id}`} icon={Eye} title="ดูใบแจ้งหนี้" />
+                      <ActionButton variant="view" href={`/billing/invoices/${inv.id}`} icon={Eye} title={t('viewTitle')} />
                       {canWrite && (
-                        <ActionButton variant="edit" onClick={() => setEditTarget(inv)} icon={Pencil} title="แก้ไข" />
+                        <ActionButton variant="edit" onClick={() => setEditTarget(inv)} icon={Pencil} title={t('editTitle')} />
                       )}
                       {canDelete && inv.status !== 'paid' && (
-                        <ActionButton variant="delete" onClick={() => setDeleteTarget(inv)} icon={Trash2} title="ลบ" />
+                        <ActionButton variant="delete" onClick={() => setDeleteTarget(inv)} icon={Trash2} title={t('deleteTitle')} />
                       )}
                     </div>
                   </td>
@@ -799,7 +805,7 @@ export default function InvoicesPage() {
           <PaginationFooter
             page={page}
             totalPages={totalPages}
-            label={`แสดง ${invoiceList.length} จาก ${total} รายการ`}
+            label={t('showing', { count: invoiceList.length, total })}
             onPageChange={setPage}
           />
         )}

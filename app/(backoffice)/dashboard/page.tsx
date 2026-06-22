@@ -28,6 +28,7 @@ async function getDashboardData() {
     overdueInvoicesList,
     reminderAlerts,
     geofenceAlerts,
+    batteryAlerts,
   ] = await Promise.all([
     db.select({ status: vehicles.status, count: count() }).from(vehicles).groupBy(vehicles.status),
     db.select({ pendingKYC: count() }).from(customers).where(eq(customers.status, 'pending_kyc')),
@@ -59,6 +60,11 @@ async function getDashboardData() {
       .where(and(eq(alertsTable.type, 'geofence_breach'), eq(alertsTable.resolved, false)))
       .orderBy(desc(alertsTable.createdAt))
       .limit(5),
+    db.select({ id: alertsTable.id, message: alertsTable.message, severity: alertsTable.severity, entityId: alertsTable.entityId, createdAt: alertsTable.createdAt })
+      .from(alertsTable)
+      .where(and(eq(alertsTable.type, 'battery_low'), eq(alertsTable.resolved, false)))
+      .orderBy(desc(alertsTable.createdAt))
+      .limit(10),
   ])
 
   const statusMap = Object.fromEntries(vehicleCounts.map(r => [r.status, Number(r.count)]))
@@ -77,9 +83,15 @@ async function getDashboardData() {
 
   const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 }
 
-  // Battery-low alerts are generated live in DashboardMapClient from WebSocket positions.
-  // This array contains only static DB-sourced alerts.
   const staticAlerts: Alert[] = [
+    ...batteryAlerts.map(a => ({
+      id: a.id,
+      type: 'battery_low' as const,
+      message: a.message,
+      severity: a.severity,
+      createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      href: `/fleet/vehicles/${a.entityId}`,
+    })),
     ...overdueInvoicesList.map(inv => ({
       id: `overdue-${inv.id}`,
       type: 'payment_overdue' as const,

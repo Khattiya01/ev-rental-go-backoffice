@@ -108,6 +108,20 @@ export interface Alert {
   href?: string
 }
 
+// Full alerts-table row, as shown on the dedicated /alerts list page — unlike
+// Alert above (used for the dashboard feed), this always maps 1:1 to a real
+// `alerts` row, so it carries `resolved` and the raw entityId/timestamp.
+export interface AlertRecord {
+  id: string
+  type: 'battery_low' | 'geofence_breach' | 'payment_reminder'
+  message: string
+  severity: AlertSeverity
+  entityId: string
+  resolved: boolean
+  createdAt: string
+  href: string
+}
+
 export interface GeofenceZone {
   id: string
   name: string

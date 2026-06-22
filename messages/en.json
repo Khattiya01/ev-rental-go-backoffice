@@ -21,6 +21,7 @@
     "kycApproval": "e-KYC Approval",
     "blacklist": "Blacklist",
     "rentals": "Rentals",
+    "alerts": "Alerts",
     "billing": "Billing",
     "invoices": "Invoices",
     "collections": "Collections",
@@ -569,6 +570,34 @@
       "reminderDisabled": "Auto reminder disabled"
     }
   },
+  "alerts": {
+    "title": "Alerts",
+    "subtitleCount": "{count} alerts",
+    "subtitleDefault": "All system alerts across the fleet",
+    "searchPlaceholder": "Search alert message...",
+    "filterAll": "All",
+    "filterUnresolved": "Unresolved",
+    "filterResolved": "Resolved",
+    "typeAll": "All types",
+    "typeBatteryLow": "Battery Low",
+    "typeGeofenceBreach": "Geofence Breach",
+    "typePaymentReminder": "Payment Reminder",
+    "columns": {
+      "severity": "Severity",
+      "type": "Type",
+      "message": "Message",
+      "createdAt": "Created",
+      "status": "Status",
+      "actions": "Action"
+    },
+    "resolved": "Resolved",
+    "unresolved": "Unresolved",
+    "resolve": "Resolve",
+    "empty": "No alerts found",
+    "emptyHint": "Try adjusting your search or filters",
+    "showing": "Showing {count} of {total}",
+    "fetchError": "Could not load alerts"
+  },
   "customers": {
     "title": "Customer Management",
     "subtitleCount": "{count} customers",
@@ -919,6 +948,258 @@
       "updated": "Contract updated successfully",
       "updateError": "Failed to update contract",
       "genericError": "An error occurred, please try again"
+    }
+  },
+  "contracts": {
+    "title": "Rental Contracts",
+    "subtitleCount": "{count} contracts total",
+    "subtitleDefault": "Manage all rental contracts",
+    "createButton": "Create Contract",
+    "loadError": "Failed to load data",
+    "searchPlaceholder": "Search contract no., customer, plate...",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "overdue": "Overdue",
+      "completed": "Completed"
+    },
+    "columns": {
+      "contractNo": "Contract No.",
+      "customer": "Customer",
+      "plate": "Plate",
+      "startDate": "Start Date",
+      "dueDate": "Due Date",
+      "dailyRate": "Daily Rate",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "overdue": "Overdue",
+      "completed": "Completed"
+    },
+    "empty": "No contracts found",
+    "emptyHint": "Try changing filters or search",
+    "showing": "Showing {count} of {total}",
+    "viewDetails": "View details",
+    "edit": "Edit"
+  },
+  "invoices": {
+    "title": "Invoices & Payments",
+    "subtitle": "Manage invoices and track rental payments",
+    "createButton": "Create Invoice",
+    "loadError": "Failed to load data",
+    "unit": "{count} invoices",
+    "cards": {
+      "collected": "Total Collected",
+      "pending": "Pending",
+      "pendingSub": "Awaiting payment",
+      "overdue": "Overdue",
+      "overdueSub": "Needs urgent follow-up",
+      "outstanding": "Total Outstanding",
+      "outstandingSub": "pending + overdue"
+    },
+    "searchPlaceholder": "Search customer, invoice no., plate...",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "paid": "Paid"
+    },
+    "columns": {
+      "invoiceNo": "Invoice #",
+      "customer": "Customer",
+      "plate": "Plate",
+      "type": "Type",
+      "amount": "Amount",
+      "dueDate": "Due",
+      "status": "Status"
+    },
+    "empty": "No invoices yet",
+    "emptyHint": "Click \"Create Invoice\" to add the first one",
+    "overdueDays": "{days} days overdue",
+    "showing": "Showing {count} of {total}",
+    "viewTitle": "View invoice",
+    "editTitle": "Edit",
+    "deleteTitle": "Delete",
+    "billingType": {
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "one_time": "One-time"
+    },
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue"
+    },
+    "form": {
+      "createTitle": "Create New Invoice",
+      "editTitle": "Edit {invoiceNo}",
+      "customerLabel": "Customer",
+      "vehicleLabel": "Vehicle Plate",
+      "billingTypeLabel": "Billing Type",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "e.g. May rental fee",
+      "amountLabel": "Amount (฿)",
+      "dueDateLabel": "Due Date",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "create": "Create Invoice",
+      "save": "Save Changes",
+      "customerSearchPlaceholder": "Search customer name...",
+      "vehicleSearchPlaceholder": "Search plate / model...",
+      "searching": "Searching...",
+      "noCustomers": "No customers found",
+      "noVehicles": "No vehicles found",
+      "vehicleStatus": {
+        "available": "Available",
+        "rented": "Rented",
+        "charging": "Charging",
+        "under_repair": "Repair",
+        "offline": "Offline"
+      },
+      "validation": {
+        "customerRequired": "Please select a customer",
+        "amountInvalid": "Please enter a valid amount (> 0)",
+        "dueDateRequired": "Please enter a due date"
+      },
+      "toast": {
+        "createSuccess": "Invoice {invoiceNo} created",
+        "editSuccess": "Invoice updated",
+        "genericError": "An error occurred",
+        "retryError": "An error occurred, please try again"
+      }
+    },
+    "delete": {
+      "title": "Delete Invoice",
+      "confirmText": "Are you sure you want to delete this invoice? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Delete",
+      "deleting": "Deleting...",
+      "deleteSuccess": "{invoiceNo} deleted",
+      "genericError": "An error occurred",
+      "retryError": "An error occurred, please try again"
+    },
+    "detail": {
+      "loadError": "Failed to load data",
+      "edit": "Edit",
+      "delete": "Delete",
+      "detailsTitle": "Invoice Details",
+      "amountDue": "Amount Due",
+      "invoiceNo": "Invoice No.",
+      "customer": "Customer",
+      "plate": "Vehicle Plate",
+      "type": "Type",
+      "note": "Note",
+      "dueDate": "Due Date",
+      "overdueDays": "({days} days overdue)",
+      "paidAt": "Paid On",
+      "relatedContract": "Related Contract",
+      "contractCardTitle": "Rental Contract",
+      "contractCardHint": "Tap to view contract details",
+      "paymentChannel": "Payment Channel",
+      "downloadQr": "Download QR",
+      "noAccount": "No account configured",
+      "setupHere": "Configure here →",
+      "amountToPay": "Amount to Pay",
+      "scanHint": "Scan with your banking app or wallet",
+      "notConfigured": "Not configured",
+      "paidBadge": "Paid",
+      "markPaid": "Confirm Paid",
+      "saving": "Saving...",
+      "markPaidHint": "Records payment time and slip (if any) together",
+      "slipTitle": "Transfer Slip",
+      "slipAlt": "Transfer slip",
+      "viewFullscreen": "View fullscreen",
+      "noSlip": "No slip attached",
+      "saveSlip": "Save Slip",
+      "slipUploadHint": "Upload the slip first, then click \"Confirm Paid\" to close the bill",
+      "slipLightboxLabel": "Slip {invoiceNo}",
+      "toast": {
+        "markPaidSuccess": "{invoiceNo} — payment recorded",
+        "slipSaveSuccess": "Slip saved",
+        "slipSaveError": "Failed to save slip",
+        "genericError": "An error occurred",
+        "retryError": "An error occurred, please try again"
+      },
+      "editModal": {
+        "title": "Edit {invoiceNo}",
+        "customerLabel": "Customer Name",
+        "plateLabel": "Vehicle Plate",
+        "platePlaceholder": "e.g. กท-1234",
+        "billingTypeLabel": "Billing Type",
+        "descriptionLabel": "Description",
+        "amountLabel": "Amount (฿)",
+        "dueDateLabel": "Due Date",
+        "cancel": "Cancel",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "validation": {
+          "customerRequired": "Please enter customer name",
+          "amountRequired": "Please enter amount",
+          "dueDateRequired": "Please enter a due date"
+        },
+        "editSuccess": "Invoice updated",
+        "genericError": "An error occurred",
+        "retryError": "An error occurred, please try again"
+      }
+    }
+  },
+  "permissionsSettings": {
+    "title": "Role Permissions Matrix",
+    "subtitle": "Define access rights for each part of the system by user role",
+    "save": "Save",
+    "saving": "Saving...",
+    "onlySuperAdmin": "Only Super Admin can edit permissions",
+    "resourceCol": "Resource / Covered Pages",
+    "perms": {
+      "read": "View",
+      "write": "Edit",
+      "delete": "Delete"
+    },
+    "soon": "Soon",
+    "legend": {
+      "has": "✓ = Allowed",
+      "hasNot": "☐ = Not allowed",
+      "note": "Enabling \"Edit\" or \"Delete\" automatically enables \"View\""
+    },
+    "resources": {
+      "vehicles": "Vehicles",
+      "customers": "Customers",
+      "contracts": "Contracts",
+      "billing": "Billing",
+      "maintenance": "Maintenance",
+      "reports": "Reports & Dashboard",
+      "settings": "System Settings"
+    },
+    "toast": {
+      "loadError": "Failed to load permissions",
+      "saveSuccess": "Permissions saved successfully",
+      "saveError": "Failed to save",
+      "retryError": "An error occurred, please try again"
+    }
+  },
+  "paymentSettings": {
+    "title": "Payment Account",
+    "subtitle": "This information is used to generate the QR code on invoices",
+    "cardSubtitle": "Phone number or national ID linked to PromptPay",
+    "idLabel": "Phone / National ID",
+    "idPlaceholder": "0812345678",
+    "idHint": "Mobile number or national ID linked to PromptPay",
+    "nameLabel": "Account Name",
+    "namePlaceholder": "Full name",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "savedNote": "✓ Saved successfully",
+    "validation": {
+      "idRequired": "Please enter phone or national ID",
+      "nameRequired": "Please enter account name"
+    },
+    "toast": {
+      "saveSuccess": "Settings saved",
+      "saveError": "Failed to save",
+      "retryError": "An error occurred, please try again"
     }
   }
 }

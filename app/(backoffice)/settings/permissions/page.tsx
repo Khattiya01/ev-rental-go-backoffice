@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Shield, Loader2, Save, Lock } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import PageHeader from '@/components/ui/page-header'
@@ -18,78 +19,71 @@ const ROLES: { role: AdminRole; label: string; color: string }[] = [
   { role: 'viewer',      label: 'Viewer',      color: 'bg-slate-100 text-slate-600' },
 ]
 
-type PageEntry = { path: string; label: string; soon?: true }
+type PageEntry = { path: string; soon?: true }
 
-const RESOURCES: { resource: Resource; label: string; icon: string; pages: PageEntry[] }[] = [
+const RESOURCES: { resource: Resource; icon: string; pages: PageEntry[] }[] = [
   {
     resource: 'vehicles',
-    label: 'ยานพาหนะ',
     icon: '🚗',
     pages: [
-      { path: '/fleet/vehicles',   label: 'รายการยานพาหนะ' },
-      { path: '/fleet/map',        label: 'Live Map',       soon: true },
-      { path: '/fleet/geofencing', label: 'Geofencing',     soon: true },
+      { path: '/fleet/vehicles' },
+      { path: '/fleet/map',        soon: true },
+      { path: '/fleet/geofencing', soon: true },
     ],
   },
   {
     resource: 'customers',
-    label: 'ลูกค้า',
     icon: '👤',
     pages: [
-      { path: '/customers',          label: 'รายการลูกค้า' },
-      { path: '/customers/kyc',      label: 'อนุมัติ KYC',   soon: true },
-      { path: '/customers/blacklist',label: 'Blacklist' },
+      { path: '/customers' },
+      { path: '/customers/kyc',      soon: true },
+      { path: '/customers/blacklist' },
     ],
   },
   {
     resource: 'contracts',
-    label: 'สัญญา',
     icon: '📋',
     pages: [
-      { path: '/contracts', label: 'สัญญาเช่าทั้งหมด' },
+      { path: '/contracts' },
     ],
   },
   {
     resource: 'billing',
-    label: 'การเงิน',
     icon: '💰',
     pages: [
-      { path: '/billing/invoices', label: 'ใบแจ้งหนี้' },
-      { path: '/billing/overdue',  label: 'ติดตามหนี้' },
+      { path: '/billing/invoices' },
+      { path: '/billing/overdue' },
     ],
   },
   {
     resource: 'maintenance',
-    label: 'บำรุงรักษา',
     icon: '🔧',
     pages: [
-      { path: '/maintenance', label: 'ตั๋วซ่อม / รายงานตรวจสภาพ', soon: true },
+      { path: '/maintenance', soon: true },
     ],
   },
   {
     resource: 'reports',
-    label: 'รายงาน & Dashboard',
     icon: '📊',
     pages: [
-      { path: '/dashboard', label: 'Dashboard' },
-      { path: '/reports',   label: 'รายงานการเงิน / สินทรัพย์', soon: true },
+      { path: '/dashboard' },
+      { path: '/reports',   soon: true },
     ],
   },
   {
     resource: 'settings',
-    label: 'ตั้งค่าระบบ',
     icon: '⚙️',
     pages: [
-      { path: '/settings/pricing', label: 'แผนราคา' },
-      { path: '/settings/payment', label: 'PromptPay' },
+      { path: '/settings/pricing' },
+      { path: '/settings/payment' },
     ],
   },
 ]
 
-const PERM_COLS: { key: PermKey; label: string }[] = [
-  { key: 'canRead',   label: 'ดู' },
-  { key: 'canWrite',  label: 'แก้ไข' },
-  { key: 'canDelete', label: 'ลบ' },
+const PERM_COLS: { key: PermKey; tKey: string }[] = [
+  { key: 'canRead',   tKey: 'read' },
+  { key: 'canWrite',  tKey: 'write' },
+  { key: 'canDelete', tKey: 'delete' },
 ]
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -118,6 +112,7 @@ function CheckBox({ checked, onChange, disabled }: { checked: boolean; onChange:
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PermissionsPage() {
+  const t = useTranslations('permissionsSettings')
   const { success, error: toastError } = useToast()
   const [matrix, setMatrix]     = useState<PermMatrix | null>(null)
   const [loading, setLoading]   = useState(true)
@@ -139,7 +134,7 @@ export default function PermissionsPage() {
         setIsSuperAdmin(meData.role === 'super_admin')
       }
     } catch {
-      toastError('โหลดข้อมูลสิทธิ์ไม่สำเร็จ')
+      toastError(t('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -180,12 +175,12 @@ export default function PermissionsPage() {
       })
       if (!res.ok) {
         const err = await res.json() as { error?: string }
-        toastError(err.error ?? 'บันทึกไม่สำเร็จ')
+        toastError(err.error ?? t('toast.saveError'))
         return
       }
-      success('บันทึกสิทธิ์เรียบร้อยแล้ว')
+      success(t('toast.saveSuccess'))
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('toast.retryError'))
     } finally {
       setSaving(false)
     }
@@ -195,8 +190,8 @@ export default function PermissionsPage() {
     <div className="space-y-5 pb-24">
       <div className="flex items-center justify-between">
         <PageHeader
-          title="Role Permissions Matrix"
-          subtitle="กำหนดสิทธิ์การเข้าถึงแต่ละส่วนของระบบ ตามบทบาทผู้ใช้งาน"
+          title={t('title')}
+          subtitle={t('subtitle')}
         />
         {isSuperAdmin && (
           <button
@@ -205,7 +200,7 @@ export default function PermissionsPage() {
             className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors"
           >
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            {saving ? t('saving') : t('save')}
           </button>
         )}
       </div>
@@ -213,7 +208,7 @@ export default function PermissionsPage() {
       {!isSuperAdmin && !loading && (
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-amber-700 text-sm">
           <Shield size={16} className="shrink-0" />
-          เฉพาะ Super Admin เท่านั้นที่แก้ไขสิทธิ์ได้
+          {t('onlySuperAdmin')}
         </div>
       )}
 
@@ -229,7 +224,7 @@ export default function PermissionsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium w-72">ทรัพยากร / หน้าที่ครอบคลุม</th>
+                  <th className="text-left px-5 py-3 text-slate-500 font-medium w-72">{t('resourceCol')}</th>
                   {ROLES.map(r => (
                     <th key={r.role} className="px-4 py-3" colSpan={3}>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${r.color}`}>
@@ -243,7 +238,7 @@ export default function PermissionsPage() {
                   {ROLES.map(r => (
                     PERM_COLS.map(col => (
                       <th key={`${r.role}-${col.key}`} className="px-3 py-2 text-slate-400 font-normal text-xs text-center">
-                        {col.label}
+                        {t(`perms.${col.tKey}`)}
                       </th>
                     ))
                   ))}
@@ -255,7 +250,7 @@ export default function PermissionsPage() {
                     <td className="px-5 py-3 align-top">
                       <div className="font-medium text-slate-700 mb-1.5">
                         <span className="mr-1.5">{res.icon}</span>
-                        {res.label}
+                        {t(`resources.${res.resource}`)}
                       </div>
                       <div className="flex flex-col gap-0.5">
                         {res.pages.map(p => (
@@ -264,7 +259,7 @@ export default function PermissionsPage() {
                             {p.path}
                             {p.soon && (
                               <span className="font-sans text-[9px] font-semibold text-amber-500 bg-amber-50 px-1 py-0.5 rounded">
-                                เร็วๆ นี้
+                                {t('soon')}
                               </span>
                             )}
                           </span>
@@ -292,10 +287,10 @@ export default function PermissionsPage() {
 
           {/* Legend */}
           <div className="border-t border-slate-100 px-5 py-3 flex flex-wrap gap-4 text-xs text-slate-400">
-            <span>✓ = มีสิทธิ์</span>
-            <span>☐ = ไม่มีสิทธิ์</span>
+            <span>{t('legend.has')}</span>
+            <span>{t('legend.hasNot')}</span>
             <span className="text-slate-300">|</span>
-            <span>การเปิด "แก้ไข" หรือ "ลบ" จะเปิด "ดู" อัตโนมัติ</span>
+            <span>{t('legend.note')}</span>
           </div>
         </div>
 

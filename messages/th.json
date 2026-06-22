@@ -21,6 +21,7 @@
     "kycApproval": "อนุมัติ e-KYC",
     "blacklist": "บัญชีดำ",
     "rentals": "สัญญาเช่า",
+    "alerts": "การแจ้งเตือน",
     "billing": "การเงิน",
     "invoices": "ใบแจ้งหนี้",
     "collections": "ติดตามหนี้",
@@ -569,6 +570,34 @@
       "reminderDisabled": "ปิดการแจ้งเตือนอัตโนมัติแล้ว"
     }
   },
+  "alerts": {
+    "title": "การแจ้งเตือน",
+    "subtitleCount": "{count} รายการ",
+    "subtitleDefault": "การแจ้งเตือนทั้งหมดในระบบ",
+    "searchPlaceholder": "ค้นหาข้อความแจ้งเตือน...",
+    "filterAll": "ทั้งหมด",
+    "filterUnresolved": "ยังไม่แก้ไข",
+    "filterResolved": "แก้ไขแล้ว",
+    "typeAll": "ทุกประเภท",
+    "typeBatteryLow": "แบตต่ำ",
+    "typeGeofenceBreach": "ออกนอกพื้นที่",
+    "typePaymentReminder": "ใกล้ครบกำหนด",
+    "columns": {
+      "severity": "ความรุนแรง",
+      "type": "ประเภท",
+      "message": "ข้อความ",
+      "createdAt": "วันที่แจ้งเตือน",
+      "status": "สถานะ",
+      "actions": "จัดการ"
+    },
+    "resolved": "แก้ไขแล้ว",
+    "unresolved": "ยังไม่แก้ไข",
+    "resolve": "แก้ไข",
+    "empty": "ไม่พบการแจ้งเตือน",
+    "emptyHint": "ลองเปลี่ยนคำค้นหาหรือตัวกรอง",
+    "showing": "แสดง {count} จาก {total} รายการ",
+    "fetchError": "ไม่สามารถโหลดข้อมูลการแจ้งเตือนได้"
+  },
   "customers": {
     "title": "จัดการลูกค้า",
     "subtitleCount": "{count} ลูกค้า",
@@ -919,6 +948,258 @@
       "updated": "อัปเดตสัญญาเรียบร้อย",
       "updateError": "อัปเดตสัญญาไม่สำเร็จ",
       "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    }
+  },
+  "contracts": {
+    "title": "สัญญาเช่า",
+    "subtitleCount": "{count} สัญญาทั้งหมด",
+    "subtitleDefault": "จัดการสัญญาเช่ารถทั้งหมด",
+    "createButton": "สร้างสัญญา",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ",
+    "searchPlaceholder": "ค้นหาเลขสัญญา, ลูกค้า, ทะเบียน...",
+    "filters": {
+      "all": "ทั้งหมด",
+      "active": "Active",
+      "overdue": "เกินกำหนด",
+      "completed": "เสร็จสิ้น"
+    },
+    "columns": {
+      "contractNo": "เลขสัญญา",
+      "customer": "ลูกค้า",
+      "plate": "ทะเบียน",
+      "startDate": "วันเริ่ม",
+      "dueDate": "วันครบกำหนด",
+      "dailyRate": "ค่าเช่า/วัน",
+      "status": "สถานะ",
+      "actions": "จัดการ"
+    },
+    "status": {
+      "active": "Active",
+      "overdue": "เกินกำหนด",
+      "completed": "เสร็จสิ้น"
+    },
+    "empty": "ไม่พบสัญญา",
+    "emptyHint": "ลองเปลี่ยนตัวกรองหรือคำค้นหา",
+    "showing": "แสดง {count} จาก {total} รายการ",
+    "viewDetails": "ดูรายละเอียด",
+    "edit": "แก้ไข"
+  },
+  "invoices": {
+    "title": "ใบแจ้งหนี้ & การชำระเงิน",
+    "subtitle": "จัดการ Invoice และติดตามการชำระค่าเช่า",
+    "createButton": "สร้าง Invoice",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ",
+    "unit": "{count} ใบ",
+    "cards": {
+      "collected": "เก็บได้รวม",
+      "pending": "รอชำระ",
+      "pendingSub": "รอการชำระเงิน",
+      "overdue": "เกินกำหนด",
+      "overdueSub": "ต้องติดตามด่วน",
+      "outstanding": "ยอดค้างรวม",
+      "outstandingSub": "pending + overdue"
+    },
+    "searchPlaceholder": "ค้นหาชื่อลูกค้า, เลข Invoice, ทะเบียน...",
+    "filters": {
+      "all": "ทั้งหมด",
+      "pending": "รอชำระ",
+      "overdue": "เกินกำหนด",
+      "paid": "ชำระแล้ว"
+    },
+    "columns": {
+      "invoiceNo": "Invoice #",
+      "customer": "ลูกค้า",
+      "plate": "ทะเบียน",
+      "type": "ประเภท",
+      "amount": "จำนวนเงิน",
+      "dueDate": "ครบกำหนด",
+      "status": "สถานะ"
+    },
+    "empty": "ยังไม่มี Invoice",
+    "emptyHint": "กดปุ่ม \"สร้าง Invoice\" เพื่อเพิ่มรายการแรก",
+    "overdueDays": "เกิน {days} วัน",
+    "showing": "แสดง {count} จาก {total} รายการ",
+    "viewTitle": "ดูใบแจ้งหนี้",
+    "editTitle": "แก้ไข",
+    "deleteTitle": "ลบ",
+    "billingType": {
+      "daily": "รายวัน",
+      "monthly": "รายเดือน",
+      "one_time": "ครั้งเดียว"
+    },
+    "status": {
+      "paid": "ชำระแล้ว",
+      "pending": "รอชำระ",
+      "overdue": "เกินกำหนด"
+    },
+    "form": {
+      "createTitle": "สร้าง Invoice ใหม่",
+      "editTitle": "แก้ไข {invoiceNo}",
+      "customerLabel": "ลูกค้า",
+      "vehicleLabel": "ทะเบียนรถ",
+      "billingTypeLabel": "ประเภทการชำระ",
+      "descriptionLabel": "รายละเอียด",
+      "descriptionPlaceholder": "เช่น ค่าเช่าเดือน พ.ค. 69",
+      "amountLabel": "จำนวนเงิน (฿)",
+      "dueDateLabel": "วันครบกำหนด",
+      "cancel": "ยกเลิก",
+      "saving": "กำลังบันทึก...",
+      "create": "สร้าง Invoice",
+      "save": "บันทึกการแก้ไข",
+      "customerSearchPlaceholder": "ค้นหาชื่อลูกค้า...",
+      "vehicleSearchPlaceholder": "ค้นหาทะเบียน / รุ่นรถ...",
+      "searching": "กำลังค้นหา...",
+      "noCustomers": "ไม่พบลูกค้า",
+      "noVehicles": "ไม่พบรถ",
+      "vehicleStatus": {
+        "available": "ว่าง",
+        "rented": "กำลังเช่า",
+        "charging": "ชาร์จ",
+        "under_repair": "ซ่อม",
+        "offline": "ออฟไลน์"
+      },
+      "validation": {
+        "customerRequired": "กรุณาเลือกลูกค้า",
+        "amountInvalid": "กรุณากรอกจำนวนเงินที่ถูกต้อง (> 0)",
+        "dueDateRequired": "กรุณาระบุวันครบกำหนด"
+      },
+      "toast": {
+        "createSuccess": "สร้าง Invoice {invoiceNo} เรียบร้อย",
+        "editSuccess": "แก้ไข Invoice เรียบร้อย",
+        "genericError": "เกิดข้อผิดพลาด",
+        "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+      }
+    },
+    "delete": {
+      "title": "ลบ Invoice",
+      "confirmText": "ยืนยันการลบ Invoice นี้? ดำเนินการนี้ไม่สามารถย้อนกลับได้",
+      "cancel": "ยกเลิก",
+      "confirm": "ยืนยันลบ",
+      "deleting": "กำลังลบ...",
+      "deleteSuccess": "ลบ {invoiceNo} เรียบร้อย",
+      "genericError": "เกิดข้อผิดพลาด",
+      "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    },
+    "detail": {
+      "loadError": "โหลดข้อมูลไม่สำเร็จ",
+      "edit": "แก้ไข",
+      "delete": "ลบ",
+      "detailsTitle": "รายละเอียดใบแจ้งหนี้",
+      "amountDue": "ยอดชำระ",
+      "invoiceNo": "เลขใบแจ้งหนี้",
+      "customer": "ลูกค้า",
+      "plate": "ทะเบียนรถ",
+      "type": "ประเภท",
+      "note": "หมายเหตุ",
+      "dueDate": "วันครบกำหนด",
+      "overdueDays": "(เกิน {days} วัน)",
+      "paidAt": "ชำระเมื่อ",
+      "relatedContract": "สัญญาที่เกี่ยวข้อง",
+      "contractCardTitle": "สัญญาเช่ารถ",
+      "contractCardHint": "แตะเพื่อดูรายละเอียดสัญญา",
+      "paymentChannel": "ช่องทางชำระเงิน",
+      "downloadQr": "ดาวน์โหลด QR",
+      "noAccount": "ยังไม่ตั้งค่าบัญชี",
+      "setupHere": "ตั้งค่าที่นี่ →",
+      "amountToPay": "ยอดชำระ",
+      "scanHint": "สแกนผ่านแอปธนาคารหรือ Wallet",
+      "notConfigured": "ยังไม่ตั้งค่า",
+      "paidBadge": "ชำระแล้ว",
+      "markPaid": "ยืนยันชำระแล้ว",
+      "saving": "กำลังบันทึก...",
+      "markPaidHint": "จะบันทึกเวลาชำระและสลิป (ถ้ามี) พร้อมกัน",
+      "slipTitle": "สลิปการโอน",
+      "slipAlt": "สลิปการโอน",
+      "viewFullscreen": "ดูเต็มจอ",
+      "noSlip": "ไม่มีสลิปแนบ",
+      "saveSlip": "บันทึกสลิป",
+      "slipUploadHint": "อัปโหลดสลิปก่อน แล้วกด \"ยืนยันชำระแล้ว\" เพื่อปิดบิล",
+      "slipLightboxLabel": "สลิป {invoiceNo}",
+      "toast": {
+        "markPaidSuccess": "{invoiceNo} — บันทึกการชำระเงินเรียบร้อย",
+        "slipSaveSuccess": "บันทึกสลิปเรียบร้อย",
+        "slipSaveError": "บันทึกสลิปไม่สำเร็จ",
+        "genericError": "เกิดข้อผิดพลาด",
+        "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+      },
+      "editModal": {
+        "title": "แก้ไข {invoiceNo}",
+        "customerLabel": "ชื่อลูกค้า",
+        "plateLabel": "ทะเบียนรถ",
+        "platePlaceholder": "กท-1234",
+        "billingTypeLabel": "ประเภทการชำระ",
+        "descriptionLabel": "รายละเอียด",
+        "amountLabel": "จำนวนเงิน (฿)",
+        "dueDateLabel": "วันครบกำหนด",
+        "cancel": "ยกเลิก",
+        "save": "บันทึกการแก้ไข",
+        "saving": "กำลังบันทึก...",
+        "validation": {
+          "customerRequired": "กรุณากรอกชื่อลูกค้า",
+          "amountRequired": "กรุณากรอกจำนวนเงิน",
+          "dueDateRequired": "กรุณาระบุวันครบกำหนด"
+        },
+        "editSuccess": "แก้ไข Invoice เรียบร้อย",
+        "genericError": "เกิดข้อผิดพลาด",
+        "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+      }
+    }
+  },
+  "permissionsSettings": {
+    "title": "Role Permissions Matrix",
+    "subtitle": "กำหนดสิทธิ์การเข้าถึงแต่ละส่วนของระบบ ตามบทบาทผู้ใช้งาน",
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก...",
+    "onlySuperAdmin": "เฉพาะ Super Admin เท่านั้นที่แก้ไขสิทธิ์ได้",
+    "resourceCol": "ทรัพยากร / หน้าที่ครอบคลุม",
+    "perms": {
+      "read": "ดู",
+      "write": "แก้ไข",
+      "delete": "ลบ"
+    },
+    "soon": "เร็วๆ นี้",
+    "legend": {
+      "has": "✓ = มีสิทธิ์",
+      "hasNot": "☐ = ไม่มีสิทธิ์",
+      "note": "การเปิด \"แก้ไข\" หรือ \"ลบ\" จะเปิด \"ดู\" อัตโนมัติ"
+    },
+    "resources": {
+      "vehicles": "ยานพาหนะ",
+      "customers": "ลูกค้า",
+      "contracts": "สัญญา",
+      "billing": "การเงิน",
+      "maintenance": "บำรุงรักษา",
+      "reports": "รายงาน & Dashboard",
+      "settings": "ตั้งค่าระบบ"
+    },
+    "toast": {
+      "loadError": "โหลดข้อมูลสิทธิ์ไม่สำเร็จ",
+      "saveSuccess": "บันทึกสิทธิ์เรียบร้อยแล้ว",
+      "saveError": "บันทึกไม่สำเร็จ",
+      "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    }
+  },
+  "paymentSettings": {
+    "title": "บัญชีรับโอนเงิน",
+    "subtitle": "ข้อมูลนี้จะถูกใช้สร้าง QR Code ในหน้าใบแจ้งหนี้",
+    "cardSubtitle": "เบอร์โทรหรือเลขบัตรประชาชนที่ผูก PromptPay",
+    "idLabel": "เบอร์โทร / เลขบัตรประชาชน",
+    "idPlaceholder": "0812345678",
+    "idHint": "เบอร์มือถือหรือเลขบัตรประชาชนที่ผูก PromptPay",
+    "nameLabel": "ชื่อบัญชี",
+    "namePlaceholder": "ชื่อ-นามสกุล",
+    "save": "บันทึกการตั้งค่า",
+    "saving": "กำลังบันทึก...",
+    "saved": "บันทึกแล้ว",
+    "savedNote": "✓ บันทึกเรียบร้อย",
+    "validation": {
+      "idRequired": "กรุณากรอกเบอร์หรือเลขบัตรประชาชน",
+      "nameRequired": "กรุณากรอกชื่อบัญชี"
+    },
+    "toast": {
+      "saveSuccess": "บันทึกการตั้งค่าเรียบร้อย",
+      "saveError": "บันทึกไม่สำเร็จ",
+      "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
     }
   }
 }

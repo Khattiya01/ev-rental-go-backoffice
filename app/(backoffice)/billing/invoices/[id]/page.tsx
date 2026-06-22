@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -29,16 +30,10 @@ const STATUS_STYLE: Record<InvoiceStatus, string> = {
   pending: 'bg-amber-100 text-amber-700 border-amber-200',
   overdue: 'bg-red-100 text-red-700 border-red-200',
 }
-const STATUS_LABEL: Record<InvoiceStatus, string> = {
-  paid: 'ชำระแล้ว', pending: 'รอชำระ', overdue: 'เกินกำหนด',
-}
 const STATUS_ICON: Record<InvoiceStatus, React.ReactNode> = {
   paid: <CheckCircle2 size={13} />,
   pending: <Clock size={13} />,
   overdue: <AlertTriangle size={13} />,
-}
-const BILLING_TYPE_LABEL: Record<BillingType, string> = {
-  daily: 'รายวัน', monthly: 'รายเดือน', one_time: 'ครั้งเดียว',
 }
 const BILLING_TYPE_COLOR: Record<BillingType, string> = {
   daily: 'bg-sky-100 text-sky-700 border-sky-200',
@@ -54,6 +49,8 @@ function EditModal({
   onClose: () => void
   onSaved: (inv: Invoice) => void
 }) {
+  const t = useTranslations('invoices.detail.editModal')
+  const tBilling = useTranslations('invoices.billingType')
   const { success, error: toastError } = useToast()
   const [form, setForm] = useState({
     customerName: invoice.customerName,
@@ -70,10 +67,10 @@ function EditModal({
   }
 
   async function handleSave() {
-    if (!form.customerName.trim()) { toastError('กรุณากรอกชื่อลูกค้า'); return }
+    if (!form.customerName.trim()) { toastError(t('validation.customerRequired')); return }
     const amount = parseFloat(form.amount)
-    if (isNaN(amount) || amount <= 0) { toastError('กรุณากรอกจำนวนเงิน'); return }
-    if (!form.dueDate) { toastError('กรุณาระบุวันครบกำหนด'); return }
+    if (isNaN(amount) || amount <= 0) { toastError(t('validation.amountRequired')); return }
+    if (!form.dueDate) { toastError(t('validation.dueDateRequired')); return }
 
     setSaving(true)
     try {
@@ -90,14 +87,14 @@ function EditModal({
         }),
       })
       if (res.ok) {
-        success('แก้ไข Invoice เรียบร้อย')
+        success(t('editSuccess'))
         onSaved(await res.json() as Invoice)
       } else {
         const data = await res.json() as { error?: string }
-        toastError(data.error ?? 'เกิดข้อผิดพลาด')
+        toastError(data.error ?? t('genericError'))
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('retryError'))
     } finally {
       setSaving(false)
     }
@@ -114,7 +111,7 @@ function EditModal({
             <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
               <FileText size={15} className="text-blue-600" />
             </div>
-            <h3 className="font-semibold text-slate-800">แก้ไข {invoice.invoiceNo}</h3>
+            <h3 className="font-semibold text-slate-800">{t('title', { invoiceNo: invoice.invoiceNo })}</h3>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <X size={16} />
@@ -123,39 +120,39 @@ function EditModal({
         <div className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className={labelCls}>ชื่อลูกค้า <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('customerLabel')} <span className="text-red-500">*</span></label>
               <input type="text" value={form.customerName} onChange={e => set('customerName', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>ทะเบียนรถ</label>
-              <input type="text" placeholder="กท-1234" value={form.vehiclePlate} onChange={e => set('vehiclePlate', e.target.value)} className={inputCls} />
+              <label className={labelCls}>{t('plateLabel')}</label>
+              <input type="text" placeholder={t('platePlaceholder')} value={form.vehiclePlate} onChange={e => set('vehiclePlate', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>ประเภทการชำระ</label>
+              <label className={labelCls}>{t('billingTypeLabel')}</label>
               <select value={form.billingType} onChange={e => set('billingType', e.target.value)} className={inputCls}>
-                <option value="monthly">รายเดือน</option>
-                <option value="daily">รายวัน</option>
-                <option value="one_time">ครั้งเดียว</option>
+                <option value="monthly">{tBilling('monthly')}</option>
+                <option value="daily">{tBilling('daily')}</option>
+                <option value="one_time">{tBilling('one_time')}</option>
               </select>
             </div>
             <div className="col-span-2">
-              <label className={labelCls}>รายละเอียด</label>
+              <label className={labelCls}>{t('descriptionLabel')}</label>
               <input type="text" value={form.description} onChange={e => set('description', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>จำนวนเงิน (฿) <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('amountLabel')} <span className="text-red-500">*</span></label>
               <input type="number" min="1" value={form.amount} onChange={e => set('amount', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>วันครบกำหนด <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t('dueDateLabel')} <span className="text-red-500">*</span></label>
               <input type="date" value={form.dueDate} onChange={e => set('dueDate', e.target.value)} className={inputCls} />
             </div>
           </div>
         </div>
         <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
-          <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">ยกเลิก</button>
+          <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">{t('cancel')}</button>
           <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-semibold transition-colors">
-            {saving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
       </div>
@@ -171,6 +168,7 @@ function DeleteModal({
   onClose: () => void
   onDeleted: () => void
 }) {
+  const t = useTranslations('invoices.delete')
   const { success, error: toastError } = useToast()
   const [deleting, setDeleting] = useState(false)
 
@@ -179,14 +177,14 @@ function DeleteModal({
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`, { method: 'DELETE' })
       if (res.status === 204) {
-        success(`ลบ ${invoice.invoiceNo} เรียบร้อย`)
+        success(t('deleteSuccess', { invoiceNo: invoice.invoiceNo }))
         onDeleted()
       } else {
         const data = await res.json() as { error?: string }
-        toastError(data.error ?? 'เกิดข้อผิดพลาด')
+        toastError(data.error ?? t('genericError'))
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('retryError'))
     } finally {
       setDeleting(false)
     }
@@ -200,15 +198,15 @@ function DeleteModal({
             <Trash2 size={18} className="text-red-500" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800">ลบ Invoice</h3>
+            <h3 className="font-semibold text-slate-800">{t('title')}</h3>
             <p className="text-slate-500 text-sm">{invoice.invoiceNo} — {invoice.customerName}</p>
           </div>
         </div>
-        <p className="text-slate-500 text-sm">ยืนยันการลบ Invoice นี้? ดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+        <p className="text-slate-500 text-sm">{t('confirmText')}</p>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">ยกเลิก</button>
+          <button onClick={onClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">{t('cancel')}</button>
           <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition-colors">
-            {deleting ? 'กำลังลบ...' : 'ยืนยันลบ'}
+            {deleting ? t('deleting') : t('confirm')}
           </button>
         </div>
       </div>
@@ -218,6 +216,9 @@ function DeleteModal({
 
 // ─── Main page ────────────────────────────────────────────────
 export default function InvoiceDetailPage() {
+  const t = useTranslations('invoices.detail')
+  const tBilling = useTranslations('invoices.billingType')
+  const tStatus = useTranslations('invoices.status')
   const params = useParams()
   const router = useRouter()
   const { success, error: toastError } = useToast()
@@ -268,14 +269,14 @@ export default function InvoiceDetailPage() {
     try {
       const res = await fetch(`/api/invoices/${params.id}`)
       if (res.status === 404) { router.push('/billing/invoices'); return }
-      if (!res.ok) { toastError('โหลดข้อมูลไม่สำเร็จ'); return }
+      if (!res.ok) { toastError(t('loadError')); return }
       const data = await res.json() as Invoice
       setInvoice(data)
       setSlipUrl(data.slipUrl ?? '')
     } finally {
       setLoading(false)
     }
-  }, [params.id, router, toastError])
+  }, [params.id, router, toastError, t])
 
   useEffect(() => { loadInvoice() }, [loadInvoice])
 
@@ -289,14 +290,14 @@ export default function InvoiceDetailPage() {
         body: JSON.stringify({ status: 'paid', slipUrl: slipUrl || null }),
       })
       if (res.ok) {
-        success(`${invoice.invoiceNo} — บันทึกการชำระเงินเรียบร้อย`)
+        success(t('toast.markPaidSuccess', { invoiceNo: invoice.invoiceNo }))
         setInvoice(await res.json() as Invoice)
       } else {
         const data = await res.json() as { error?: string }
-        toastError(data.error ?? 'เกิดข้อผิดพลาด')
+        toastError(data.error ?? t('toast.genericError'))
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('toast.retryError'))
     } finally {
       setPaying(false)
     }
@@ -312,13 +313,13 @@ export default function InvoiceDetailPage() {
         body: JSON.stringify({ slipUrl }),
       })
       if (res.ok) {
-        success('บันทึกสลิปเรียบร้อย')
+        success(t('toast.slipSaveSuccess'))
         setInvoice(await res.json() as Invoice)
       } else {
-        toastError('บันทึกสลิปไม่สำเร็จ')
+        toastError(t('toast.slipSaveError'))
       }
     } catch {
-      toastError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      toastError(t('toast.retryError'))
     } finally {
       setPaying(false)
     }
@@ -346,7 +347,7 @@ export default function InvoiceDetailPage() {
       >
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLE[invoice.status]}`}>
           {STATUS_ICON[invoice.status]}
-          {STATUS_LABEL[invoice.status]}
+          {tStatus(invoice.status)}
         </span>
         {canWrite && (
           <button
@@ -354,7 +355,7 @@ export default function InvoiceDetailPage() {
             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             <Pencil size={14} />
-            แก้ไข
+            {t('edit')}
           </button>
         )}
         {canDelete && invoice.status !== 'paid' && (
@@ -363,7 +364,7 @@ export default function InvoiceDetailPage() {
             className="flex items-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             <Trash2 size={14} />
-            ลบ
+            {t('delete')}
           </button>
         )}
       </PageHeader>
@@ -372,38 +373,38 @@ export default function InvoiceDetailPage() {
       <div className="grid grid-cols-5 gap-5">
         {/* ── Left: Invoice details ── */}
         <div className="col-span-2 space-y-4">
-          <SectionCard title="รายละเอียดใบแจ้งหนี้">
+          <SectionCard title={t('detailsTitle')}>
             <dl className="space-y-3">
               <div>
-                <dt className="text-slate-400 text-xs">ยอดชำระ</dt>
+                <dt className="text-slate-400 text-xs">{t('amountDue')}</dt>
                 <dd className="text-slate-800 text-2xl font-bold tabular-nums">฿{fmt(invoice.amount)}</dd>
               </div>
               <div className="border-t border-slate-100 pt-3 space-y-2.5">
-                <Row label="เลขใบแจ้งหนี้" value={<span className="font-mono font-semibold">{invoice.invoiceNo}</span>} />
-                <Row label="ลูกค้า" value={invoice.customerName} />
+                <Row label={t('invoiceNo')} value={<span className="font-mono font-semibold">{invoice.invoiceNo}</span>} />
+                <Row label={t('customer')} value={invoice.customerName} />
                 {invoice.vehiclePlate && (
-                  <Row label="ทะเบียนรถ" value={<span className="font-mono">{invoice.vehiclePlate}</span>} />
+                  <Row label={t('plate')} value={<span className="font-mono">{invoice.vehiclePlate}</span>} />
                 )}
-                <Row label="ประเภท" value={
+                <Row label={t('type')} value={
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${BILLING_TYPE_COLOR[invoice.billingType]}`}>
-                    {BILLING_TYPE_LABEL[invoice.billingType]}
+                    {tBilling(invoice.billingType)}
                   </span>
                 } />
                 {invoice.description && (
-                  <Row label="หมายเหตุ" value={invoice.description} />
+                  <Row label={t('note')} value={invoice.description} />
                 )}
               </div>
               <div className="border-t border-slate-100 pt-3 space-y-2.5">
-                <Row label="วันครบกำหนด" value={
+                <Row label={t('dueDate')} value={
                   <span className={invoice.status === 'overdue' ? 'text-red-600 font-semibold' : ''}>
                     {invoice.dueDate}
                     {invoice.status === 'overdue' && invoice.daysOverdue && (
-                      <span className="text-red-400 text-xs font-normal ml-1">(เกิน {invoice.daysOverdue} วัน)</span>
+                      <span className="text-red-400 text-xs font-normal ml-1">{t('overdueDays', { days: invoice.daysOverdue })}</span>
                     )}
                   </span>
                 } />
                 {invoice.status === 'paid' && invoice.paidAt && (
-                  <Row label="ชำระเมื่อ" value={<span className="text-green-600 font-medium">{invoice.paidAt}</span>} />
+                  <Row label={t('paidAt')} value={<span className="text-green-600 font-medium">{invoice.paidAt}</span>} />
                 )}
               </div>
             </dl>
@@ -413,7 +414,7 @@ export default function InvoiceDetailPage() {
           {invoice.contractId && (
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
               <div className="px-5 py-3 border-b border-slate-100">
-                <h2 className="text-slate-800 font-semibold text-sm">สัญญาที่เกี่ยวข้อง</h2>
+                <h2 className="text-slate-800 font-semibold text-sm">{t('relatedContract')}</h2>
               </div>
               <Link
                 href={`/contracts/${invoice.contractId}`}
@@ -423,8 +424,8 @@ export default function InvoiceDetailPage() {
                   <FileText size={18} className="text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-slate-700 text-sm font-medium">สัญญาเช่ารถ</p>
-                  <p className="text-slate-400 text-xs mt-0.5">แตะเพื่อดูรายละเอียดสัญญา</p>
+                  <p className="text-slate-700 text-sm font-medium">{t('contractCardTitle')}</p>
+                  <p className="text-slate-400 text-xs mt-0.5">{t('contractCardHint')}</p>
                 </div>
                 <Eye size={15} className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0" />
               </Link>
@@ -435,7 +436,7 @@ export default function InvoiceDetailPage() {
         {/* ── Right: Payment + Slip ── */}
         <div className="col-span-3 space-y-4">
           {/* QR + Mark Paid */}
-          <SectionCard title="ช่องทางชำระเงิน">
+          <SectionCard title={t('paymentChannel')}>
             <div className="space-y-5">
               {/* QR + PromptPay info — always visible */}
               <div className="flex gap-6 items-start">
@@ -450,7 +451,7 @@ export default function InvoiceDetailPage() {
                         <QRCode value={qrPayload} size={160} />
                         <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-700 shadow">
-                            <Download size={12} /> ดาวน์โหลด QR
+                            <Download size={12} /> {t('downloadQr')}
                           </span>
                         </div>
                       </button>
@@ -459,8 +460,8 @@ export default function InvoiceDetailPage() {
                         href="/settings"
                         className="w-[184px] h-[184px] bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                       >
-                        <p className="text-slate-400 text-xs text-center px-4">ยังไม่ตั้งค่าบัญชี</p>
-                        <p className="text-blue-500 text-xs font-medium">ตั้งค่าที่นี่ →</p>
+                        <p className="text-slate-400 text-xs text-center px-4">{t('noAccount')}</p>
+                        <p className="text-blue-500 text-xs font-medium">{t('setupHere')}</p>
                       </Link>
                     )}
                   </div>
@@ -476,7 +477,7 @@ export default function InvoiceDetailPage() {
                     disabled={!paySettings.promptpayId}
                     className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-500 disabled:pointer-events-none transition-colors group"
                   >
-                    {paySettings.promptpayId || 'ยังไม่ตั้งค่า'}
+                    {paySettings.promptpayId || t('notConfigured')}
                     {paySettings.promptpayId && (
                       copied
                         ? <CheckCheck size={11} className="text-green-500" />
@@ -484,11 +485,11 @@ export default function InvoiceDetailPage() {
                     )}
                   </button>
                   <div className="pt-2">
-                    <p className="text-slate-400 text-xs">ยอดชำระ</p>
+                    <p className="text-slate-400 text-xs">{t('amountToPay')}</p>
                     <p className="text-2xl font-bold text-slate-800 tabular-nums">฿{fmt(invoice.amount)}</p>
                   </div>
                   {invoice.status !== 'paid' && (
-                    <p className="text-slate-400 text-xs">สแกนผ่านแอปธนาคารหรือ Wallet</p>
+                    <p className="text-slate-400 text-xs">{t('scanHint')}</p>
                   )}
                 </div>
               </div>
@@ -500,7 +501,7 @@ export default function InvoiceDetailPage() {
                     <CheckCircle2 size={16} className="text-green-600" />
                   </div>
                   <div>
-                    <p className="text-green-700 font-semibold text-sm">ชำระแล้ว</p>
+                    <p className="text-green-700 font-semibold text-sm">{t('paidBadge')}</p>
                     {invoice.paidAt && <p className="text-slate-400 text-xs">{invoice.paidAt}</p>}
                   </div>
                 </div>
@@ -515,18 +516,18 @@ export default function InvoiceDetailPage() {
                     className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl text-sm font-semibold transition-colors"
                   >
                     {paying
-                      ? <><Loader2 size={15} className="animate-spin" /> กำลังบันทึก...</>
-                      : <><Check size={15} /> ยืนยันชำระแล้ว</>
+                      ? <><Loader2 size={15} className="animate-spin" /> {t('saving')}</>
+                      : <><Check size={15} /> {t('markPaid')}</>
                     }
                   </button>
-                  <p className="text-slate-400 text-xs text-center mt-2">จะบันทึกเวลาชำระและสลิป (ถ้ามี) พร้อมกัน</p>
+                  <p className="text-slate-400 text-xs text-center mt-2">{t('markPaidHint')}</p>
                 </div>
               )}
             </div>
           </SectionCard>
 
           {/* Slip */}
-          <SectionCard title="สลิปการโอน">
+          <SectionCard title={t('slipTitle')}>
 
             {invoice.status === 'paid' && invoice.slipUrl ? (
               /* Paid + has slip → show preview */
@@ -538,13 +539,13 @@ export default function InvoiceDetailPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={invoice.slipUrl}
-                    alt="สลิปการโอน"
+                    alt={t('slipAlt')}
                     className="w-full max-h-56 object-contain bg-slate-50"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <div className="bg-white rounded-lg px-3 py-2 flex items-center gap-1.5 text-sm font-medium text-slate-700">
                       <Eye size={14} />
-                      ดูเต็มจอ
+                      {t('viewFullscreen')}
                     </div>
                   </div>
                 </div>
@@ -553,7 +554,7 @@ export default function InvoiceDetailPage() {
               /* Paid but no slip */
               <div className="flex items-center gap-2 text-slate-400 py-2">
                 <FileText size={16} />
-                <p className="text-sm">ไม่มีสลิปแนบ</p>
+                <p className="text-sm">{t('noSlip')}</p>
               </div>
             ) : canWrite ? (
               /* Not paid → allow upload (admin only) */
@@ -571,10 +572,10 @@ export default function InvoiceDetailPage() {
                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-sm font-medium transition-colors"
                   >
                     {paying ? <Loader2 size={14} className="animate-spin" /> : null}
-                    บันทึกสลิป
+                    {t('saveSlip')}
                   </button>
                 )}
-                <p className="text-slate-400 text-xs">อัปโหลดสลิปก่อน แล้วกด &quot;ยืนยันชำระแล้ว&quot; เพื่อปิดบิล</p>
+                <p className="text-slate-400 text-xs">{t('slipUploadHint')}</p>
               </div>
             ) : null}
           </SectionCard>
@@ -599,7 +600,7 @@ export default function InvoiceDetailPage() {
       {slipPreview && invoice.slipUrl && (
         <ImageLightbox
           src={invoice.slipUrl}
-          label={`สลิป ${invoice.invoiceNo}`}
+          label={t('slipLightboxLabel', { invoiceNo: invoice.invoiceNo })}
           onClose={() => setSlipPreview(false)}
         />
       )}

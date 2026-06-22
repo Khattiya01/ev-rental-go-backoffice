@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { FileText, AlertCircle, CheckCircle2, Clock, Eye, Pencil, Plus } from 'lucide-react'
 import Badge from '@/components/ui/badge'
@@ -14,17 +15,18 @@ import ActionButton from '@/components/ui/action-button'
 
 const PAGE_SIZE = 20
 
-const FILTER_OPTIONS = [
-  { value: 'all', label: 'ทั้งหมด' },
-  { value: 'active', label: 'Active', dotColor: 'bg-green-400' },
-  { value: 'overdue', label: 'เกินกำหนด', dotColor: 'bg-red-400' },
-  { value: 'completed', label: 'เสร็จสิ้น', dotColor: 'bg-slate-400' },
-]
-
 type FilterTab = 'all' | ContractStatus
 
 export default function ContractsPage() {
+  const t = useTranslations('contracts')
   const canWrite = useCanWrite('contracts')
+
+  const FILTER_OPTIONS = [
+    { value: 'all', label: t('filters.all') },
+    { value: 'active', label: t('filters.active'), dotColor: 'bg-green-400' },
+    { value: 'overdue', label: t('filters.overdue'), dotColor: 'bg-red-400' },
+    { value: 'completed', label: t('filters.completed'), dotColor: 'bg-slate-400' },
+  ]
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
   const [search, setSearch] = useState('')
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -44,7 +46,7 @@ export default function ContractsPage() {
       params.set('page', String(p))
       params.set('limit', String(PAGE_SIZE))
       const res = await fetch(`/api/contracts?${params}`)
-      if (!res.ok) { setError('โหลดข้อมูลไม่สำเร็จ'); return }
+      if (!res.ok) { setError(t('loadError')); return }
       setError(null)
       const json = await res.json() as { data: Contract[]; total: number }
       setContracts(json.data ?? [])
@@ -52,7 +54,7 @@ export default function ContractsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (firstRender.current) {
@@ -68,6 +70,9 @@ export default function ContractsPage() {
 
   const badgeVariant = (s: ContractStatus) =>
     s === 'active' ? 'active' as const : s === 'overdue' ? 'overdue' as const : 'paid' as const
+
+  const statusLabel = (s: ContractStatus) =>
+    s === 'active' ? t('status.active') : s === 'overdue' ? t('status.overdue') : t('status.completed')
 
   const statusIcon = (s: ContractStatus) => {
     if (s === 'active') return <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
@@ -88,8 +93,8 @@ export default function ContractsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="สัญญาเช่า"
-        subtitle={total > 0 ? `${total} สัญญาทั้งหมด` : 'จัดการสัญญาเช่ารถทั้งหมด'}
+        title={t('title')}
+        subtitle={total > 0 ? t('subtitleCount', { count: total }) : t('subtitleDefault')}
       >
         {canWrite && (
           <Link
@@ -97,7 +102,7 @@ export default function ContractsPage() {
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
           >
             <Plus size={16} />
-            สร้างสัญญา
+            {t('createButton')}
           </Link>
         )}
       </PageHeader>
@@ -109,7 +114,7 @@ export default function ContractsPage() {
       <SearchFilterBar
         search={search}
         onSearchChange={handleSearchChange}
-        placeholder="ค้นหาเลขสัญญา, ลูกค้า, ทะเบียน..."
+        placeholder={t('searchPlaceholder')}
         filterOptions={FILTER_OPTIONS}
         activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
@@ -119,14 +124,14 @@ export default function ContractsPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-200">
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">เลขสัญญา</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">ลูกค้า</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">ทะเบียน</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">วันเริ่ม</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">วันครบกำหนด</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">ค่าเช่า/วัน</th>
-              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">สถานะ</th>
-              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">Actions</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.contractNo')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.customer')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.plate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.startDate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.dueDate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.dailyRate')}</th>
+              <th className="text-left text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.status')}</th>
+              <th className="text-right text-slate-400 text-xs font-semibold px-5 py-3.5 uppercase tracking-wider">{t('columns.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -151,7 +156,7 @@ export default function ContractsPage() {
             ) : contracts.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center">
-                  <EmptyState icon={FileText} title="ไม่พบสัญญา" subtitle="ลองเปลี่ยนตัวกรองหรือคำค้นหา" />
+                  <EmptyState icon={FileText} title={t('empty')} subtitle={t('emptyHint')} />
                 </td>
               </tr>
             ) : (
@@ -180,13 +185,13 @@ export default function ContractsPage() {
                   </td>
                   <td className="px-5 py-3.5 text-slate-700 text-sm">฿{contract.dailyRate.toLocaleString()}</td>
                   <td className="px-5 py-3.5">
-                    <Badge variant={badgeVariant(contract.status)} />
+                    <Badge variant={badgeVariant(contract.status)} label={statusLabel(contract.status)} />
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      <ActionButton variant="view" href={`/contracts/${contract.id}`} icon={Eye} title="ดูรายละเอียด" />
+                      <ActionButton variant="view" href={`/contracts/${contract.id}`} icon={Eye} title={t('viewDetails')} />
                       {canWrite && (
-                        <ActionButton variant="edit" href={`/contracts/${contract.id}/edit`} icon={Pencil} title="แก้ไข" />
+                        <ActionButton variant="edit" href={`/contracts/${contract.id}/edit`} icon={Pencil} title={t('edit')} />
                       )}
                     </div>
                   </td>
@@ -200,7 +205,7 @@ export default function ContractsPage() {
           <PaginationFooter
             page={page}
             totalPages={totalPages}
-            label={`แสดง ${contracts.length} จาก ${total} รายการ`}
+            label={t('showing', { count: contracts.length, total })}
             onPageChange={setPage}
           />
         )}

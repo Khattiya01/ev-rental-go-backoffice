@@ -12,7 +12,7 @@ import { useCanRead, useIsSuperAdmin } from '@/lib/user-context'
 import {
   LayoutDashboard, Car, Map, Locate, Users, BadgeCheck, Ban,
   FileText, Receipt, AlertTriangle, Wrench, BarChart3, UserCog, DollarSign,
-  Settings, ChevronDown, QrCode, Shield, ClipboardList,
+  Settings, ChevronDown, QrCode, Shield, ClipboardList, Bell,
   type LucideIcon
 } from 'lucide-react'
 
@@ -178,6 +178,7 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
   const canReadContracts = useCanRead('contracts')
   const canReadBilling   = useCanRead('billing')
   const canReadSettings  = useCanRead('settings')
+  const canReadReports   = useCanRead('reports')
 
   const settingsChildren: NavLeaf[] = [
     ...(isSuperAdmin    ? [{ href: '/settings/users',       label: t('users'),       icon: UserCog       }] : []),
@@ -213,6 +214,8 @@ export default function Sidebar({ user, collapsed }: SidebarProps) {
     } as NavGroup] : []),
 
     ...(canReadContracts ? [{ href: '/contracts', label: t('rentals'), icon: FileText } as NavLeaf] : []),
+
+    ...(canReadReports ? [{ href: '/alerts', label: t('alerts'), icon: Bell } as NavLeaf] : []),
 
     ...(canReadBilling ? [{
       label: t('billing'),
