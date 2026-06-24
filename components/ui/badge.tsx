@@ -1,5 +1,5 @@
 interface BadgeProps {
-  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'rejected' | 'suspended' | 'blacklisted' | 'paid' | 'overdue' | 'completed' | 'inactive' | 'critical' | 'warning' | 'battery_low' | 'payment_overdue' | 'payment_reminder' | 'geofence_breach' | 'service_due'
+  variant: 'available' | 'rented' | 'charging' | 'under_repair' | 'offline' | 'active' | 'pending' | 'pending_kyc' | 'rejected' | 'suspended' | 'blacklisted' | 'paid' | 'overdue' | 'completed' | 'inactive' | 'critical' | 'warning' | 'battery_low' | 'payment_overdue' | 'payment_reminder' | 'geofence_breach' | 'service_due' | 'vehicle_offline'
   label?: string
   className?: string
 }
@@ -27,6 +27,7 @@ const variantStyles: Record<BadgeProps['variant'], string> = {
   payment_reminder: 'bg-amber-100 text-amber-700 border-amber-200',
   geofence_breach:  'bg-orange-100 text-orange-600 border-orange-200',
   service_due:      'bg-blue-100 text-blue-600 border-blue-200',
+  vehicle_offline:  'bg-slate-100 text-slate-600 border-slate-200',
 }
 
 const variantLabels: Record<BadgeProps['variant'], string> = {
@@ -52,6 +53,7 @@ const variantLabels: Record<BadgeProps['variant'], string> = {
   payment_reminder: 'ใกล้ครบกำหนด',
   geofence_breach:  'เขตพื้นที่',
   service_due:      'ซ่อมบำรุง',
+  vehicle_offline:  'ขาดการเชื่อมต่อ',
 }
 
 export default function Badge({ variant, label, className = '' }: BadgeProps) {

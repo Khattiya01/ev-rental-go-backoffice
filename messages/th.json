@@ -582,6 +582,7 @@
     "typeBatteryLow": "แบตต่ำ",
     "typeGeofenceBreach": "ออกนอกพื้นที่",
     "typePaymentReminder": "ใกล้ครบกำหนด",
+    "typeVehicleOffline": "ขาดการเชื่อมต่อ",
     "columns": {
       "severity": "ความรุนแรง",
       "type": "ประเภท",

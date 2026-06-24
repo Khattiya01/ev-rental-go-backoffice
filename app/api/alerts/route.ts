@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 import type { AlertRecord, AlertSeverity } from '@/lib/types'
 
-const VALID_TYPES: AlertRecord['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder']
+const VALID_TYPES: AlertRecord['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder', 'vehicle_offline']
 const VALID_SEVERITIES: AlertSeverity[] = ['info', 'warning', 'critical']
 
 function hrefFor(type: AlertRecord['type'], entityId: string): string {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import {
-  BellRing, BatteryWarning, MapPinned, Receipt,
+  BellRing, BatteryWarning, MapPinned, Receipt, WifiOff,
   CheckCircle2, AlertCircle, AlertTriangle, Info,
   Eye,
 } from 'lucide-react'
@@ -38,7 +38,7 @@ export default function AlertsPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
-  const [counts, setCounts] = useState({ battery_low: 0, geofence_breach: 0, payment_reminder: 0, resolved: 0 })
+  const [counts, setCounts] = useState({ battery_low: 0, geofence_breach: 0, payment_reminder: 0, vehicle_offline: 0, resolved: 0 })
 
   const firstRender = useRef(true)
 
@@ -64,18 +64,20 @@ export default function AlertsPage() {
 
   async function fetchCounts() {
     try {
-      const [r1, r2, r3, r4] = await Promise.all([
+      const [r1, r2, r3, r4, r5] = await Promise.all([
         fetch('/api/alerts?type=battery_low&resolved=false&limit=1'),
         fetch('/api/alerts?type=geofence_breach&resolved=false&limit=1'),
         fetch('/api/alerts?type=payment_reminder&resolved=false&limit=1'),
+        fetch('/api/alerts?type=vehicle_offline&resolved=false&limit=1'),
         fetch('/api/alerts?resolved=true&limit=1'),
       ])
-      const [j1, j2, j3, j4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()])
+      const [j1, j2, j3, j4, j5] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json(), r5.json()])
       setCounts({
         battery_low: j1.total ?? 0,
         geofence_breach: j2.total ?? 0,
         payment_reminder: j3.total ?? 0,
-        resolved: j4.total ?? 0,
+        vehicle_offline: j4.total ?? 0,
+        resolved: j5.total ?? 0,
       })
     } catch { /* silent */ }
   }
@@ -136,6 +138,11 @@ export default function AlertsPage() {
       activeClass: 'bg-amber-50 border-amber-400', idleClass: 'bg-white border-slate-200 hover:border-amber-300',
       iconClass: 'text-amber-500 bg-amber-500/10', countClass: 'text-amber-700',
     },
+    {
+      key: 'vehicle_offline' as const, label: t('typeVehicleOffline'), count: counts.vehicle_offline, Icon: WifiOff,
+      activeClass: 'bg-slate-100 border-slate-400', idleClass: 'bg-white border-slate-200 hover:border-slate-300',
+      iconClass: 'text-slate-500 bg-slate-500/10', countClass: 'text-slate-700',
+    },
   ]
 
   const filterOptions = [
@@ -156,7 +163,7 @@ export default function AlertsPage() {
       )}
 
       {/* Type Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {summaryCards.map(({ key, label, count, Icon, activeClass, idleClass, iconClass, countClass }) => {
           const isActive = typeFilter === key && resolvedFilter === 'unresolved'
           return (

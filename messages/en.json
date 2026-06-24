@@ -582,6 +582,7 @@
     "typeBatteryLow": "Battery Low",
     "typeGeofenceBreach": "Geofence Breach",
     "typePaymentReminder": "Payment Reminder",
+    "typeVehicleOffline": "Vehicle Offline",
     "columns": {
       "severity": "Severity",
       "type": "Type",

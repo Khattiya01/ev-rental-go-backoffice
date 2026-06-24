@@ -29,6 +29,7 @@ async function getDashboardData() {
     reminderAlerts,
     geofenceAlerts,
     batteryAlerts,
+    offlineAlerts,
   ] = await Promise.all([
     db.select({ status: vehicles.status, count: count() }).from(vehicles).groupBy(vehicles.status),
     db.select({ pendingKYC: count() }).from(customers).where(eq(customers.status, 'pending_kyc')),
@@ -65,6 +66,11 @@ async function getDashboardData() {
       .where(and(eq(alertsTable.type, 'battery_low'), eq(alertsTable.resolved, false)))
       .orderBy(desc(alertsTable.createdAt))
       .limit(10),
+    db.select({ id: alertsTable.id, message: alertsTable.message, severity: alertsTable.severity, entityId: alertsTable.entityId, createdAt: alertsTable.createdAt })
+      .from(alertsTable)
+      .where(and(eq(alertsTable.type, 'vehicle_offline'), eq(alertsTable.resolved, false)))
+      .orderBy(desc(alertsTable.createdAt))
+      .limit(5),
   ])
 
   const statusMap = Object.fromEntries(vehicleCounts.map(r => [r.status, Number(r.count)]))
@@ -113,6 +119,14 @@ async function getDashboardData() {
       type: 'geofence_breach' as const,
       message: a.message,
       severity: 'critical' as const,
+      createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      href: `/fleet/vehicles/${a.entityId}`,
+    })),
+    ...offlineAlerts.map(a => ({
+      id: a.id,
+      type: 'vehicle_offline' as const,
+      message: a.message,
+      severity: a.severity,
       createdAt: new Date(a.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
       href: `/fleet/vehicles/${a.entityId}`,
     })),

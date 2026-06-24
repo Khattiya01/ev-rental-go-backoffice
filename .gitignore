@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# mosquitto credentials (hashed but still secret; .example is tracked, the real file is not)
+mosquitto/passwd
+
 # vercel
 .vercel
 
