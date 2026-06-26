@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { eq, inArray, and } from 'drizzle-orm'
 import { db } from '@/db'
 import { invoices, alerts } from '@/db/schema'
+import { calcDaysOverdue } from '@/lib/overdue-calc'
 
 // ─── Production setup ─────────────────────────────────────────────────────────
 //
@@ -57,23 +58,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     const nowOverdue: OverdueRow[] = []
 
     for (const inv of pending) {
-      try {
-        const due = new Date(inv.dueDate)
-        if (isNaN(due.getTime())) continue
-        due.setHours(0, 0, 0, 0)
-        const days = Math.floor((today.getTime() - due.getTime()) / 86_400_000)
-        if (days > 0) {
-          nowOverdue.push({
-            id: inv.id,
-            invoiceNo: inv.invoiceNo,
-            customerName: inv.customerName,
-            amount: inv.amount,
-            dueDate: inv.dueDate,
-            daysOverdue: days,
-          })
-        }
-      } catch {
-        // unparseable dueDate — skip
+      const days = calcDaysOverdue(inv.dueDate, today)
+      if (days !== null && days > 0) {
+        nowOverdue.push({
+          id: inv.id,
+          invoiceNo: inv.invoiceNo,
+          customerName: inv.customerName,
+          amount: inv.amount,
+          dueDate: inv.dueDate,
+          daysOverdue: days,
+        })
       }
     }
 

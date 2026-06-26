@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { invoices } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
+import { parseFlexibleDate } from '@/lib/parse-flexible-date'
 import type { InvoiceStatus, BillingType } from '@/lib/types'
 
 const VALID_STATUSES: InvoiceStatus[] = ['paid', 'pending', 'overdue']
@@ -110,15 +111,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const enriched = rows.map(row => {
     if (row.status !== 'overdue') return row
-    try {
-      const due = new Date(row.dueDate)
-      if (isNaN(due.getTime())) return row
-      due.setHours(0, 0, 0, 0)
-      const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000))
-      return { ...row, daysOverdue: days }
-    } catch {
-      return row
-    }
+    const due = parseFlexibleDate(row.dueDate)
+    if (!due) return row
+    due.setHours(0, 0, 0, 0)
+    const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000))
+    return { ...row, daysOverdue: days }
   })
 
   return NextResponse.json({

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { eq, and, desc, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, invoices } from '@/db/schema'
+import { buildMonthlyDueDate, formatDDMMYYYY, resolveDefaultMonthlyPeriod, shouldRunMonthlyInvoices } from '@/lib/invoice-period'
 
 // ─── Production setup ─────────────────────────────────────────────────────────
 //
@@ -39,18 +40,6 @@ async function getNextInvoiceNo(): Promise<number> {
   const match = last.invoiceNo.match(/INV-(\d+)/)
   if (!match) return 1
   return parseInt(match[1], 10) + 1
-}
-
-function formatDDMMYYYY(year: number, month: number, day: number): string {
-  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
-}
-
-// Extract day from DD/MM/YYYY and build due date in target month (clamp to last day)
-function buildMonthlyDueDate(contractStartDate: string, year: number, month: number): string {
-  const [dayStr] = contractStartDate.split('/')
-  const day = parseInt(dayStr, 10) || 1
-  const lastDayOfMonth = new Date(year, month, 0).getDate()
-  return formatDDMMYYYY(year, month, Math.min(day, lastDayOfMonth))
 }
 
 interface GeneratedRow {
@@ -94,6 +83,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   let monthlyTargetMonth: number
   const qYear  = searchParams.get('year')
   const qMonth = searchParams.get('month')
+  const hasExplicitOverride = qYear !== null && qMonth !== null
   if (qYear && qMonth) {
     monthlyTargetYear  = parseInt(qYear,  10)
     monthlyTargetMonth = parseInt(qMonth, 10)
@@ -101,14 +91,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: 'Invalid year/month parameters' }, { status: 400 })
     }
   } else {
-    // Default: next month
-    const next = new Date(todayYear, todayMonth, 1)
-    monthlyTargetYear  = next.getFullYear()
-    monthlyTargetMonth = next.getMonth() + 1
+    const defaultPeriod = resolveDefaultMonthlyPeriod(today)
+    monthlyTargetYear  = defaultPeriod.year
+    monthlyTargetMonth = defaultPeriod.month
   }
 
   // Monthly generation only runs on the 25th (unless year/month override given)
-  const shouldRunMonthly = todayDay === 25 || (qYear !== null && qMonth !== null)
+  const shouldRunMonthly = shouldRunMonthlyInvoices(todayDay, hasExplicitOverride)
 
   // ── Fetch all active contracts ────────────────────────────────────────────
   const activeContracts = await db

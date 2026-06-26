@@ -10,6 +10,7 @@ async function seed() {
   console.log('🌱 Seeding database...')
 
   // Clear in reverse FK order
+  await db.delete(schema.alerts)
   await db.delete(schema.invoices)
   await db.delete(schema.contracts)
   await db.delete(schema.customers)

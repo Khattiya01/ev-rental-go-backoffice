@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { eq, and, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { contracts, invoices, alerts } from '@/db/schema'
+import { parseFlexibleDate } from '@/lib/parse-flexible-date'
 
 // ─── Production setup ─────────────────────────────────────────────────────────
 //
@@ -21,20 +22,6 @@ import { contracts, invoices, alerts } from '@/db/schema'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const REMINDER_DAYS = 3
-
-// Supports both YYYY-MM-DD (HTML date input) and DD/MM/YYYY (generate-invoices cron)
-function parseDate(str: string): Date | null {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    const d = new Date(str)
-    return isNaN(d.getTime()) ? null : d
-  }
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
-    const [day, month, year] = str.split('/')
-    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    return isNaN(d.getTime()) ? null : d
-  }
-  return null
-}
 
 export async function POST(request: Request): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET
@@ -76,7 +63,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // ── Step 3: Filter to invoices due within the next REMINDER_DAYS days ─────
   const dueSoon = pendingInvoices.filter(inv => {
-    const due = parseDate(inv.dueDate)
+    const due = parseFlexibleDate(inv.dueDate)
     if (!due) return false
     due.setHours(0, 0, 0, 0)
     return due >= today && due <= threshold
@@ -109,7 +96,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   for (const inv of dueSoon) {
     if (alreadyAlerted.has(inv.id)) continue
 
-    const due = parseDate(inv.dueDate)!
+    const due = parseFlexibleDate(inv.dueDate)!
     due.setHours(0, 0, 0, 0)
     const daysUntilDue = Math.round((due.getTime() - today.getTime()) / 86_400_000)
     const daysLabel = daysUntilDue === 0 ? 'วันนี้' : `อีก ${daysUntilDue} วัน`
