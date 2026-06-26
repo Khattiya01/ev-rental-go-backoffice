@@ -4,9 +4,9 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import { logout } from '@/lib/actions/auth'
 import { setLocale } from '@/lib/actions/locale'
 import type { CurrentUser } from '@/lib/dal'
-import { mockAlerts } from '@/lib/mock-data'
-import { Search, Bell, ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
+import NotificationBell from './notification-bell'
 
 interface HeaderProps {
   user: CurrentUser | null
@@ -125,15 +125,7 @@ export default function Header({ user, onToggle, collapsed }: HeaderProps) {
           )}
         </div>
 
-        {/* Notification bell */}
-        <button className="relative text-slate-500 hover:text-slate-700 transition-colors p-1">
-          <Bell className="w-5 h-5" />
-          {mockAlerts.filter(a => a.severity === 'critical').length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
-              {mockAlerts.filter(a => a.severity === 'critical').length}
-            </span>
-          )}
-        </button>
+        <NotificationBell />
 
         {/* Profile dropdown */}
         <div className="relative" ref={dropdownRef}>

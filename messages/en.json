@@ -43,7 +43,12 @@
     "backoffice": "Backoffice",
     "searchPlaceholder": "Search...",
     "signOut": "Sign Out",
-    "switchLanguage": "ภาษาไทย"
+    "switchLanguage": "ภาษาไทย",
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No new alerts",
+      "viewAll": "View all alerts"
+    }
   },
   "dashboard": {
     "title": "Dashboard Overview",

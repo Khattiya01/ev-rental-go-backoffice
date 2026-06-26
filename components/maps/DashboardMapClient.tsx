@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import type { Vehicle, VehicleStatus, Alert, GeofenceZone } from '@/lib/types'
 import { pointInPolygon } from '@/lib/geofence-checker'
 import { useFleetSocket, type FleetSocketMessage } from '@/lib/use-fleet-socket'
+import { useLiveAlerts } from '@/lib/use-live-alerts'
 
 const DashboardMap = dynamic(() => import('@/components/maps/DashboardMap'), { ssr: false })
 
@@ -27,10 +28,8 @@ interface DashboardMapClientProps {
 
 export default function DashboardMapClient({ initialVehicles, staticAlerts }: DashboardMapClientProps) {
   const t = useTranslations('dashboard')
-  const [vehicles,    setVehicles]    = useState<Vehicle[]>(initialVehicles)
-  const [zones,       setZones]       = useState<GeofenceZone[]>([])
-  const [wsAlerts,    setWsAlerts]    = useState<Alert[]>([])
-  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles)
+  const [zones,    setZones]    = useState<GeofenceZone[]>([])
 
   // Load active geofence zones for client-side breach computation
   useEffect(() => {
@@ -40,36 +39,19 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
       .catch(() => {/* non-critical */})
   }, [])
 
-  // WebSocket — real-time position + alert updates (auto-reconnects on drop)
+  // WebSocket — real-time position updates (auto-reconnects on drop). Alert
+  // updates from the same socket are handled by useLiveAlerts below.
   const handleMessage = useCallback((msg: FleetSocketMessage) => {
-    if (msg.type === 'positions') {
-      const positions = msg.data as WsPosition[]
-      setVehicles(prev => {
-        const updates = new Map(positions.map(p => [p.vehicleId, p]))
-        return prev.map(v => {
-          const pos = updates.get(v.id)
-          if (!pos) return v
-          return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
-        })
+    if (msg.type !== 'positions') return
+    const positions = msg.data as WsPosition[]
+    setVehicles(prev => {
+      const updates = new Map(positions.map(p => [p.vehicleId, p]))
+      return prev.map(v => {
+        const pos = updates.get(v.id)
+        if (!pos) return v
+        return { ...v, lat: pos.lat, lng: pos.lng, socPercent: pos.soc, status: pos.status as VehicleStatus }
       })
-    }
-
-    if (msg.type === 'alert') {
-      const d = msg.data as { id: string; type: string; severity: string; message: string; createdAt: string; href?: string }
-      const incoming: Alert = {
-        id: d.id,
-        type: d.type as Alert['type'],
-        severity: d.severity as Alert['severity'],
-        message: d.message,
-        createdAt: new Date(d.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        href: d.href,
-      }
-      setWsAlerts(prev => {
-        // Deduplicate by id — alert may already be in staticAlerts if loaded on page refresh
-        if (prev.some(a => a.id === incoming.id)) return prev
-        return [incoming, ...prev].slice(0, 20)
-      })
-    }
+    })
   }, [])
 
   const { connected: wsConnected } = useFleetSocket(handleMessage)
@@ -92,19 +74,7 @@ export default function DashboardMapClient({ initialVehicles, staticAlerts }: Da
 
   // Battery alerts come from the alerts table (written by the IoT Gateway with
   // proper warning/critical tiers + debounce) — same source as geofence/payment alerts below.
-  const allAlerts: Alert[] = useMemo(() => {
-    const SEV = { critical: 0, warning: 1, info: 2 } as const
-    // wsAlerts deduplicated against staticAlerts by id
-    const staticIds = new Set(staticAlerts.map(a => a.id))
-    const freshWsAlerts = wsAlerts.filter(a => !staticIds.has(a.id))
-    return [...freshWsAlerts, ...staticAlerts]
-      .filter(a => !resolvedIds.has(a.id))
-      .sort((a, b) => SEV[a.severity] - SEV[b.severity])
-  }, [staticAlerts, wsAlerts, resolvedIds])
-
-  const handleResolve = useCallback((id: string) => {
-    setResolvedIds(prev => new Set(prev).add(id))
-  }, [])
+  const { alerts: allAlerts, resolve: handleResolve } = useLiveAlerts({ initialAlerts: staticAlerts })
 
   const criticalCount = allAlerts.filter(a => a.severity === 'critical').length
   const warningCount  = allAlerts.filter(a => a.severity === 'warning').length
