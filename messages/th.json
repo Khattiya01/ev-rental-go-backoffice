@@ -238,6 +238,23 @@
       "deleteError": "ไม่สามารถลบรถได้"
     }
   },
+  "fleetMap": {
+    "liveFleet": "ฝูงรถแบบเรียลไทม์",
+    "live": "ออนไลน์",
+    "offlineConnection": "ออฟไลน์",
+    "searchPlaceholder": "ค้นหาทะเบียน / รุ่น",
+    "statusFilterAll": "ทุกสถานะ",
+    "batteryFilterAll": "ทุกระดับแบตเตอรี่",
+    "batteryLow": "ต่ำ (<20%)",
+    "batteryMedium": "ปานกลาง (20–60%)",
+    "batteryHigh": "สูง (>60%)",
+    "loading": "กำลังโหลดข้อมูลรถ…",
+    "empty": "ไม่พบรถที่ตรงกับตัวกรอง",
+    "outsideZone": "ออกนอกพื้นที่",
+    "socLabel": "SoC",
+    "footerCount": "{filtered} / {total} คัน",
+    "footerBreach": "{count} คันออกนอกพื้นที่"
+  },
   "vehicleDetail": {
     "backToList": "กลับไปรายการรถ",
     "notFound": "ไม่พบรถคันนี้",

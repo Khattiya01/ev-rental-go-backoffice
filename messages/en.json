@@ -238,6 +238,23 @@
       "deleteError": "Failed to delete vehicle"
     }
   },
+  "fleetMap": {
+    "liveFleet": "Live Fleet",
+    "live": "Live",
+    "offlineConnection": "Offline",
+    "searchPlaceholder": "Search plate / model",
+    "statusFilterAll": "All Status",
+    "batteryFilterAll": "All Battery Level",
+    "batteryLow": "Low (<20%)",
+    "batteryMedium": "Medium (20–60%)",
+    "batteryHigh": "High (>60%)",
+    "loading": "Loading vehicles…",
+    "empty": "No vehicles match filters",
+    "outsideZone": "Outside zone",
+    "socLabel": "SoC",
+    "footerCount": "{filtered} / {total} vehicles",
+    "footerBreach": "{count} outside zone"
+  },
   "vehicleDetail": {
     "backToList": "Back to Vehicles",
     "notFound": "Vehicle Not Found",

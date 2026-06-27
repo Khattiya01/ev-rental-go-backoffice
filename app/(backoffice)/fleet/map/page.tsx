@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { useTranslations } from 'next-intl'
 import type { Vehicle, VehicleStatus, GeofenceZone } from '@/lib/types'
 import { pointInPolygon } from '@/lib/geofence-checker'
 import { useFleetSocket, type FleetSocketMessage } from '@/lib/use-fleet-socket'
@@ -27,6 +28,9 @@ const statusDotColor: Record<string, string> = {
 }
 
 export default function FleetMapPage() {
+  const t = useTranslations('fleetMap')
+  const tStatus = useTranslations('vehicles.status')
+
   const [vehicles,     setVehicles]     = useState<Vehicle[]>([])
   const [zones,        setZones]        = useState<GeofenceZone[]>([])
   const [search,       setSearch]       = useState('')
@@ -104,7 +108,7 @@ export default function FleetMapPage() {
       <div className="w-80 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-slate-800 font-semibold text-sm">Live Fleet</h2>
+            <h2 className="text-slate-800 font-semibold text-sm">{t('liveFleet')}</h2>
             <div className="flex items-center gap-2">
               {breachCount > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 animate-pulse">
@@ -113,14 +117,14 @@ export default function FleetMapPage() {
               )}
               <div className="flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
-                <span className="text-xs text-slate-500">{wsConnected ? 'Live' : 'Offline'}</span>
+                <span className="text-xs text-slate-500">{wsConnected ? t('live') : t('offlineConnection')}</span>
               </div>
             </div>
           </div>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search plate / model"
+            placeholder={t('searchPlaceholder')}
             className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400 mb-2"
           />
           <select
@@ -128,30 +132,30 @@ export default function FleetMapPage() {
             onChange={e => setStatusFilter(e.target.value)}
             className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none mb-2"
           >
-            <option value="">All Status</option>
-            <option value="available">Available</option>
-            <option value="rented">Rented</option>
-            <option value="charging">Charging</option>
-            <option value="under_repair">Under Repair</option>
-            <option value="offline">Offline</option>
+            <option value="">{t('statusFilterAll')}</option>
+            <option value="available">{tStatus('available')}</option>
+            <option value="rented">{tStatus('rented')}</option>
+            <option value="charging">{tStatus('charging')}</option>
+            <option value="under_repair">{tStatus('under_repair')}</option>
+            <option value="offline">{tStatus('offline')}</option>
           </select>
           <select
             value={batteryFilter}
             onChange={e => setBatteryFilter(e.target.value)}
             className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none"
           >
-            <option value="">All Battery Level</option>
-            <option value="low">Low (&lt;20%)</option>
-            <option value="medium">Medium (20–60%)</option>
-            <option value="high">High (&gt;60%)</option>
+            <option value="">{t('batteryFilterAll')}</option>
+            <option value="low">{t('batteryLow')}</option>
+            <option value="medium">{t('batteryMedium')}</option>
+            <option value="high">{t('batteryHigh')}</option>
           </select>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
           {vehicles.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center mt-6">Loading vehicles…</p>
+            <p className="text-xs text-slate-400 text-center mt-6">{t('loading')}</p>
           ) : filtered.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center mt-6">No vehicles match filters</p>
+            <p className="text-xs text-slate-400 text-center mt-6">{t('empty')}</p>
           ) : (
             filtered.map(vehicle => {
               const isBreached = breachSet.has(vehicle.id)
@@ -166,9 +170,9 @@ export default function FleetMapPage() {
                       {vehicle.make} {vehicle.model} ({vehicle.plate})
                     </p>
                     <p className="text-slate-400 text-xs">
-                      SoC: {vehicle.socPercent}%
+                      {t('socLabel')}: {vehicle.socPercent}%
                       {isBreached && (
-                        <span className="ml-2 text-red-500 font-semibold">⚠ Outside zone</span>
+                        <span className="ml-2 text-red-500 font-semibold">⚠ {t('outsideZone')}</span>
                       )}
                     </p>
                   </div>
@@ -180,9 +184,9 @@ export default function FleetMapPage() {
 
         <div className="p-3 border-t border-slate-200">
           <p className="text-xs text-slate-400 text-center">
-            {filtered.length} / {vehicles.length} vehicles
+            {t('footerCount', { filtered: filtered.length, total: vehicles.length })}
             {breachCount > 0 && (
-              <span className="ml-2 text-red-500 font-medium">· {breachCount} outside zone</span>
+              <span className="ml-2 text-red-500 font-medium">· {t('footerBreach', { count: breachCount })}</span>
             )}
           </p>
         </div>
