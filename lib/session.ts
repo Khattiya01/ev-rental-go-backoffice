@@ -36,7 +36,7 @@ export async function createSession(userId: string, role: SessionPayload['role']
   const cookieStore = await cookies()
   cookieStore.set('session', session, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NEXT_PUBLIC_PORTAL_URL?.startsWith('https') ?? false,
     expires: expiresAt,
     sameSite: 'lax',
     path: '/',
