@@ -47,6 +47,7 @@
     "react-leaflet-draw": "^0.21.0",
     "react-qr-code": "^2.0.21",
     "recharts": "^3.8.1",
+    "stripe": "^22.3.2",
     "ws": "^8.21.0",
     "zod": "^4.4.3"
   },

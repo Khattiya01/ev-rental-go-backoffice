@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { invoices } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
+import { formatThaiDate } from '@/lib/date'
 import type { InvoiceStatus } from '@/lib/types'
 
 const VALID_STATUSES: InvoiceStatus[] = ['paid', 'pending', 'overdue']
@@ -70,9 +71,7 @@ export async function PATCH(
     fields.status = raw.status as InvoiceStatus
 
     if (raw.status === 'paid') {
-      fields.paidAt = new Date().toLocaleDateString('th-TH', {
-        day: 'numeric', month: 'short', year: '2-digit',
-      })
+      fields.paidAt = formatThaiDate(new Date())
       if (typeof raw.slipUrl === 'string' && raw.slipUrl) {
         fields.slipUrl = raw.slipUrl
       }

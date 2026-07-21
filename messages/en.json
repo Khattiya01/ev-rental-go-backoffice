@@ -1122,6 +1122,13 @@
       "contractCardHint": "Tap to view contract details",
       "paymentChannel": "Payment Channel",
       "downloadQr": "Download QR",
+      "payWithStripe": "Pay with Stripe QR",
+      "stripeQrTitle": "Stripe PromptPay QR",
+      "scanToPayStripe": "Scan with your banking app to pay",
+      "waitingPayment": "Waiting for payment...",
+      "paymentSuccess": "Payment successful",
+      "qrExpired": "QR code expired",
+      "viewStripeReceipt": "View Stripe receipt",
       "noAccount": "No account configured",
       "setupHere": "Configure here →",
       "amountToPay": "Amount to Pay",
@@ -1143,7 +1150,10 @@
         "slipSaveSuccess": "Slip saved",
         "slipSaveError": "Failed to save slip",
         "genericError": "An error occurred",
-        "retryError": "An error occurred, please try again"
+        "retryError": "An error occurred, please try again",
+        "paymentIntentError": "Failed to create payment QR code. Please try again.",
+        "paymentStatusError": "Failed to check payment status.",
+        "customerEmailRequired": "Customer email is required to create a PromptPay payment. Please add an email to the customer profile first."
       },
       "editModal": {
         "title": "Edit {invoiceNo}",

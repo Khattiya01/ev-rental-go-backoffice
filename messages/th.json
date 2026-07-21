@@ -1122,6 +1122,13 @@
       "contractCardHint": "แตะเพื่อดูรายละเอียดสัญญา",
       "paymentChannel": "ช่องทางชำระเงิน",
       "downloadQr": "ดาวน์โหลด QR",
+      "payWithStripe": "ชำระผ่าน Stripe QR",
+      "stripeQrTitle": "QR พร้อมเพย์ Stripe",
+      "scanToPayStripe": "สแกนผ่านแอปธนาคารเพื่อชำระเงิน",
+      "waitingPayment": "กำลังรอการชำระเงิน...",
+      "paymentSuccess": "ชำระเงินสำเร็จ",
+      "qrExpired": "QR code หมดอายุ",
+      "viewStripeReceipt": "ดูใบเสร็จจาก Stripe",
       "noAccount": "ยังไม่ตั้งค่าบัญชี",
       "setupHere": "ตั้งค่าที่นี่ →",
       "amountToPay": "ยอดชำระ",
@@ -1143,7 +1150,10 @@
         "slipSaveSuccess": "บันทึกสลิปเรียบร้อย",
         "slipSaveError": "บันทึกสลิปไม่สำเร็จ",
         "genericError": "เกิดข้อผิดพลาด",
-        "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+        "retryError": "เกิดข้อผิดพลาด กรุณาลองใหม่",
+        "paymentIntentError": "สร้าง QR สำหรับชำระเงินไม่สำเร็จ กรุณาลองใหม่",
+        "paymentStatusError": "ตรวจสอบสถานะการชำระเงินไม่สำเร็จ",
+        "customerEmailRequired": "ต้องมีอีเมลลูกค้าเพื่อสร้างการชำระเงินพร้อมเพย์ กรุณาเพิ่มอีเมลในโปรไฟล์ลูกค้าก่อน"
       },
       "editModal": {
         "title": "แก้ไข {invoiceNo}",

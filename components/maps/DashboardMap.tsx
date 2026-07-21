@@ -27,14 +27,14 @@ function createVehicleIcon(status: string, isBreach: boolean) {
     return L.divIcon({
       className: `fleet-marker status-${status} breach-true`,
       html: `
-        <div style="position:relative;width:32px;height:32px;">
+        <div style="position:relative;width:44px;height:44px;">
           <div class="fleet-breach-ping"
                style="position:absolute;inset:0;border-radius:50%;background:rgba(239,68,68,0.35);pointer-events:none;"></div>
-          <div style="position:absolute;inset:4px;background:${color};border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.3);">🚗</div>
-          <div style="position:absolute;top:-1px;right:-1px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:1.5px solid white;display:flex;align-items:center;justify-content:center;font-size:8px;color:white;font-weight:700;line-height:1;">!</div>
+          <div style="position:absolute;inset:6px;background:${color};border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,0.3);">🚗</div>
+          <div style="position:absolute;top:-1px;right:-1px;width:16px;height:16px;background:#ef4444;border-radius:50%;border:1.5px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;font-weight:700;line-height:1;">!</div>
         </div>`,
-      iconSize:   [32, 32],
-      iconAnchor: [16, 16],
+      iconSize:   [44, 44],
+      iconAnchor: [22, 22],
     })
   }
 
@@ -44,9 +44,9 @@ function createVehicleIcon(status: string, isBreach: boolean) {
 
   return L.divIcon({
     className: `fleet-marker status-${status}`,
-    html: `<div style="${dim}background:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚗</div>`,
-    iconSize:   [24, 24],
-    iconAnchor: [12, 12],
+    html: `<div style="${dim}background:${color};width:32px;height:32px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚗</div>`,
+    iconSize:   [32, 32],
+    iconAnchor: [16, 16],
   })
 }
 

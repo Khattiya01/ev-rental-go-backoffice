@@ -6,6 +6,9 @@ export type VehicleStatus = 'available' | 'rented' | 'charging' | 'under_repair'
 export type CustomerStatus = 'pending_kyc' | 'rejected' | 'active' | 'suspended' | 'blacklisted'
 export type ContractStatus = 'active' | 'completed' | 'overdue'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
+export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'canceled' | 'expired'
+export type PaymentProvider = 'stripe'
+export type PaymentMethod = 'promptpay'
 export type BillingType = 'daily' | 'monthly' | 'one_time'
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 export type DriverType = 'Grab' | 'Bolt' | 'Private'
@@ -96,6 +99,23 @@ export interface Invoice {
   daysOverdue?: number | null
   lastContacted?: string | null
   slipUrl?: string | null
+  createdAt: string
+}
+
+export interface Payment {
+  id: string
+  invoiceId: string
+  provider: PaymentProvider
+  method: PaymentMethod
+  stripePaymentIntentId: string
+  stripeChargeId?: string | null
+  amount: number
+  currency: string
+  status: PaymentStatus
+  receiptUrl?: string | null
+  failureReason?: string | null
+  expiresAt?: string | null
+  paidAt?: string | null
   createdAt: string
 }
 
