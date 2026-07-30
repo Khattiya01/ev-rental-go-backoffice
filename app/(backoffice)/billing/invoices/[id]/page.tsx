@@ -11,18 +11,56 @@ import {
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import generatePayload from 'promptpay-qr'
-import type { Invoice, BillingType, InvoiceStatus } from '@/lib/types'
+import type { Invoice, BillingType, InvoiceStatus, PaymentStatus, PaymentMethod } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
 import ImageUploader from '@/components/ui/image-uploader'
 import ImageLightbox from '@/components/ui/image-lightbox'
 import { useCanWrite, useCanDelete } from '@/lib/user-context'
 import PageHeader from '@/components/ui/page-header'
 import SectionCard from '@/components/ui/section-card'
+import logoAsset from '@/public/images/logo.png'
 
 const PROMPTPAY_DEFAULTS = { promptpayId: '', promptpayName: '' }
 
+// Web-safe font stack for canvas text — page fonts (Geist) aren't inherited by
+// canvas, so we list system fonts with native Thai coverage across platforms:
+// "Leelawadee UI" (Windows), "Thonburi" (macOS), "Noto Sans Thai" (Linux/Chrome
+// OS, if installed). Best-effort only: falls back to whichever installed system
+// font actually covers Thai glyphs — there's no guarantee without loading a
+// dedicated webfont for canvas use.
+const SLIP_FONT_STACK = '"Segoe UI", "Leelawadee UI", "Noto Sans Thai", "Thonburi", "Sukhumvit Set", Tahoma, Arial, sans-serif'
+
 function fmt(n: number) {
   return n.toLocaleString('th-TH', { minimumFractionDigits: 0 })
+}
+
+function formatSlipExpiry(iso: string) {
+  return new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+// Same convention as formatSlipExpiry, plus year — unlike a same-day QR expiry,
+// payment history is a permanent record that can span multiple years.
+function formatPaymentDate(iso: string) {
+  return new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+    img.src = src
+  })
+}
+
+function traceRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
 }
 
 const STATUS_STYLE: Record<InvoiceStatus, string> = {
@@ -39,6 +77,28 @@ const BILLING_TYPE_COLOR: Record<BillingType, string> = {
   daily: 'bg-sky-100 text-sky-700 border-sky-200',
   monthly: 'bg-violet-100 text-violet-700 border-violet-200',
   one_time: 'bg-amber-100 text-amber-700 border-amber-200',
+}
+
+// Payment attempt status — same color tokens as STATUS_STYLE (green/amber/red),
+// plus a muted slate tone for the two terminal-but-inactive states.
+const PAYMENT_STATUS_STYLE: Record<PaymentStatus, string> = {
+  succeeded: 'bg-green-100 text-green-700 border-green-200',
+  pending: 'bg-amber-100 text-amber-700 border-amber-200',
+  failed: 'bg-red-100 text-red-700 border-red-200',
+  canceled: 'bg-slate-100 text-slate-500 border-slate-200',
+  expired: 'bg-slate-100 text-slate-500 border-slate-200',
+}
+const PAYMENT_STATUS_ICON: Record<PaymentStatus, React.ReactNode> = {
+  succeeded: <CheckCircle2 size={13} />,
+  pending: <Clock size={13} />,
+  failed: <AlertTriangle size={13} />,
+  canceled: <X size={13} />,
+  expired: <X size={13} />,
+}
+// Brand name, written as-is rather than through i18n — matches the hardcoded
+// "PromptPay" label already used in the payment channel card above.
+const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  promptpay: 'PromptPay',
 }
 
 // ─── Edit Modal ───────────────────────────────────────────────
@@ -214,6 +274,350 @@ function DeleteModal({
   )
 }
 
+// ─── Stripe QR Modal ──────────────────────────────────────────
+interface PaymentIntentData {
+  paymentIntentId: string
+  qrData: string
+  qrImagePng: string
+  expiresAt: string
+  amount: number
+}
+
+interface PaymentStatusData {
+  invoiceStatus: InvoiceStatus
+  paymentStatus: PaymentStatus | null
+  receiptUrl: string | null
+}
+
+// Mirrors the API's `payments` entry shape (Pick<Payment, ...> with
+// createdAt/paidAt pre-converted to ISO strings server-side).
+interface PaymentHistoryItem {
+  id: string
+  status: PaymentStatus
+  method: PaymentMethod
+  amount: number
+  receiptUrl: string | null
+  createdAt: string
+  paidAt: string | null
+}
+
+// Page-level payment-status snapshot (receipt link + full payment history for
+// the currently viewed invoice). Distinct from `PaymentStatusData` above —
+// that one is StripeQrModal's polling response shape — to avoid future edits
+// grabbing the wrong type despite the similar name.
+interface InvoicePaymentStatus {
+  invoiceId: string
+  receiptUrl: string | null
+  payments: PaymentHistoryItem[]
+}
+
+function StripeQrModal({
+  invoice, onClose, onRefresh,
+}: {
+  invoice: Invoice
+  onClose: () => void
+  onRefresh: () => void
+}) {
+  const t = useTranslations('invoices.detail')
+  const { success, error: toastError } = useToast()
+  const [loading, setLoading] = useState(true)
+  const [intentData, setIntentData] = useState<PaymentIntentData | null>(null)
+  const [expired, setExpired] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [intentLoadFailed, setIntentLoadFailed] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  // `isCancelled` lets the mount effect below opt out of applying state
+  // updates from a request whose owning effect instance has already been
+  // cleaned up (unmount, or React StrictMode's mount → cleanup → mount
+  // double-invoke). The retry/"generate new QR" buttons call this directly
+  // on click and omit the argument — for them cancellation never applies,
+  // so behavior there is unchanged.
+  const requestPaymentIntent = useCallback(async (isCancelled: () => boolean = () => false) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/payment-intent`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json() as PaymentIntentData
+        if (isCancelled()) return
+        setIntentData(data)
+        setExpired(false)
+        setFailed(false)
+        setIntentLoadFailed(false)
+      } else {
+        const data = await res.json() as { error?: string }
+        if (isCancelled()) return
+        toastError(data.error ?? t('toast.paymentIntentError'))
+        setIntentLoadFailed(true)
+      }
+    } catch {
+      if (isCancelled()) return
+      toastError(t('toast.retryError'))
+      setIntentLoadFailed(true)
+    } finally {
+      if (!isCancelled()) setLoading(false)
+    }
+  }, [invoice.id, t, toastError])
+
+  useEffect(() => {
+    let cancelled = false
+    requestPaymentIntent(() => cancelled)
+    return () => { cancelled = true }
+  }, [requestPaymentIntent])
+
+  // One-shot expiry timer — NOT a recurring poll. Re-armed whenever a fresh
+  // `expiresAt` comes in (initial fetch or "Generate New QR").
+  const expiresAt = intentData?.expiresAt
+  useEffect(() => {
+    if (!expiresAt) return
+    const msRemaining = new Date(expiresAt).getTime() - Date.now()
+    const timer = setTimeout(() => setExpired(true), Math.max(msRemaining, 0))
+    return () => clearTimeout(timer)
+  }, [expiresAt])
+
+  // Recurring poll — DB-backed status only (no Stripe SDK call), per contract #2.
+  // Stops re-arming once the QR expires or the payment fails: `expired`/`failed`
+  // flip from the one-shot timer above / the poll's own failed-status branch,
+  // and the guard clause below then skips creating a new interval for a dead
+  // QR. Also torn down on unmount and the instant payment succeeds.
+  useEffect(() => {
+    if (!intentData || expired || failed) return
+    let errorShown = false
+    const interval = setInterval(() => {
+      fetch(`/api/invoices/${invoice.id}/payment-status`)
+        .then(res => {
+          if (!res.ok) throw new Error('poll failed')
+          return res.json() as Promise<PaymentStatusData>
+        })
+        .then(data => {
+          if (data.invoiceStatus === 'paid' || data.paymentStatus === 'succeeded') {
+            clearInterval(interval)
+            success(t('paymentSuccess'))
+            onRefresh()
+            onClose()
+          } else if (data.paymentStatus === 'failed') {
+            clearInterval(interval)
+            setFailed(true)
+          }
+        })
+        .catch(() => {
+          if (!errorShown) {
+            errorShown = true
+            toastError(t('toast.paymentStatusError'))
+          }
+        })
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [intentData, expired, failed, invoice.id, onClose, onRefresh, success, t, toastError])
+
+  // Composites the same-origin hidden QR SVG + logo into a branded "payment
+  // slip" card. Rejects (via loadImage's onerror) on any image-load failure
+  // so downloadStripeQr()'s catch can fall back to the raw Stripe QR image.
+  async function buildBrandedSlipCanvas(invoiceNo: string, data: PaymentIntentData): Promise<HTMLCanvasElement> {
+    const svg = document.querySelector<SVGSVGElement>('#stripe-slip-qr-source')
+    if (!svg) throw new Error('QR source not mounted')
+    const svgXml = new XMLSerializer().serializeToString(svg)
+    const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgXml)}`
+
+    const [qrImg, logoImg] = await Promise.all([
+      loadImage(svgUrl),
+      loadImage(logoAsset.src),
+    ])
+
+    const width = 480
+    const height = 640
+    const headerHeight = 160
+    const cardRadius = 24
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas context unavailable')
+
+    // White rounded card background
+    traceRoundedRect(ctx, 0, 0, width, height, cardRadius)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+
+    // Clip everything below to the card's rounded outline so the header
+    // band's top corners pick up the same rounding for free.
+    ctx.save()
+    traceRoundedRect(ctx, 0, 0, width, height, cardRadius)
+    ctx.clip()
+
+    // Header band
+    ctx.fillStyle = '#4f46e5'
+    ctx.fillRect(0, 0, width, headerHeight)
+
+    // Logo (preserve aspect ratio), centered near the top of the header
+    const logoTargetHeight = 44
+    const logoRatio = logoImg.naturalWidth && logoImg.naturalHeight
+      ? logoImg.naturalWidth / logoImg.naturalHeight
+      : 1
+    const logoTargetWidth = logoTargetHeight * logoRatio
+    const logoX = (width - logoTargetWidth) / 2
+    const logoY = 28
+    ctx.drawImage(logoImg, logoX, logoY, logoTargetWidth, logoTargetHeight)
+
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+
+    // Subtitle
+    ctx.fillStyle = '#ffffff'
+    ctx.font = `500 15px ${SLIP_FONT_STACK}`
+    ctx.fillText(t('slipSubtitle'), width / 2, logoY + logoTargetHeight + 28)
+
+    // QR code
+    const qrSize = 220
+    const qrX = (width - qrSize) / 2
+    const qrY = headerHeight + 36
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
+
+    // Invoice number
+    ctx.fillStyle = '#1e293b'
+    ctx.font = `600 15px ${SLIP_FONT_STACK}`
+    ctx.fillText(invoiceNo, width / 2, qrY + qrSize + 34)
+
+    // Amount
+    ctx.fillStyle = '#16a34a'
+    ctx.font = `bold 34px ${SLIP_FONT_STACK}`
+    ctx.fillText(`฿${fmt(data.amount)}`, width / 2, qrY + qrSize + 78)
+
+    // Expiry
+    ctx.fillStyle = '#64748b'
+    ctx.font = `400 13px ${SLIP_FONT_STACK}`
+    ctx.fillText(`${t('slipExpiryLabel')}: ${formatSlipExpiry(data.expiresAt)}`, width / 2, qrY + qrSize + 108)
+
+    // Footer
+    ctx.fillStyle = '#94a3b8'
+    ctx.font = `400 12px ${SLIP_FONT_STACK}`
+    ctx.fillText(t('slipFooter'), width / 2, height - 24)
+
+    ctx.restore()
+
+    return canvas
+  }
+
+  async function downloadStripeQr() {
+    if (!intentData) return
+    setDownloading(true)
+    try {
+      const canvas = await buildBrandedSlipCanvas(invoice.invoiceNo, intentData)
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+      if (!blob) throw new Error('Failed to encode slip image')
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `payment-slip-${invoice.invoiceNo}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      window.open(intentData.qrImagePng, '_blank', 'noopener,noreferrer')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  function handleClose() {
+    onRefresh()
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center">
+              <Receipt size={15} className="text-indigo-600" />
+            </div>
+            <h3 className="font-semibold text-slate-800">{t('stripeQrTitle')}</h3>
+          </div>
+          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          {loading && !intentData ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <Loader2 size={24} className="animate-spin text-slate-400" />
+            </div>
+          ) : failed ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <p className="text-slate-500 text-sm text-center">{t('paymentFailed')}</p>
+              <button
+                onClick={() => requestPaymentIntent()}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                {t('generateNewQr')}
+              </button>
+            </div>
+          ) : expired ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <p className="text-slate-500 text-sm text-center">{t('qrExpired')}</p>
+              <button
+                onClick={() => requestPaymentIntent()}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                {t('generateNewQr')}
+              </button>
+            </div>
+          ) : intentData ? (
+            <div className="flex flex-col items-center gap-3">
+              {/* Same-origin QR source for canvas compositing (branded slip download).
+                  Hidden from view — the Stripe-hosted qrImagePng above is what's shown. */}
+              <div className="hidden">
+                <QRCode value={intentData.qrData} size={240} id="stripe-slip-qr-source" />
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={intentData.qrImagePng}
+                alt={t('stripeQrTitle')}
+                className="w-48 h-48 object-contain border-2 border-slate-200 rounded-2xl p-2"
+              />
+              <p className="text-slate-800 text-2xl font-bold tabular-nums">฿{fmt(intentData.amount)}</p>
+              <p className="text-slate-400 text-xs text-center">{t('scanToPayStripe')}</p>
+              <p className="text-slate-500 text-sm">{t('waitingPayment')}</p>
+            </div>
+          ) : intentLoadFailed ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <p className="text-slate-500 text-sm text-center">{t('intentLoadFailed')}</p>
+              <button
+                onClick={() => requestPaymentIntent()}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                {t('retryPayment')}
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
+          <button onClick={handleClose} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors">
+            {t('stripeQrCancel')}
+          </button>
+          {intentData && !expired && !failed && (
+            <button
+              onClick={downloadStripeQr}
+              disabled={downloading}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-colors"
+            >
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {downloading ? t('generatingSlip') : t('downloadQr')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────
 export default function InvoiceDetailPage() {
   const t = useTranslations('invoices.detail')
@@ -230,7 +634,9 @@ export default function InvoiceDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [slipPreview, setSlipPreview] = useState(false)
+  const [stripeModalOpen, setStripeModalOpen] = useState(false)
   const [paySettings, setPaySettings] = useState(PROMPTPAY_DEFAULTS)
+  const [paymentStatusData, setPaymentStatusData] = useState<InvoicePaymentStatus | null>(null)
 
   // Payment form state
   const [slipUrl, setSlipUrl] = useState('')
@@ -265,6 +671,30 @@ export default function InvoiceDetailPage() {
       .catch(() => { })
   }, [])
 
+  // Invoice type has no `receiptUrl`/payment-history columns (they live on
+  // `payments`, which can have multiple attempts per invoice) — pull both from
+  // the same DB-backed status endpoint the QR modal polls. Runs on every
+  // invoice load/refresh (not gated on paid status) so the Payment History
+  // section can show attempts — including failed/pending ones — regardless of
+  // the invoice's current status. Tagged with the invoice id so stale data
+  // from a previously viewed invoice can't leak into the render below while
+  // this fetch for the new one is in flight.
+  const loadPaymentStatus = useCallback(async (invoiceId: string) => {
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/payment-status`)
+      if (!res.ok) return
+      const data = await res.json() as { receiptUrl: string | null; payments: PaymentHistoryItem[] }
+      setPaymentStatusData({ invoiceId, receiptUrl: data.receiptUrl, payments: data.payments ?? [] })
+    } catch {
+      // best-effort — payment history / receipt link simply won't show
+    }
+  }, [])
+
+  // Memoized so StripeQrModal's poll `useEffect` (which depends on `onClose`)
+  // doesn't tear down and re-create its 3s interval on unrelated parent
+  // re-renders (e.g. the `copied` state toggle) while the modal is open.
+  const closeStripeModal = useCallback(() => setStripeModalOpen(false), [])
+
   const loadInvoice = useCallback(async () => {
     try {
       const res = await fetch(`/api/invoices/${params.id}`)
@@ -273,12 +703,20 @@ export default function InvoiceDetailPage() {
       const data = await res.json() as Invoice
       setInvoice(data)
       setSlipUrl(data.slipUrl ?? '')
+      void loadPaymentStatus(data.id)
     } finally {
       setLoading(false)
     }
-  }, [params.id, router, toastError, t])
+  }, [params.id, router, toastError, t, loadPaymentStatus])
 
   useEffect(() => { loadInvoice() }, [loadInvoice])
+
+  const stripeReceiptUrl = invoice && paymentStatusData?.invoiceId === invoice.id
+    ? paymentStatusData.receiptUrl
+    : null
+  const paymentHistory = invoice && paymentStatusData?.invoiceId === invoice.id
+    ? paymentStatusData.payments
+    : []
 
   async function handleMarkPaid() {
     if (!invoice) return
@@ -494,16 +932,42 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
 
+              {/* Pay with Stripe QR — unpaid, writable, and above the PromptPay minimum */}
+              {canWrite && invoice.status !== 'paid' && invoice.amount >= 10 && (
+                <div className="border-t border-slate-100 pt-4">
+                  <button
+                    onClick={() => setStripeModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    <Receipt size={15} />
+                    {t('payWithStripe')}
+                  </button>
+                </div>
+              )}
+
               {/* Paid badge */}
               {invoice.status === 'paid' && (
-                <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
-                  <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 size={16} className="text-green-600" />
+                <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={16} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-green-700 font-semibold text-sm">{t('paidBadge')}</p>
+                      {invoice.paidAt && <p className="text-slate-400 text-xs">{invoice.paidAt}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-green-700 font-semibold text-sm">{t('paidBadge')}</p>
-                    {invoice.paidAt && <p className="text-slate-400 text-xs">{invoice.paidAt}</p>}
-                  </div>
+                  {stripeReceiptUrl && (
+                    <a
+                      href={stripeReceiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors shrink-0"
+                    >
+                      <Receipt size={13} />
+                      {t('viewStripeReceipt')}
+                    </a>
+                  )}
                 </div>
               )}
 
@@ -579,6 +1043,49 @@ export default function InvoiceDetailPage() {
               </div>
             ) : null}
           </SectionCard>
+
+          {/* Payment History — Stripe payment attempts for this invoice.
+              Historical record only: omitted entirely when empty (unlike the
+              Slip card above, there's no empty-state UI here — a payment
+              in-progress state is StripeQrModal's job, not this card's). */}
+          {paymentHistory.length > 0 && (
+            <SectionCard title={t('paymentHistoryTitle')}>
+              <ul className="space-y-3">
+                {paymentHistory.map(payment => (
+                  <li
+                    key={payment.id}
+                    className="flex items-center justify-between gap-3 border-b border-slate-100 last:border-0 pb-3 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-slate-700 text-sm font-medium">
+                        {PAYMENT_METHOD_LABEL[payment.method]} · <span className="tabular-nums">฿{fmt(payment.amount)}</span>
+                      </p>
+                      <p className="text-slate-400 text-xs mt-0.5">
+                        {formatPaymentDate(payment.paidAt ?? payment.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${PAYMENT_STATUS_STYLE[payment.status]}`}>
+                        {PAYMENT_STATUS_ICON[payment.status]}
+                        {t(`paymentStatus.${payment.status}`)}
+                      </span>
+                      {payment.receiptUrl && (
+                        <a
+                          href={payment.receiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                        >
+                          <Receipt size={13} />
+                          {t('viewStripeReceipt')}
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
         </div>
       </div>
 
@@ -602,6 +1109,13 @@ export default function InvoiceDetailPage() {
           src={invoice.slipUrl}
           label={t('slipLightboxLabel', { invoiceNo: invoice.invoiceNo })}
           onClose={() => setSlipPreview(false)}
+        />
+      )}
+      {stripeModalOpen && invoice && (
+        <StripeQrModal
+          invoice={invoice}
+          onClose={closeStripeModal}
+          onRefresh={loadInvoice}
         />
       )}
     </div>

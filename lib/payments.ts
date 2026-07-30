@@ -5,6 +5,8 @@ import { db } from '@/db'
 import { payments, invoices, alerts } from '@/db/schema'
 import { getStripeClient } from '@/lib/stripe'
 import { formatThaiDate } from '@/lib/date'
+import { generateReceiptSlipPng } from '@/lib/receipt-slip'
+import { uploadFile } from '@/lib/storage'
 
 /**
  * Handles a verified `payment_intent.succeeded` webhook event.
@@ -22,6 +24,12 @@ import { formatThaiDate } from '@/lib/date'
  *
  * Best-effort receipt lookup: failures to resolve `receiptUrl` are logged and
  * swallowed, since a receipt link is not required to mark a payment as paid.
+ *
+ * After a successful write, also best-effort renders a branded receipt PNG
+ * (lib/receipt-slip.ts), uploads it, and overwrites `invoices.slipUrl`. Only
+ * the delivery that actually performed the `payments` update does this — see
+ * the `updatedPayment` gate below — so a losing concurrent/duplicate webhook
+ * delivery never redundantly regenerates or re-uploads it.
  */
 export async function markPaymentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
   const [existing] = await db
@@ -61,7 +69,10 @@ export async function markPaymentSucceeded(paymentIntent: Stripe.PaymentIntent):
   // written to payments.paidAt a few lines below, hence the different name.
   const invoicePaidAtLabel = formatThaiDate(new Date())
 
-  await db.transaction(async tx => {
+  // Returns the updated `payments` row, or `null` if a concurrent/duplicate
+  // delivery had already flipped it to `succeeded` first — used below to gate
+  // receipt slip generation so a losing delivery doesn't redundantly redo it.
+  const updatedPayment = await db.transaction(async tx => {
     const [updated] = await tx
       .update(payments)
       .set({ status: 'succeeded', receiptUrl, stripeChargeId: chargeId ?? null, paidAt: new Date() })
@@ -73,14 +84,50 @@ export async function markPaymentSucceeded(paymentIntent: Stripe.PaymentIntent):
         '[lib/payments] payments row was already succeeded by a concurrent delivery, skipping invoice update',
         paymentIntent.id
       )
-      return
+      return null
     }
 
     await tx
       .update(invoices)
       .set({ status: 'paid', paidAt: invoicePaidAtLabel })
       .where(eq(invoices.id, existing.invoiceId))
+
+    return updated
   })
+
+  if (!updatedPayment) return
+
+  // Best-effort branded receipt slip: render, upload, and overwrite
+  // `invoices.slipUrl` (Stripe payment success is authoritative — always
+  // overwrites even a previously manually-uploaded slip). Any failure here is
+  // logged and swallowed rather than thrown: the invoice is already correctly
+  // marked paid above, and the Stripe-hosted `receiptUrl` set on the payments
+  // row remains a working fallback. This must never throw — the caller
+  // (app/api/webhooks/stripe/route.ts) wraps the whole event-handling switch
+  // in one catch-all that returns HTTP 500 on any thrown error to trigger a
+  // Stripe retry, which is correct for genuine DB failures but wrong for
+  // "PNG generation failed" (would cause endless pointless retries).
+  try {
+    const [invoice] = await db
+      .select({ invoiceNo: invoices.invoiceNo })
+      .from(invoices)
+      .where(eq(invoices.id, existing.invoiceId))
+      .limit(1)
+
+    const slipPng = await generateReceiptSlipPng({
+      invoiceNo: invoice?.invoiceNo ?? existing.invoiceId,
+      amount: updatedPayment.amount,
+      paidAtLabel: invoicePaidAtLabel,
+      paymentIntentId: paymentIntent.id,
+    })
+
+    const slipFile = new File([new Uint8Array(slipPng)], `receipt-${existing.invoiceId}.png`, { type: 'image/png' })
+    const { url: slipUrl } = await uploadFile(slipFile, 'invoices')
+
+    await db.update(invoices).set({ slipUrl }).where(eq(invoices.id, existing.invoiceId))
+  } catch (err) {
+    console.error('[lib/payments] failed to generate/upload receipt slip, keeping Stripe-hosted receiptUrl as fallback', paymentIntent.id, err)
+  }
 }
 
 /**

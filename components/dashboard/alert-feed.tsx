@@ -11,7 +11,9 @@ import ResolveAlertButton from '@/components/ui/resolve-alert-button'
 // not backed by a real `alerts` row — there's nothing to PATCH, so no resolve action for it.
 // vehicle_offline is normally auto-resolved by the gateway when telemetry resumes — manual
 // resolve stays available here as a fallback if that auto-resolve doesn't fire.
-const RESOLVABLE_TYPES: Alert['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder', 'vehicle_offline']
+// payment_failed, like the other entries here (and unlike payment_overdue), is backed by a
+// real `alerts` table row, so it can be manually resolved/dismissed the same way.
+const RESOLVABLE_TYPES: Alert['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder', 'vehicle_offline', 'payment_failed']
 
 const severityConfig: Record<Alert['severity'], {
   border: string

@@ -4,12 +4,16 @@ import { db } from '@/db'
 import { invoices, payments } from '@/db/schema'
 import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
-import type { InvoiceStatus, PaymentStatus } from '@/lib/types'
+import type { InvoiceStatus, PaymentStatus, Payment } from '@/lib/types'
 
 interface PaymentStatusResponse {
   invoiceStatus: InvoiceStatus
   paymentStatus: PaymentStatus | null
   receiptUrl: string | null
+  // Additive field — full payment attempt history for this invoice, latest
+  // first. Existing consumers (e.g. the invoice detail page's polling logic)
+  // only read the fields above and keep working unmodified.
+  payments: Pick<Payment, 'id' | 'status' | 'method' | 'amount' | 'receiptUrl' | 'createdAt' | 'paidAt'>[]
 }
 
 export async function GET(
@@ -27,20 +31,30 @@ export async function GET(
     const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1)
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
 
-    // No status filter here by design — this reflects the true latest payment attempt
-    // (pending/succeeded/failed/canceled/expired), unlike the pending-only reuse-check
-    // query in payment-intent/route.ts, which serves a different purpose.
-    const [latestPayment] = await db
+    // No status filter here by design — this reflects the full payment attempt
+    // history (pending/succeeded/failed/canceled/expired), unlike the pending-only
+    // reuse-check query in payment-intent/route.ts, which serves a different purpose.
+    const paymentHistory = await db
       .select()
       .from(payments)
       .where(eq(payments.invoiceId, id))
       .orderBy(desc(payments.createdAt))
-      .limit(1)
+
+    const latestPayment = paymentHistory[0]
 
     const payload: PaymentStatusResponse = {
       invoiceStatus: invoice.status,
       paymentStatus: latestPayment?.status ?? null,
       receiptUrl: latestPayment?.receiptUrl ?? null,
+      payments: paymentHistory.map(p => ({
+        id: p.id,
+        status: p.status,
+        method: p.method,
+        amount: p.amount,
+        receiptUrl: p.receiptUrl,
+        createdAt: p.createdAt.toISOString(),
+        paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+      })),
     }
 
     return NextResponse.json(payload)

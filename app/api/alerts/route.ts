@@ -6,11 +6,13 @@ import { getCurrentUser } from '@/lib/dal'
 import { requirePermission } from '@/lib/permissions'
 import type { AlertRecord, AlertSeverity } from '@/lib/types'
 
-const VALID_TYPES: AlertRecord['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder', 'vehicle_offline']
+const VALID_TYPES: AlertRecord['type'][] = ['battery_low', 'geofence_breach', 'payment_reminder', 'payment_failed', 'vehicle_offline']
 const VALID_SEVERITIES: AlertSeverity[] = ['info', 'warning', 'critical']
 
 function hrefFor(type: AlertRecord['type'], entityId: string): string {
-  return type === 'payment_reminder' ? `/billing/invoices/${entityId}` : `/fleet/vehicles/${entityId}`
+  return type === 'payment_reminder' || type === 'payment_failed'
+    ? `/billing/invoices/${entityId}`
+    : `/fleet/vehicles/${entityId}`
 }
 
 export async function GET(request: Request): Promise<NextResponse> {

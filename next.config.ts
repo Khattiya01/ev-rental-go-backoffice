@@ -4,6 +4,11 @@ import createNextIntlPlugin from 'next-intl/plugin'
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
 const nextConfig: NextConfig = {
+  // @napi-rs/canvas ships a native .node binary (lib/receipt-slip.ts) — without
+  // this, Next bundles it into the route output and the binary's relative
+  // require path breaks, crashing any route that imports it (e.g. the Stripe
+  // webhook handler, via lib/payments.ts).
+  serverExternalPackages: ['@napi-rs/canvas'],
   // Separate build cache dir for the E2E test server (.env.test) so it can run
   // alongside a real dev server on :3000 without both writing to the same .next/.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),

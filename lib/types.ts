@@ -121,7 +121,7 @@ export interface Payment {
 
 export interface Alert {
   id: string
-  type: 'battery_low' | 'geofence_breach' | 'payment_overdue' | 'payment_reminder' | 'service_due' | 'vehicle_offline'
+  type: 'battery_low' | 'geofence_breach' | 'payment_overdue' | 'payment_reminder' | 'payment_failed' | 'service_due' | 'vehicle_offline'
   message: string
   severity: AlertSeverity
   createdAt: string
@@ -133,7 +133,7 @@ export interface Alert {
 // `alerts` row, so it carries `resolved` and the raw entityId/timestamp.
 export interface AlertRecord {
   id: string
-  type: 'battery_low' | 'geofence_breach' | 'payment_reminder' | 'vehicle_offline'
+  type: 'battery_low' | 'geofence_breach' | 'payment_reminder' | 'payment_failed' | 'vehicle_offline'
   message: string
   severity: AlertSeverity
   entityId: string
