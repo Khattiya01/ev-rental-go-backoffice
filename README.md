@@ -1,20 +1,48 @@
 # EV Rental GO — Web Backoffice
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Internal backoffice for an EV car rental business in Thailand: real-time fleet tracking, customer e-KYC,
+rental contracts, billing/invoicing (incl. Stripe/PromptPay), maintenance queues, and management reports.
+See `AGENTS.md` for the full stack/conventions and `docs/constitution.md` for the non-negotiable rules.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-pnpm dev
+docker compose up -d   # Postgres/TimescaleDB + Redis + Mosquitto
+pnpm install
+pnpm dev                # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm dev` runs the custom `server.ts` entrypoint (http + WebSocket), not plain `next dev` — needed for the
+live-fleet map. Copy `.env.example` to `.env.local` and fill in real values first.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js 16 (App Router) · TypeScript · Drizzle ORM on PostgreSQL + TimescaleDB · custom JWT auth (`jose`,
+not NextAuth) · hand-rolled UI in `components/ui/` (no shadcn/ui) · next-intl (th default + en) · Vitest +
+Playwright. Why each choice: `docs/adr/`.
+
+## Folder layout
+
+```
+app/(auth)/, app/(backoffice)/   pages (public login / protected admin area)
+app/api/                          route handlers
+components/ui/                    hand-rolled, reusable UI primitives
+db/schema/                        Drizzle schema (source of truth for the data model)
+lib/                              auth, business logic, shared types
+e2e/                               Playwright specs
+server.ts                         custom http + WebSocket entrypoint
+```
+
+## Key docs
+
+| What | Where |
+|---|---|
+| AI/contributor rules | `AGENTS.md` |
+| Non-negotiable principles | `docs/constitution.md` |
+| Why things are built this way | `docs/adr/` |
+| Codebase inventory | `docs/planning/A1-inventory.md` |
+| Review policy | `REVIEW.md` |
+| Open ideas not yet decided | `docs/intents/` |
 
 ## Testing
 
@@ -67,17 +95,8 @@ Requires:
 
 Playwright manages both webServers (this app on `3100`, the gateway on `3101`) automatically — same `reuseExistingServer` behavior as the main suite.
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This app deploys on-premise on 2 servers (App Server: this app + IoT Gateway + Mosquitto; Data Server:
+PostgreSQL/TimescaleDB + Redis) — **not Vercel, not containerized** (no Dockerfile for the app itself;
+Docker here is dev-time infra only). See `docs/adr/0006-on-premise-two-server-deployment.md` for why.

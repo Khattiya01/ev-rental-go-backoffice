@@ -47,8 +47,11 @@ export default function OverduePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
     setPage(1)
+  }, [search])
+
+  const filtered = useMemo(() => {
     if (!search.trim()) return invoices
     const q = search.toLowerCase()
     return invoices.filter(inv =>
@@ -56,7 +59,6 @@ export default function OverduePage() {
       inv.invoiceNo.toLowerCase().includes(q) ||
       (inv.vehiclePlate ?? '').toLowerCase().includes(q)
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoices, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
