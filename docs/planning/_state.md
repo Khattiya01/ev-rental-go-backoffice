@@ -13,7 +13,7 @@
 |---|---|---|
 | 0 ตั้งต้น | ✅ เสร็จ | docs/planning/_state.md |
 | A สำรวจของเดิม | ✅ เสร็จ (A.1–A.8 ผ่านหมด) | docs/planning/A1-inventory.md, docs/adr/, docs/constitution.md, .claude/, docs/backlog/, docs/intents/ |
-| 7 Handoff | ⬜ ยังไม่ทำ | AGENTS.md, CLAUDE.md, REVIEW.md, .claude/ |
+| 7 Handoff | ✅ เสร็จ (commit `e3bdd5b` บน branch `chore/buaflow-adoption` — รอ push + เปิด PR) | AGENTS.md, CLAUDE.md, REVIEW.md, CONTRIBUTING.md, docs/workflow.md, docs/standards/, .git/hooks/{pre-push,post-merge,post-checkout} |
 | 8 Tune | ♻️ ทำซ้ำเรื่อยๆ | อัปเดต config หลังใช้งานจริง |
 
 ## การตัดสินใจที่ล็อกแล้ว
@@ -79,6 +79,24 @@
   - `node .claude/check-config.js` เหลือ "ต้องแก้" 2 จุดเดิม (REVIEW.md, AGENTS.md ยาวเกิน 200 บรรทัด) — เป็นงานของ Phase 7 ตามที่ระบุไว้ตั้งแต่ A.1 ไม่ใช่ตัวบล็อกของ Phase A
   - `buaflow doctor` เหลือ warning เดียว: ไม่มี `.buaflow/project.json` (ยังไม่ได้รัน `buaflow init` — เป็น metadata เสริม ไม่ใช่ requirement ของ A.8)
   - **Phase A ปิดแล้ว → พร้อมเข้า Phase 7 (Handoff)**
+
+- 2026-09-24 (Phase 7): ทำ handoff ครบตาม `phases/07-handoff.md`:
+  - 7.2–7.3: เขียน `AGENTS.md` ใหม่ (167 บรรทัด, ภาษาอังกฤษ, แก้ auth/UI claim ที่ผิด, มีตัวอย่าง verify ที่ผ่านจริง, หมวด "Things the AI gets wrong" เริ่มมี 3 ข้อจริงจาก session นี้) และ `CLAUDE.md` (thin layer ตาม template)
+  - **พบข้อขัดแย้ง workflow ใหญ่ระหว่างทาง**: `CLAUDE.md` เดิม import ระบบ multi-agent ของตัวเอง (`.github/agents/product-owner.agent.md` ฯลฯ ที่ห้าม AI เขียนโค้ดเอง ต้อง delegate ทุกครั้ง) ขัดกับ workflow ของ Buaflow ที่ main session ทำงานตรง — **ผู้ใช้เลือกใช้ Buaflow เป็นหลัก** บันทึกเป็น `docs/adr/0008-buaflow-as-primary-ai-workflow.md` ย้ายไฟล์เดิมไป `docs/_archive/github-agents/` (ไม่ลบ)
+  - 7.4: `.claude/stack.json` ตั้ง `ciMode: local-only` ตามที่ผู้ใช้เลือก (ยังไม่มี GitHub Actions), ติดตั้ง `.git/hooks/pre-push` (เรียก `gate.js`) + `post-merge`/`post-checkout` (regenerate board.md อัตโนมัติ) เพราะไม่มี husky — ทดสอบจริงทั้ง 3 ตัวแล้วผ่าน (รวมทดสอบบน branch `fix/` จริงว่าบล็อกการแก้ไฟล์เทสได้จริง)
+  - **เจอ critical security finding ระหว่างรัน gate ครั้งแรก**: `pnpm audit` พบ unauthenticated RCE 2 ตัวใน `next@16.2.6` เอง (ไม่ใช่ dev-dependency) แก้ได้ด้วยการอัป `>=16.3.3` — ผู้ใช้เลือกทำเป็น intent แยก (`I-007`) แทนการแก้ทันที
+  - 7.5: เขียน `REVIEW.md`
+  - 7.6: copy `docs/standards/*.md` (23 ไฟล์) + `docs/templates/` (31+ ไฟล์ จาก A.2 อยู่แล้ว) + `docs/evals/EV-001..005.json` เข้าโปรเจกต์ — แก้ `tests[]`/`ablation.disable` ของทุก eval case ให้ชี้ไฟล์จริงที่มีอยู่ในโปรเจกต์แทน path เชิงสัญลักษณ์ของ kit (ไม่งั้น `node .claude/gate.js` fail ที่ eval-harness ทันที — เจอและแก้แล้ว) และแก้เนื้อหา standards ที่อ้าง shadcn/Prisma/container-first ให้ตรงของจริง (banner note ในแต่ละไฟล์ที่กระทบ) สร้างโฟลเดอร์ว่าง `docs/incidents/`, `docs/releases/`, `docs/discovery/`
+  - 7.7: เขียน `CONTRIBUTING.md` ใหม่, แก้ `README.md` (เพิ่ม stack/โครงสร้าง/ลิงก์เอกสาร, ลบท่อน "Deploy on Vercel" ที่ผิดออก)
+  - 7.8: เขียน `docs/workflow.md` จาก `workflow-lifecycle.md` พร้อม banner แก้จุดที่ไม่ตรง (ไม่มี Postman/OpenAPI, ไม่มี Phase 1-6 docs, ciMode local-only)
+  - 7.10: เช็กลิสต์ก่อนปิด — `check-config.js` ต้องแก้:0, `node .claude/gate.js` **ผ่านทุกด่าน** (verify 42.4s, audit warn, secrets skip เพราะไม่มี gitleaks, check-config/docs-lint/evals pass), `board.js --check` ตรงกัน, ทดสอบ hook จริงครบ (guard-edit/guard-bash/fix-branch-block) — เจอ 3 อย่างที่ต้องแก้เพิ่มระหว่างเช็ก:
+    1. `.env.example` **ไม่เคยถูก commit เข้า git เลย** เพราะ `.gitignore` มี `.env*` โดยไม่มี exception — เพิ่ม `!.env.example` แล้ว `git add` แล้ว
+    2. ไม่มี `/health` endpoint (ตรงกับที่ `buaflow assess` เคยเจอที่ Phase 0) → บันทึกเป็น `I-008`
+    3. dark mode ไม่มีจริง มีแค่ Tailwind boilerplate ที่ไม่ได้ใช้ → บันทึกเป็น `I-009`
+    ส่วนที่ต้องให้ผู้ใช้ตรวจเองในเซสชันจริง (ไม่ใช่สิ่งที่ตรวจแทนได้): เปิด session ใหม่แล้วเช็ค `/context`, `/hooks`, พิมพ์ `/` ดู skills, และ QA เต็มรูปแบบผ่าน browser จริง (th/en, docker compose up ครบวงจร)
+  - 7.11: eval baseline — cases ผ่านการตรวจโครงสร้างแล้ว (`eval-harness.js` = 5 case valid) แต่**ยังไม่รัน/ยังไม่ให้คะแนน** เพราะคนที่เขียน config เอง (Claude ใน session นี้) ตรวจ eval ของตัวเองไม่ได้ตามกฎ kit — ต้องให้คนอื่น/session อื่นรันจริงทีหลัง
+  - 7.12: commit ทุกอย่างบน branch ใหม่ `chore/buaflow-adoption` (commit `e3bdd5b`, 150 ไฟล์) **ไม่ commit ตรงเข้า main** ตาม ADR-0008 — ยังไม่ได้ push/เปิด PR (รอ user ยืนยัน)
+  - พบบั๊กจริงเพิ่มระหว่างทาง: `.env.example` หลุดจาก git tracking ทั้งที่มีมาตั้งแต่ต้น (แก้แล้ว), เจอ Next.js RCE (บันทึกเป็น intent)
 
 ## คำถามที่ยังค้าง
 (ไม่มี)
