@@ -38,6 +38,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # mosquitto credentials (hashed but still secret; .example is tracked, the real file is not)
 mosquitto/passwd
@@ -55,3 +56,8 @@ next-env.d.ts
 
 # sonar q
 sonar-project.properties
+.verify-flakes.jsonl
+.verify.log
+
+# generated from docs/backlog/tasks/*.md by node .claude/board.js — never hand-edit or commit
+docs/backlog/board.md

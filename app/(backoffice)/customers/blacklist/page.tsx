@@ -64,8 +64,11 @@ export default function BlacklistPage() {
     }
   }
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
     setPage(1)
+  }, [search])
+
+  const filtered = useMemo(() => {
     if (!search.trim()) return blacklisted
     const q = search.toLowerCase()
     return blacklisted.filter(c =>
@@ -73,7 +76,6 @@ export default function BlacklistPage() {
       c.phone.includes(search) ||
       (c.bannedReason ?? '').toLowerCase().includes(q)
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blacklisted, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))

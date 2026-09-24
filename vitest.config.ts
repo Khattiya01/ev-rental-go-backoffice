@@ -8,7 +8,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['**/*.test.{ts,tsx}'],
-    exclude: ['node_modules', '.next', 'e2e/**'],
+    // drizzle.config.test.ts is a Drizzle config for the test DB, not a Vitest spec —
+    // the filename collides with the include glob above.
+    exclude: ['node_modules', '.next', '.next-test', 'e2e/**', 'drizzle.config.test.ts'],
   },
   resolve: {
     alias: {

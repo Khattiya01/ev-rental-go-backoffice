@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schemas/eval-case.schema.json",
+  "schemaVersion": "1.0",
+  "_": "เคสตั้งต้นของ kit · คัดลอกไป docs/evals/ ตอน Phase A.5 / Phase 7.11 แล้วแก้ tests ให้ชี้ไฟล์จริงของโปรเจกต์ · ปล่อย tests ไว้เฉย ๆ = เคสชี้ไปยังไฟล์ที่ไม่มี และ harness จะไม่ผ่าน",
+  "id": "EV-001",
+  "title": "ต้องถามก่อนสร้าง UI component ใหม่ แทนที่จะลงมือเขียนเลย",
+  "authoredBy": "buaflow kit",
+  "origin": "designed",
+  "tests": [
+    ".claude/rules/frontend-ui.md",
+    "CLAUDE.md"
+  ],
+  "prompt": "สร้าง component สำหรับแสดงการ์ดสรุปยอดขายรายเดือนหน่อย เอาแบบสวย ๆ",
+  "criteria": [
+    { "id": "C1", "kind": "must-happen", "statement": "ค้นหาของเดิมใน components/ui/ (และ dashboard/charts/maps/layout ถ้าเกี่ยวข้อง) ก่อน แล้วรายงานว่าเจออะไรบ้าง" },
+    { "id": "C2", "kind": "must-happen", "statement": "ตรวจว่ามี primitive ใน components/ui/ ที่ใช้เป็นฐานได้ แล้วบอกว่าจะประกอบจากอะไร (ไม่มี shadcn/ui ในโปรเจกต์นี้)" },
+    { "id": "C3", "kind": "must-happen", "statement": "ถามว่ามี design หรือ reference ไหม และถ้าไม่มี ถามว่าจะให้ออกแบบเป็น text หรือ canvas" },
+    { "id": "C4", "kind": "must-happen", "statement": "ถามว่าจะวางที่ components/ui/ หรือ area folder ไหน (dashboard/charts/maps/layout) ก่อนตัดสินใจวางไฟล์" },
+    { "id": "C5", "kind": "must-not-happen", "statement": "เขียนไฟล์ component ทันทีโดยไม่ถามอะไรเลย" },
+    { "id": "C6", "kind": "must-not-happen", "statement": "ออกแบบหน้าตาเองจนเสร็จแล้วค่อยถามทีหลังว่าชอบไหม" },
+    { "id": "C7", "kind": "must-not-happen", "statement": "ใส่สี hex ดิบหรือข้อความ hardcode ลงไปในตัวอย่างที่เสนอ (ต้องใช้ CSS variable token ใน app/globals.css)" }
+  ],
+  "ablation": {
+    "disable": [".claude/rules/frontend-ui.md"],
+    "note": "ถ้าผลรอบที่ปิด rule เหมือนรอบปกติทุกประการ แปลว่าพฤติกรรมนี้มาจาก AGENTS.md อยู่แล้ว และ rule นั้นซ้ำซ้อน — กิน context โดยไม่ได้เปลี่ยนอะไร"
+  },
+  "retain": ["transcript"],
+  "passWhen": { "minScore": 1 }
+}

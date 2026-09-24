@@ -4,257 +4,163 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
----
-
 # EV Rental GO — Web Backoffice
 
-## Project Scope
+<!-- English by design: every AI session loads this file, and Thai tokenizes ~2x more expensively.
+     Replies to the user and everything under docs/ stay in Thai (see Language below). -->
 
-This repository is **Web Backoffice only** (Admin & Fleet Management).
-The other two products — Public Website (Customer Facing) and Maintenance App (Tablet PWA) — are separate repositories and are **out of scope here**.
+> Core rules for every AI agent working in this repo (AGENTS.md standard).
+> Claude Code loads this through `CLAUDE.md`, which imports it.
+> Keep under ~200 lines. Details live in `docs/` — link, don't paste.
+> Test for every line: *"If this line were deleted, would the AI get something wrong?"* If not, delete it.
+
+## Language
+
+- Reply to the user in Thai. Technical terms, identifiers, file names, branch names, commit messages, code, and i18n keys stay in English.
+- Everything written into `docs/` (intent, spec, plan, ADR, task) is written in full Thai.
+- This file, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, and `REVIEW.md` are in English because only the AI reads them.
+
+## Scope
+
+This repository is **Web Backoffice only** (Admin & Fleet Management). The Public Website (customer-facing)
+and the Maintenance App (tablet PWA) are separate repositories — out of scope. The **IoT Gateway**
+(`ev-rental-iot-gateway/`, Node.js + Express) is also a separate repository — never implement MQTT/GPS
+ingestion here, only read from Redis (latest position) and PostgreSQL (history, alerts) that it writes.
+
+## What this project is
+
+Internal backoffice for an EV car rental business in Thailand: real-time fleet tracking (GPS/battery via
+Redis + TimescaleDB), customer e-KYC approval, rental contracts, billing/invoicing (incl. Stripe/PromptPay),
+maintenance queues, and management reports. Target scale: up to 100 vehicles on a 2-server on-premise
+deployment (`docs/adr/0006-on-premise-two-server-deployment.md`).
+
+## Stack (verified against the actual code — not aspirational)
+
+- Framework: Next.js 16 (App Router); custom `server.ts` (http + `ws`) instead of `next start` — needed for
+  the live-fleet WebSocket (`docs/adr/0001-nextjs-fullstack-monolith.md`)
+- Auth: **custom JWT** (`jose`) + httpOnly cookie + `bcryptjs` — **not NextAuth**, despite older docs
+  (`docs/adr/0002-custom-jwt-auth.md`)
+- UI: **hand-rolled components in `components/ui/`** — **no shadcn/ui, no registry, no CLI**
+  (`docs/adr/0003-hand-rolled-ui-components.md`). Adding any UI library needs an intent + ADR first.
+- DB/ORM: Drizzle ORM on PostgreSQL + TimescaleDB extension (`db/schema/` is the source of truth)
+- i18n: next-intl — **th (default) + en**, one file per locale (`messages/{en,th}.json`), 2-level keys
+- Test: Vitest (unit, colocated `*.test.ts`) + Playwright (`e2e/`, plus a separate `@gateway` suite)
+- Docker: **dev-time infra only** (Postgres/TimescaleDB, Redis, Mosquitto via `docker-compose.yml`) — the
+  app itself is **not containerized**; it runs directly via `pnpm start` / `tsx`
+
+## Commands
+
+```bash
+pnpm verify              # typecheck -> lint -> build -> test, short summary, full log in .verify.log
+node .claude/gate.js     # verify + audit + secrets + check-config + docs-lint — pre-push runs this
+node .claude/board.js    # regenerates docs/backlog/board.md from task/intent files — never hand-edit it
+pnpm dev                 # dev server (server.ts, needs the docker stack running)
+pnpm build               # production build
+pnpm db:push             # sync schema to a LOCAL/dev DB only — never shared/production (see intent I-004)
+pnpm db:seed             # seed dev data
+docker compose up -d     # Postgres/TimescaleDB + Redis + Mosquitto for local dev and e2e
+pnpm sonar               # the user runs this — AI must not
+```
+
+**What "passing" looks like** (paste only this when reporting — the full log is in `.verify.log`):
+
+```
+verify  ✓ typecheck 2.3s   ✓ lint 7.3s   ✓ build 18.2s   ✓ test 13.9s   [41.7s]
+        Tests  89 passed (89)
+        all passed
+```
+
+## Folder layout
+
+```
+app/(auth)/login/           public login page
+app/(backoffice)/           protected admin pages (fleet, customers, contracts, billing, maintenance, reports, settings, alerts)
+app/api/                    route handlers, one folder per resource; app/api/public/ is unauthenticated
+app/register/               public customer self-registration
+components/ui/              hand-rolled, reusable UI primitives — team-owned, edit freely
+components/{dashboard,charts,maps,layout}/  composite / area-specific components
+db/schema/                  Drizzle schema, one file per table — source of truth for the data model
+lib/                        auth (session.ts, permissions.ts, dal.ts), business-logic helpers, types.ts
+i18n/, messages/            next-intl config and the two locale files
+e2e/                        Playwright specs (+ a separate @gateway suite needing the IoT gateway running)
+server.ts                   custom http + WebSocket entrypoint (not `next start`)
+```
 
 ---
 
-## Project Overview
+## Workflow (always in this order)
 
-A full-stack internal backoffice for managing an EV car rental business in Thailand.
-Admins use this system to:
-- Track and control the entire EV fleet in real time (GPS, battery, IoT)
-- Manage customer onboarding and e-KYC document approval
-- Issue and manage rental contracts
-- Handle billing, invoicing, and debt collection
-- Oversee maintenance queues and inspection reports
-- Generate financial and operational reports for management
+```
+intent -> spec (large feature) -> plan -> code -> verify -> check -> PR -> done
+                                                 (trivial track: task -> code -> check low -> PR)
+```
+
+1. **Starting any task** — `/task` reads the board + task file, then summarizes its understanding to the user first. Never start coding immediately.
+2. **Before touching code** — more than 3 files / DB / auth / unfamiliar code -> `/plan` in plan mode, commit the plan first.
+3. **While working** — one task at a time; small commits; anything out of scope -> stop and ask. Same spot fails twice in a row -> stop, tell the user.
+4. **Before claiming done** — actually run `pnpm verify` and paste its summary line. Never claim "passes" without running it.
+5. **Finishing** — `/check` -> the user approves -> `/done` opens a PR -> a human merges after the gate passes -> `/clear`.
+   The AI never merges into main (hook blocks it) and never hand-edits `board.md`.
+
+## Never
+
+- Hardcoded UI strings — every string goes through i18n, both th and en
+- Raw Tailwind palette colors in new code — use the CSS variable tokens in `app/globals.css` (existing files using raw colors are pre-existing, see constitution art. 9.1)
+- Installing a UI library — this project hand-rolls `components/ui/` (ADR-0003); needs an intent + ADR first
+- Running `pnpm db:push` against a shared or production database (local/dev only — intent I-004)
+- Editing test files to make tests pass while fixing a bug
+- `git commit --no-verify`
+- Running the SonarQube scan yourself
+- Working outside the task scope without asking
+- Reporting "passes" without actually running it
+- `git merge` / `git push` into main — open a PR for a human
+- Hand-editing `docs/backlog/board.md`
+
+## Backend (`app/api/**`)
+
+- **Write unit tests together with the module, always**
+- New endpoints: validate input with a real `zod` schema — existing endpoints validate by hand, that's
+  pre-existing, don't refactor it as a side effect (constitution art. 9.1, intent I-001)
+- Errors: `NextResponse.json({ error }, { status })` — never leak stack traces
+- Authorize on the server via `getCurrentUser()` + `requirePermission()`, always
+- No OpenAPI/Postman in this repo yet (intent I-002) — new endpoints should start `docs/api/openapi.json`
+
+## Frontend (`components/`, `app/**/*.tsx`)
+
+- **Before creating a component, always ask**: exists in `components/ui/` (or the matching `dashboard/`/`charts/`/`maps/`/`layout/`)? -> composable from existing primitives? -> is there a design? -> **none -> stop and ask before designing your own**
+- No `cva`/`clsx`/`cn()` in this project — follow the existing variant-map + template-literal pattern (`components/ui/badge.tsx`)
+- Data fetching: `useEffect` + `fetch` is the existing convention (baselined against a stricter lint rule — constitution art. 9.1, intent I-003); don't invent a different pattern for one page
+- Cover every state: loading / empty / error / unauthorized
+- Test th/en, light/dark, ~390px
+
+## When the plan changes
+
+Update the source document first (intent / spec / plan / ADR / task file), then the code. Never let code and docs disagree.
+
+## When unsure
+
+Ask, don't guess — write `[NEEDS CLARIFICATION: <question>]` in the document instead of filling in a plausible value.
 
 ---
 
-## Tech Stack
+## Things the AI gets wrong in this project
 
-| Layer | Choice |
+<!-- Rule: the 2nd time the same mistake happens -> add it here immediately -->
+
+- Assumed `.next-test/` (the test-env build output) was covered by the default eslint ignores like `.next/` -> it isn't; `eslint.config.mjs` needs it listed explicitly, same for `.claude/` (kit tooling)
+- Assumed a file named `drizzle.config.test.ts` is a Vitest test because of the `.test.ts` suffix -> it's a Drizzle config for the test DB; `vitest.config.ts` excludes it explicitly
+- Assumed this repo uses shadcn/ui because an older agent doc said so -> it's 100% hand-rolled (`docs/adr/0003-hand-rolled-ui-components.md`); always check `components/ui/` for a real `components.json` before believing a doc
+
+> If this list grows past ~10 items, promote some to a path-scoped rule or a hook.
+
+## Reference docs
+
+| Topic | File |
 |---|---|
-| Framework | Next.js 16 (App Router, full-stack) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| Package manager | pnpm |
-| Database | PostgreSQL + TimescaleDB extension + Drizzle ORM |
-| Real-time / Cache | Redis (live GPS positions) + WebSockets |
-| IoT Gateway | Separate Node.js + Express (TypeScript) microservice — NOT in this repo |
-| MQTT Broker | Mosquitto — runs on App Server alongside IoT Gateway |
-| Auth | NextAuth v5 |
-| Maps | Leaflet.js + OpenStreetMap (via `react-leaflet`) — free, no API key required |
-| Charts | Recharts |
-
-> Update this table as dependencies are added.
-
----
-
-## Architecture
-
-### Hybrid Monolith
-This repo is the **Next.js full-stack app** only. It handles:
-- Web UI (all admin pages)
-- Business logic API routes (Auth, Rentals, Customers, Billing, Reports)
-- Real-time display — reads latest GPS from **Redis**, does NOT receive raw IoT data directly
-
-### IoT Gateway (Separate Service — out of scope for this repo)
-A dedicated **Node.js + Express (TypeScript)** microservice handles high-frequency GPS telemetry:
-- Receives GPS data from vehicles via **MQTT** every 1–5 seconds
-- Validates and parses incoming payloads
-- Writes latest position to **Redis** (fast cache)
-- Writes GPS history to **PostgreSQL** (TimescaleDB for time-series efficiency)
-- Triggers Alerts (low battery < 15%, geofence breach) by writing to the alerts table
-- Reason for separation: raw IoT traffic would block Next.js Event Loop if handled here
-
-### Deployment Architecture (On-Premise — 2 Servers)
-
-```
-Server 1: App Server
-├── Next.js (Web Backoffice)   — this repo
-├── IoT Gateway (Node.js + Express/TS)  — separate repo
-└── MQTT Broker (Mosquitto)    — handles vehicle connections
-
-Server 2: Data Server
-├── PostgreSQL + TimescaleDB   — all business + GPS history data
-└── Redis                      — latest GPS position per vehicle
-```
-
-Target scale: **up to 100 vehicles** on this 2-server setup.
-
-### Data Flow
-```
-Vehicle (IoT device)
-  │  MQTT
-  ▼
-MQTT Broker (Mosquitto)
-  │
-  ▼
-IoT Gateway (Node.js/TS)
-  ├─ latest position ──► Redis
-  ├─ GPS history ──────► PostgreSQL (TimescaleDB)
-  └─ alerts ───────────► PostgreSQL (alerts table)
-
-Next.js App (this repo)
-  ├─ reads Redis ──► real-time map / dashboard via WebSockets or Server Actions
-  └─ reads PostgreSQL ──► business data (contracts, customers, invoices, alerts, etc.)
-```
-
-### Agent Scope Reminder
-- **Implement:** Next.js pages, API route handlers, DB queries, Redis reads, WebSocket connections for display
-- **Do NOT implement:** IoT Gateway, MQTT broker, GPS ingestion logic — those are separate services
-
----
-
-## Folder Structure Conventions
-
-```
-app/
-  (auth)/
-    login/            # Login page
-  (backoffice)/       # All admin pages (protected)
-    dashboard/
-    fleet/
-      map/            # Live tracking map
-      vehicles/       # Vehicle list
-        new/          # Add new vehicle form
-        [id]/         # Vehicle detail (tabs: info, telematics, history, remote-control)
-          edit/       # Edit vehicle
-      geofencing/
-    customers/        # Customer list (index page)
-      new/            # Add new customer form
-      kyc/            # e-KYC approval queue
-      [id]/           # Customer profile
-        edit/         # Edit customer
-      blacklist/
-    contracts/        # Active rentals list (index page)
-      [id]/           # Contract detail
-    billing/
-      invoices/
-      overdue/
-    maintenance/      # Maintenance overview (tickets & reports as tabs or sub-pages)
-    reports/
-    settings/         # System settings
-      pricing/        # Pricing configuration
-      users/          # Admin user management
-  register/           # Public customer self-registration (unauthenticated)
-  api/                # Route Handlers (backend API)
-    customers/
-      [id]/
-    vehicles/
-      [id]/
-    users/
-      [id]/
-    upload/           # Internal file upload
-    registration-links/
-    public/           # Unauthenticated endpoints
-      register/
-      upload/
-components/           # Shared UI components
-  ui/                 # Primitive components (buttons, modals, tables, etc.)
-  charts/             # Chart components (Recharts wrappers)
-  maps/               # Map components (always "use client")
-  dashboard/          # Dashboard-specific composite components
-  layout/             # Shell, sidebar, header
-db/                   # Database layer
-  schema/             # One file per table; re-export from index.ts
-  index.ts            # Drizzle client + schema barrel
-  seed.ts             # Development seed data
-lib/                  # Shared utilities, constants, types
-  actions/            # Server Actions (auth, locale, etc.)
-  dal.ts              # Data Access Layer — server-only DB helpers
-  session.ts          # Session helpers (NextAuth / JWT)
-  storage.ts          # File storage helpers
-  types.ts            # Shared TypeScript types
-i18n/                 # next-intl request config
-messages/             # Locale message files (en.json, th.json)
-public/               # Static assets
-  uploads/            # User-uploaded files (customers/, vehicles/)
-middleware.ts         # Auth / route protection + i18n routing
-```
-
----
-
-## Domain Knowledge
-
-### Core Business Entities
-
-| Entity | Description |
-|---|---|
-| **Vehicle** | An EV car in the fleet. Has status: available, rented, charging, under_repair, offline |
-| **Customer** | A driver (Grab/Bolt driver). Has status: pending_kyc, active, blacklisted |
-| **Contract** | A rental agreement between a customer and a vehicle. Has start/end date, deposit, daily/monthly rate |
-| **Invoice** | A billing record for a rental period. Has status: paid, unpaid, overdue |
-| **MaintenanceTicket** | A repair/service job for a vehicle. Has status: todo, in_progress, done |
-| **InspectionReport** | Pre/post-rental vehicle condition record with photos and damage markings |
-| **GeofenceZone** | A polygon area defining the operational boundary for a vehicle |
-| **Alert** | A system notification (low battery, geofence breach, overdue payment) |
-
-### Vehicle Statuses
-- `available` — parked, ready to rent
-- `rented` — currently on the road with a customer
-- `charging` — at a charging station
-- `under_repair` — in the workshop
-- `offline` — IoT device not responding
-
-### Key Business Rules
-- Remote motor cutoff (emergency control) must require a second password confirmation before executing
-- e-KYC requires: National ID (front+back), Driver's License, Grab/Bolt driver profile screenshot
-- Battery State of Charge (SoC) alerts fire at < 15%
-- Battery State of Health (SoH) reports flag vehicles whose battery is degrading for review
-- Geofence breach triggers an alert immediately
-
----
-
-## Pages & Features
-
-### 1. Dashboard
-- Summary cards: total vehicles, rented, available, under repair, pending KYC customers
-- Mini map with clustered vehicle positions
-- Alert/notification feed (low battery, geofence breach, overdue payment)
-- Revenue chart (daily/weekly)
-
-### 2. Fleet Management
-- **Live Tracking Map** — fullscreen map, vehicle icons colored by status, side filter panel
-- **Vehicle List** — data table with search by plate number, filter by status, add new vehicle
-- **Vehicle Detail** (4 tabs):
-  - Tab 1: General info (photo, plate, model, year, odometer)
-  - Tab 2: Telematics & Battery (SoC graph, temperature, charge cycle stats)
-  - Tab 3: Rental history (list of past renters)
-  - Tab 4: Emergency Remote Control (motor cutoff with password confirmation modal, IoT device reset)
-- **Geofencing** — polygon drawing tool on map, alert recipient configuration
-
-### 3. Customer Management
-- **Customer List** — table with name, phone, type (Grab/Bolt), account status
-- **e-KYC Approval** — side-by-side selfie vs ID card comparison, approve/reject with reason
-- **Customer Profile** — personal info, rental history, claim/accident history, blacklist button
-- **Blacklist** — list of banned customers with ban reason notes
-
-### 4. Contract & Rental
-- **Active Rentals** — table: contract number, customer, vehicle plate, start date, return date
-- **Contract Detail** — digitally signed PDF, deposit amount, daily/monthly rate, battery degradation penalty terms
-
-### 5. Billing & Payment
-- **Invoices & Transactions** — all bills table, status (paid/unpaid), payment slip viewer, card charge records
-- **Overdue & Debt Collection** — overdue customer list, quick actions: send SMS, send LINE notification, send vehicle lock command
-
-### 6. Maintenance (read-only view from admin side)
-- **Service Tickets** — Kanban board (Todo / In Progress / Done) for repair queues
-- **Inspection Reports** — damage photos from technician tablet app, used for vehicle condition comparison at return
-
-### 7. Reports & Analytics
-- **Financial Report** — revenue, bad debt; export as Excel/CSV
-- **Asset Report** — vehicle utilization rate (% rented vs parked)
-- **Battery Health Report** — vehicles with low SoH flagged for battery replacement or resale evaluation
-
----
-
-## Agent Guidelines
-
-- **Do NOT implement features from the Public Website or Maintenance App** — those are separate repos
-- All pages are protected routes — assume an auth layer (middleware) guards `/backoffice/**`
-- API routes live in `app/api/` following REST conventions
-- Use server components by default; use `"use client"` only when interactivity is required
-- Map components are always client components (browser API dependency)
-- The emergency remote control action must always include a confirmation step — never implement it as a single-click action
-- When displaying vehicle positions, use clustering for the map
-- All data tables should support search and filter
-- Financial exports must support CSV at minimum
+| Project constitution (non-negotiable principles) | `docs/constitution.md` |
+| Codebase inventory (EXTEND mode — no Phase 1-6 architecture doc) | `docs/planning/A1-inventory.md` |
+| Data model (source of truth) | `db/schema/*.ts` |
+| Architecture decisions | `docs/adr/` |
+| Review policy | `REVIEW.md` |
+| Backlog | `docs/backlog/board.md` |
+| Open ideas not yet decided | `docs/intents/` — see `I-007` (critical security fix pending decision) |
